@@ -154,11 +154,21 @@ ob_start();
                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition" target="_blank">
                     <i class="fas fa-print mr-2"></i>In hóa đơn
                 </a>
-                <?php if ($invoice['payment_status'] === 'unpaid' && Auth::isPatient()): ?>
-                <a href="<?= APP_URL ?>/invoices/<?= $invoice['id'] ?>/pay" 
-                   class="px-6 py-2 gradient-bg text-white rounded-lg hover:opacity-90 transition">
-                    <i class="fas fa-credit-card mr-2"></i>Thanh toán
-                </a>
+                
+                <?php if ($invoice['payment_status'] === 'unpaid'): ?>
+                    <?php if (Auth::isPatient()): ?>
+                    <a href="<?= APP_URL ?>/invoices/<?= $invoice['id'] ?>/pay" 
+                       class="px-6 py-2 gradient-bg text-white rounded-lg hover:opacity-90 transition">
+                        <i class="fas fa-credit-card mr-2"></i>Thanh toán
+                    </a>
+                    <?php endif; ?>
+                    
+                    <?php if (Auth::isAdmin()): ?>
+                    <a href="<?= APP_URL ?>/invoices/<?= $invoice['id'] ?>/pay" 
+                       class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                        <i class="fas fa-check-circle mr-2"></i>Xác nhận thanh toán
+                    </a>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>
