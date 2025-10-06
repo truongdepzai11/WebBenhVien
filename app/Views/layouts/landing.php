@@ -119,9 +119,9 @@
                 <div>
                     <h4 class="text-lg font-bold mb-4">Liên hệ</h4>
                     <ul class="space-y-2 text-sm text-gray-400">
-                        <li><i class="fas fa-map-marker-alt mr-2"></i>123 Đường ABC, TP.HCM</li>
-                        <li><i class="fas fa-phone mr-2"></i>1900 xxxx</li>
-                        <li><i class="fas fa-envelope mr-2"></i>info@hospital.com</li>
+                        <li><i class="fas fa-map-marker-alt mr-2"></i>57 Lê Lợi, Quận Gò VấpTP.HCM</li>
+                        <li><i class="fas fa-phone mr-2"></i>0973436483</li>
+                        <li><i class="fas fa-envelope mr-2"></i>truongpham12032003@gmail.com</li>
                     </ul>
                 </div>
                 
