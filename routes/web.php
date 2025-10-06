@@ -313,6 +313,11 @@ $router->get('/invoices/{id}', function($id) {
     $controller->show($id);
 });
 
+$router->get('/invoices/{id}/pay', function($id) {
+    $controller = new InvoiceController();
+    $controller->pay($id);
+});
+
 $router->post('/invoices/{id}/pay', function($id) {
     $controller = new InvoiceController();
     $controller->pay($id);

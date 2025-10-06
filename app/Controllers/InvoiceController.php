@@ -240,17 +240,29 @@ class InvoiceController {
         $this->paymentModel->payment_date = null;
 
         if ($payment_method === 'cash') {
-            // Thanh toán tiền mặt - cập nhật ngay
-            $this->paymentModel->payment_status = 'success';
-            $this->paymentModel->payment_date = date('Y-m-d H:i:s');
-            
-            if ($this->paymentModel->create()) {
-                // Cập nhật trạng thái hóa đơn
-                $this->invoiceModel->updatePaymentStatus($id, 'paid', date('Y-m-d H:i:s'));
+            // Thanh toán tiền mặt
+            if (Auth::isAdmin()) {
+                // Admin xác nhận thanh toán ngay
+                $this->paymentModel->payment_status = 'success';
+                $this->paymentModel->payment_date = date('Y-m-d H:i:s');
                 
-                $_SESSION['success'] = 'Thanh toán thành công';
-                header('Location: ' . APP_URL . '/invoices/' . $id);
-                exit;
+                if ($this->paymentModel->create()) {
+                    // Cập nhật trạng thái hóa đơn
+                    $this->invoiceModel->updatePaymentStatus($id, 'paid', date('Y-m-d H:i:s'));
+                    
+                    $_SESSION['success'] = 'Xác nhận thanh toán thành công';
+                    header('Location: ' . APP_URL . '/invoices/' . $id);
+                    exit;
+                }
+            } else {
+                // Bệnh nhân chỉ tạo yêu cầu thanh toán
+                $this->paymentModel->payment_status = 'pending';
+                
+                if ($this->paymentModel->create()) {
+                    $_SESSION['success'] = 'Đã gửi yêu cầu thanh toán. Vui lòng thanh toán tại quầy thu ngân.';
+                    header('Location: ' . APP_URL . '/invoices/' . $id);
+                    exit;
+                }
             }
         } elseif ($payment_method === 'momo') {
             // Chuyển đến trang thanh toán MoMo
@@ -308,5 +320,41 @@ class InvoiceController {
 
         header('Location: ' . APP_URL . '/invoices');
         exit;
+    }
+
+    // Thanh toán MoMo
+    public function momo($id) {
+        Auth::requireLogin();
+
+        $invoice = $this->invoiceModel->findById($id);
+        
+        if (!$invoice) {
+            $_SESSION['error'] = 'Không tìm thấy hóa đơn';
+            header('Location: ' . APP_URL . '/invoices');
+            exit;
+        }
+
+        // TODO: Tích hợp MoMo API
+        // Cần: Partner Code, Access Key, Secret Key từ MoMo
+        
+        require_once APP_PATH . '/Views/invoices/momo.php';
+    }
+
+    // Thanh toán VNPay
+    public function vnpay($id) {
+        Auth::requireLogin();
+
+        $invoice = $this->invoiceModel->findById($id);
+        
+        if (!$invoice) {
+            $_SESSION['error'] = 'Không tìm thấy hóa đơn';
+            header('Location: ' . APP_URL . '/invoices');
+            exit;
+        }
+
+        // TODO: Tích hợp VNPay API
+        // Cần: Terminal ID, Secret Key từ VNPay
+        
+        require_once APP_PATH . '/Views/invoices/vnpay.php';
     }
 }
