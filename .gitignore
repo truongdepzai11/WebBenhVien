@@ -1,0 +1,22 @@
+# Config files with sensitive data
+config/database.php
+
+# Cache
+*.cache
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.bak
+public/phpinfo.php
+public/test.html
