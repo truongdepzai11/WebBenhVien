@@ -155,20 +155,20 @@ class AdminController {
         // Tạo user
         $this->userModel->username = $_POST['username'];
         $this->userModel->email = $_POST['email'];
-        $this->userModel->password = password_hash($_POST['password'], PASSWORD_BCRYPT);
+        $this->userModel->password = $_POST['password']; // Model sẽ tự hash
         $this->userModel->full_name = $_POST['full_name'];
         $this->userModel->phone = $_POST['phone'];
         $this->userModel->role = 'doctor';
 
         if ($this->userModel->create()) {
-            $user_id = $this->userModel->conn->lastInsertId();
+            $user_id = $this->userModel->id;
             
             // Tạo doctor
             $doctor_code = 'DOC' . str_pad($user_id, 4, '0', STR_PAD_LEFT);
             
             $this->doctorModel->user_id = $user_id;
             $this->doctorModel->doctor_code = $doctor_code;
-            $this->doctorModel->specialization = $_POST['specialization'];
+            $this->doctorModel->specialization_id = $_POST['specialization'];
             $this->doctorModel->license_number = $_POST['license_number'];
             $this->doctorModel->qualification = $_POST['qualification'] ?? '';
             $this->doctorModel->experience_years = $_POST['experience_years'] ?? 0;

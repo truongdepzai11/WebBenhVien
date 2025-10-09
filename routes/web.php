@@ -60,6 +60,7 @@ require_once __DIR__ . '/../app/Controllers/AdminController.php';
 require_once __DIR__ . '/../app/Controllers/InvoiceController.php';
 require_once __DIR__ . '/../app/Controllers/ScheduleController.php';
 require_once __DIR__ . '/../app/Controllers/MedicalRecordController.php';
+require_once __DIR__ . '/../app/Controllers/ValidationController.php';
 
 // Home Route (Landing Page)
 $router->get('/', function() {
@@ -357,6 +358,22 @@ $router->get('/invoices/{id}/print', function($id) {
 $router->post('/invoices/{id}/delete', function($id) {
     $controller = new InvoiceController();
     $controller->delete($id);
+});
+
+// API Validation
+$router->get('/api/validate/username', function() {
+    $controller = new ValidationController();
+    $controller->checkUsername();
+});
+
+$router->get('/api/validate/email', function() {
+    $controller = new ValidationController();
+    $controller->checkEmail();
+});
+
+$router->get('/api/validate/phone', function() {
+    $controller = new ValidationController();
+    $controller->checkPhone();
 });
 
 return $router;

@@ -9,6 +9,7 @@ class Doctor {
     public $id;
     public $user_id;
     public $doctor_code;
+    public $specialization_id;
     public $specialization;
     public $license_number;
     public $qualification;
@@ -33,17 +34,20 @@ class Doctor {
 
     // Tạo bác sĩ mới
     public function create() {
-        $this->doctor_code = $this->generateDoctorCode();
+        // Nếu chưa có doctor_code, tự động generate
+        if (empty($this->doctor_code)) {
+            $this->doctor_code = $this->generateDoctorCode();
+        }
 
         $query = "INSERT INTO " . $this->table . " 
-                  (user_id, doctor_code, specialization, license_number, qualification, experience_years, consultation_fee, available_days, available_hours) 
-                  VALUES (:user_id, :doctor_code, :specialization, :license_number, :qualification, :experience_years, :consultation_fee, :available_days, :available_hours)";
+                  (user_id, doctor_code, specialization_id, license_number, qualification, experience_years, consultation_fee, available_days, available_hours) 
+                  VALUES (:user_id, :doctor_code, :specialization_id, :license_number, :qualification, :experience_years, :consultation_fee, :available_days, :available_hours)";
 
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(':user_id', $this->user_id);
         $stmt->bindParam(':doctor_code', $this->doctor_code);
-        $stmt->bindParam(':specialization', $this->specialization);
+        $stmt->bindParam(':specialization_id', $this->specialization_id);
         $stmt->bindParam(':license_number', $this->license_number);
         $stmt->bindParam(':qualification', $this->qualification);
         $stmt->bindParam(':experience_years', $this->experience_years);
