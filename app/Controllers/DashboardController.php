@@ -26,14 +26,17 @@ class DashboardController {
         $role = Auth::role();
 
         // Thống kê theo vai trò
-        if ($role === 'admin') {
+        if ($role === 'admin' || $role === 'receptionist') {
+            $allAppointments = $this->appointmentModel->getAll();
             $stats = [
                 'total_patients' => count($this->patientModel->getAll()),
                 'total_doctors' => count($this->doctorModel->getAll()),
-                'total_appointments' => count($this->appointmentModel->getAll()),
+                'total_appointments' => count($allAppointments),
+                'pending_appointments' => count(array_filter($allAppointments, fn($a) => $a['status'] === 'pending')),
+                'completed_appointments' => count(array_filter($allAppointments, fn($a) => $a['status'] === 'completed')),
                 'total_records' => count($this->medicalRecordModel->getAll())
             ];
-            $recent_appointments = array_slice($this->appointmentModel->getAll(), 0, 5);
+            $recent_appointments = array_slice($allAppointments, 0, 5);
         } elseif ($role === 'doctor') {
             $doctor = $this->doctorModel->findByUserId(Auth::id());
             $appointments = $this->appointmentModel->getByDoctorId($doctor['id']);

@@ -113,7 +113,7 @@
                         </div>
                         <?php endif; ?>
                         
-                        <?php if (Auth::isAdmin() || Auth::isDoctor()): ?>
+                        <?php if (Auth::isAdmin() || Auth::isDoctor() || Auth::isReceptionist()): ?>
                         <a href="<?= APP_URL ?>/patients" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg <?= (strpos($_SERVER['REQUEST_URI'], '/patients') !== false) ? 'active' : '' ?>">
                             <i class="fas fa-hospital-user w-5"></i>
                             <span>Bệnh nhân</span>
@@ -130,10 +130,16 @@
                             <span>Lịch hẹn</span>
                         </a>
 
-                        <?php if (Auth::isAdmin() || Auth::isDoctor()): ?>
+                        <?php if (Auth::isReceptionist()): ?>
+                        <!-- Menu nổi bật cho Lễ tân - Đăng ký Walk-in -->
+                        <a href="<?= APP_URL ?>/schedule" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-lg">
+                            <i class="fas fa-user-plus w-5"></i>
+                            <span class="font-semibold">Đăng ký khám Walk-in</span>
+                        </a>
+                        <?php elseif (Auth::isAdmin() || Auth::isDoctor()): ?>
                         <a href="<?= APP_URL ?>/schedule" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg <?= (strpos($_SERVER['REQUEST_URI'], '/schedule') !== false) ? 'active' : '' ?>">
                             <i class="fas fa-calendar-alt w-5"></i>
-                            <span>Lịch làm việc</span>
+                            <span>Lịch làm việc Bác sĩ</span>
                         </a>
                         <?php endif; ?>
 
@@ -183,6 +189,16 @@
                             </div>
                         </div>
                         <?php unset($_SESSION['success']); ?>
+                    <?php endif; ?>
+                    
+                    <?php if (isset($_SESSION['warning'])): ?>
+                        <div class="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-6 rounded" role="alert">
+                            <div class="flex items-center">
+                                <i class="fas fa-exclamation-triangle mr-3"></i>
+                                <p><?= $_SESSION['warning'] ?></p>
+                            </div>
+                        </div>
+                        <?php unset($_SESSION['warning']); ?>
                     <?php endif; ?>
                     
                     <?php if (isset($_SESSION['error'])): ?>

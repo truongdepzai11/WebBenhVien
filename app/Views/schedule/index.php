@@ -11,9 +11,9 @@ ob_start();
 
 <!-- Filters -->
 <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-    <form method="GET" action="<?= APP_URL ?>/schedule" class="grid grid-cols-1 md:grid-cols-<?= Auth::isAdmin() ? '3' : '2' ?> gap-4">
-        <!-- Chọn bác sĩ - CHỈ ADMIN -->
-        <?php if (Auth::isAdmin()): ?>
+    <form method="GET" action="<?= APP_URL ?>/schedule" class="grid grid-cols-1 md:grid-cols-<?= (Auth::isAdmin() || Auth::isReceptionist()) ? '3' : '2' ?> gap-4">
+        <!-- Chọn bác sĩ - ADMIN/RECEPTIONIST -->
+        <?php if (Auth::isAdmin() || Auth::isReceptionist()): ?>
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Bác sĩ</label>
             <select name="doctor_id" onchange="this.form.submit()" 
@@ -62,8 +62,15 @@ ob_start();
 
     <div class="p-6">
         <div class="grid grid-cols-1 gap-3">
-            <?php foreach ($timeSlots as $time => $appointment): ?>
-            <div class="flex items-center border rounded-lg overflow-hidden hover:shadow-md transition">
+            <?php 
+            $currentDateTime = time();
+            foreach ($timeSlots as $time => $appointment): 
+                $slotDateTime = strtotime($selectedDate . ' ' . $time);
+                $isPast = $slotDateTime <= $currentDateTime;
+                // Chỉ hiển thị mờ slot quá khứ cho Lễ tân (để họ không đặt)
+                $showPastStyle = Auth::isReceptionist() && $isPast;
+            ?>
+            <div class="flex items-center border rounded-lg overflow-hidden hover:shadow-md transition <?= $showPastStyle ? 'opacity-50 bg-gray-50' : '' ?>">
                 <!-- Time -->
                 <div class="w-24 bg-gray-100 p-4 text-center border-r">
                     <p class="text-2xl font-bold text-gray-800"><?= date('H:i', strtotime($time)) ?></p>
@@ -74,20 +81,27 @@ ob_start();
                     <?php if ($appointment): ?>
                         <!-- Đã có lịch -->
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-4">
-                                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                                    <i class="fas fa-user text-purple-600 text-xl"></i>
+                            <div class="flex items-center space-x-4 flex-1">
+                                <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
+                                    <i class="fas fa-user text-white text-xl"></i>
                                 </div>
-                                <div>
-                                    <p class="font-bold text-gray-900"><?= htmlspecialchars($appointment['patient_name']) ?></p>
-                                    <p class="text-sm text-gray-500">
-                                        <?= htmlspecialchars($appointment['patient_code']) ?> • 
-                                        <?= htmlspecialchars($appointment['patient_phone']) ?>
-                                    </p>
-                                    <p class="text-sm text-gray-600 mt-1">
-                                        <i class="fas fa-notes-medical mr-1"></i>
-                                        <?= htmlspecialchars($appointment['reason']) ?>
-                                    </p>
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-2 mb-1">
+                                        <p class="font-bold text-gray-900 text-lg"><?= htmlspecialchars($appointment['patient_name']) ?></p>
+                                        <span class="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">
+                                            <?= htmlspecialchars($appointment['patient_code']) ?>
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center space-x-4 text-sm text-gray-600">
+                                        <span>
+                                            <i class="fas fa-phone mr-1 text-gray-400"></i>
+                                            <?= htmlspecialchars($appointment['patient_phone']) ?>
+                                        </span>
+                                        <span>
+                                            <i class="fas fa-notes-medical mr-1 text-gray-400"></i>
+                                            <?= htmlspecialchars($appointment['reason']) ?>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="flex items-center space-x-2">
@@ -121,13 +135,21 @@ ob_start();
                                 <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
                                     <i class="fas fa-calendar-plus text-gray-400 text-xl"></i>
                                 </div>
+                                <?php if (Auth::isReceptionist() && $isPast): ?>
+                                <p class="text-gray-400 italic">Đã qua (không thể đặt)</p>
+                                <?php else: ?>
                                 <p class="text-gray-400 italic">Slot trống</p>
+                                <?php endif; ?>
                             </div>
-                            <?php if (Auth::isAdmin()): ?>
+                            <?php if (Auth::isReceptionist() && !$isPast): ?>
                             <a href="<?= APP_URL ?>/schedule/add-patient?doctor_id=<?= $selectedDoctorId ?>&date=<?= $selectedDate ?>&time=<?= $time ?>" 
                                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
                                 <i class="fas fa-plus mr-2"></i>Thêm bệnh nhân
                             </a>
+                            <?php elseif (Auth::isReceptionist() && $isPast): ?>
+                            <span class="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed">
+                                <i class="fas fa-ban mr-2"></i>Đã qua
+                            </span>
                             <?php endif; ?>
                         </div>
                     <?php endif; ?>

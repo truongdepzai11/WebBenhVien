@@ -91,7 +91,11 @@ ob_start();
                 <input type="date" id="appointment_date" name="appointment_date" required
                        min="<?= date('Y-m-d') ?>"
                        value="<?= $_SESSION['old']['appointment_date'] ?? '' ?>"
+                       onchange="validateDateTime()"
                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                <p class="text-xs text-gray-500 mt-1">
+                    <i class="fas fa-info-circle"></i> Chỉ được chọn ngày từ hôm nay trở đi
+                </p>
             </div>
 
             <!-- Giờ khám -->
@@ -100,6 +104,7 @@ ob_start();
                     <i class="fas fa-clock mr-2"></i>Giờ khám *
                 </label>
                 <select id="appointment_time" name="appointment_time" required
+                        onchange="validateDateTime()"
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
                     <option value="">-- Chọn giờ --</option>
                     <option value="08:00:00">08:00</option>
@@ -169,6 +174,35 @@ ob_start();
         </div>
     </div>
 </div>
+
+<script>
+// Validate thời gian không được trong quá khứ
+function validateDateTime() {
+    const dateInput = document.getElementById('appointment_date');
+    const timeInput = document.getElementById('appointment_time');
+    
+    if (!dateInput.value || !timeInput.value) return;
+    
+    const selectedDate = new Date(dateInput.value + ' ' + timeInput.value);
+    const now = new Date();
+    
+    if (selectedDate <= now) {
+        alert('Không thể đặt lịch khám trong quá khứ. Vui lòng chọn thời gian sau ' + now.toLocaleString('vi-VN'));
+        timeInput.value = '';
+        return false;
+    }
+    
+    return true;
+}
+
+// Validate khi submit form
+document.querySelector('form').addEventListener('submit', function(e) {
+    if (!validateDateTime()) {
+        e.preventDefault();
+        return false;
+    }
+});
+</script>
 
 <?php 
 unset($_SESSION['old']);

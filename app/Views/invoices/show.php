@@ -51,6 +51,14 @@ ob_start();
             <div class="space-y-2 text-gray-700">
                 <p><strong>Mã lịch:</strong> <?= htmlspecialchars($invoice['appointment_code']) ?></p>
                 <p><strong>Ngày khám:</strong> <?= date('d/m/Y', strtotime($invoice['appointment_date'])) ?></p>
+                <?php if (isset($doctor_name) && $doctor_name): ?>
+                <p><strong>Bác sĩ:</strong> 
+                    <span class="inline-flex items-center">
+                        <i class="fas fa-user-md text-purple-600 mr-2"></i>
+                        <?= htmlspecialchars($doctor_name) ?>
+                    </span>
+                </p>
+                <?php endif; ?>
             </div>
         </div>
         <?php endif; ?>
@@ -163,7 +171,7 @@ ob_start();
                     </a>
                     <?php endif; ?>
                     
-                    <?php if (Auth::isAdmin()): ?>
+                    <?php if (Auth::isAdmin() || Auth::isReceptionist()): ?>
                     <a href="<?= APP_URL ?>/invoices/<?= $invoice['id'] ?>/pay" 
                        class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
                         <i class="fas fa-check-circle mr-2"></i>Xác nhận thanh toán

@@ -129,6 +129,17 @@ class AppointmentController {
             }
         }
 
+        // Kiểm tra thời gian không được trong quá khứ
+        $appointmentDateTime = strtotime($_POST['appointment_date'] . ' ' . $_POST['appointment_time']);
+        $currentDateTime = time();
+        
+        if ($appointmentDateTime <= $currentDateTime) {
+            $_SESSION['error'] = 'Không thể đặt lịch khám trong quá khứ. Vui lòng chọn thời gian sau ' . date('d/m/Y H:i', $currentDateTime);
+            $_SESSION['old'] = $_POST;
+            header('Location: ' . APP_URL . '/appointments/create');
+            exit;
+        }
+
         // Kiểm tra xung đột lịch
         if ($this->appointmentModel->checkConflict($_POST['doctor_id'], $_POST['appointment_date'], $_POST['appointment_time'])) {
             $_SESSION['error'] = 'Thời gian này đã có lịch hẹn khác. Vui lòng chọn thời gian khác.';
@@ -168,14 +179,41 @@ class AppointmentController {
 
         $status = $_POST['status'] ?? '';
         
-        if (!in_array($status, ['pending', 'confirmed', 'completed', 'cancelled'])) {
+        if (!in_array($status, ['pending', 'confirmed', 'completed', 'cancelled', 'late_cancelled', 'no_show'])) {
             $_SESSION['error'] = 'Trạng thái không hợp lệ';
             header('Location: ' . APP_URL . '/appointments');
             exit;
         }
 
+        // Nếu hủy lịch, kiểm tra thời gian để áp dụng chính sách phí
+        if ($status === 'cancelled') {
+            $appointment = $this->appointmentModel->findById($id);
+            
+            if ($appointment) {
+                $appointmentDateTime = strtotime($appointment['appointment_date'] . ' ' . $appointment['appointment_time']);
+                $currentDateTime = time();
+                $hoursDiff = ($appointmentDateTime - $currentDateTime) / 3600;
+                
+                // Nếu hủy trong vòng 1 giờ trước giờ khám → Phí 30%
+                if ($hoursDiff < 1 && $hoursDiff >= 0) {
+                    $status = 'late_cancelled'; // Hủy muộn - tính phí 30%
+                    $_SESSION['warning'] = 'Lịch hẹn đã bị hủy. Do hủy muộn (dưới 1 giờ trước giờ khám), bạn sẽ bị tính phí 30% chi phí khám.';
+                } else if ($hoursDiff < 0) {
+                    // Đã qua giờ khám
+                    $_SESSION['error'] = 'Không thể hủy lịch hẹn đã qua giờ khám';
+                    header('Location: ' . APP_URL . '/appointments/' . $id);
+                    exit;
+                } else {
+                    // Hủy trước 1 giờ → Miễn phí
+                    $_SESSION['success'] = 'Hủy lịch hẹn thành công. Không tính phí.';
+                }
+            }
+        }
+
         if ($this->appointmentModel->updateStatus($id, $status)) {
-            $_SESSION['success'] = 'Cập nhật trạng thái thành công';
+            if (!isset($_SESSION['success']) && !isset($_SESSION['warning'])) {
+                $_SESSION['success'] = 'Cập nhật trạng thái thành công';
+            }
         } else {
             $_SESSION['error'] = 'Cập nhật trạng thái thất bại';
         }
@@ -348,9 +386,9 @@ class AppointmentController {
         $cancellationFee = 0;
         $cancellationStatus = 'cancelled';
         
-        if ($hoursUntilAppointment < 24) {
-            // Hủy trong vòng 24h → Phạt 50%
-            $cancellationFee = $appointment['consultation_fee'] * 0.5;
+        if ($hoursUntilAppointment < 1) {
+            // Hủy trong vòng 1h → Phạt 30%
+            $cancellationFee = $appointment['consultation_fee'] * 0.3;
             $cancellationStatus = 'late_cancelled';
         }
 
@@ -392,9 +430,9 @@ class AppointmentController {
         $cancellationFee = 0;
         $cancellationStatus = 'cancelled';
         
-        if ($hoursUntilAppointment < 24) {
-            // Hủy trong vòng 24h → Phạt 50%
-            $cancellationFee = $appointment['consultation_fee'] * 0.5;
+        if ($hoursUntilAppointment < 1) {
+            // Hủy trong vòng 1h → Phạt 30%
+            $cancellationFee = $appointment['consultation_fee'] * 0.3;
             $cancellationStatus = 'late_cancelled';
         }
 

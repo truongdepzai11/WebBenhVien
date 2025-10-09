@@ -60,6 +60,16 @@ class Auth {
         return self::check() && $_SESSION['role'] === 'patient';
     }
 
+    // Kiểm tra quyền receptionist
+    public static function isReceptionist() {
+        return self::check() && $_SESSION['role'] === 'receptionist';
+    }
+
+    // Kiểm tra quyền admin hoặc receptionist
+    public static function isAdminOrReceptionist() {
+        return self::check() && (self::isAdmin() || self::isReceptionist());
+    }
+
     // Yêu cầu đăng nhập
     public static function requireLogin() {
         if (!self::check()) {

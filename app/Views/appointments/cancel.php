@@ -35,13 +35,13 @@ ob_start();
                 <div>
                     <h3 class="font-bold text-red-800 mb-2">Cảnh báo: Phí hủy lịch muộn!</h3>
                     <p class="text-red-700 mb-3">
-                        Bạn đang hủy lịch trong vòng <strong>24 giờ</strong> trước giờ khám. 
+                        Bạn đang hủy lịch trong vòng <strong>1 giờ</strong> trước giờ khám. 
                         Theo chính sách của bệnh viện, bạn sẽ bị tính phí hủy lịch.
                     </p>
                     <div class="bg-white p-4 rounded border border-red-200">
                         <p class="text-sm text-gray-600 mb-1">Phí khám gốc:</p>
                         <p class="text-lg font-semibold text-gray-900 mb-2"><?= number_format($appointment['consultation_fee']) ?> VNĐ</p>
-                        <p class="text-sm text-gray-600 mb-1">Phí hủy (50%):</p>
+                        <p class="text-sm text-gray-600 mb-1">Phí hủy (30%):</p>
                         <p class="text-2xl font-bold text-red-600"><?= number_format($cancellationFee) ?> VNĐ</p>
                     </div>
                     <p class="text-sm text-red-600 mt-3">
@@ -58,7 +58,7 @@ ob_start();
                 <div>
                     <h3 class="font-bold text-green-800 mb-2">Hủy miễn phí</h3>
                     <p class="text-green-700">
-                        Bạn đang hủy lịch trước <strong>24 giờ</strong> so với giờ khám. 
+                        Bạn đang hủy lịch trước <strong>1 giờ</strong> so với giờ khám. 
                         Không có phí hủy lịch.
                     </p>
                 </div>
@@ -97,11 +97,11 @@ ob_start();
             <ul class="space-y-2 text-sm text-gray-600">
                 <li class="flex items-start">
                     <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
-                    <span>Hủy trước <strong>24 giờ</strong>: Miễn phí, không mất chi phí</span>
+                    <span>Hủy trước <strong>1 giờ</strong>: Miễn phí, không mất chi phí</span>
                 </li>
                 <li class="flex items-start">
                     <i class="fas fa-exclamation-triangle text-yellow-500 mr-2 mt-1"></i>
-                    <span>Hủy trong vòng <strong>24 giờ</strong>: Phí hủy <strong>50%</strong> phí khám</span>
+                    <span>Hủy trong vòng <strong>1 giờ</strong>: Phí hủy <strong>30%</strong> phí khám</span>
                 </li>
                 <li class="flex items-start">
                     <i class="fas fa-times text-red-500 mr-2 mt-1"></i>

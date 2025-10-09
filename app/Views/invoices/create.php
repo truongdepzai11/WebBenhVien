@@ -21,32 +21,67 @@ ob_start();
                 <label class="block text-sm font-medium text-gray-700 mb-2">
                     Bệnh nhân <span class="text-red-500">*</span>
                 </label>
-                <select name="patient_id" required
+                <select name="patient_id" id="patient_id" required onchange="filterAppointments()"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                    <option value="">-- Chọn bệnh nhân --</option>
+                    <option value="">-- Chọn bệnh nhân đã khám --</option>
                     <?php foreach ($patients as $patient): ?>
                     <option value="<?= $patient['id'] ?>">
                         <?= htmlspecialchars($patient['full_name']) ?> (<?= htmlspecialchars($patient['patient_code']) ?>)
                     </option>
                     <?php endforeach; ?>
                 </select>
+                <p class="text-xs text-gray-500 mt-1">
+                    <i class="fas fa-info-circle"></i> Chỉ hiển thị bệnh nhân đã khám (có lịch hẹn hoàn thành)
+                </p>
             </div>
 
-            <!-- Lịch khám (optional) -->
+            <!-- Lịch khám (theo bệnh nhân) -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Lịch khám (nếu có)
+                    Lịch khám <span class="text-red-500">*</span>
                 </label>
-                <select name="appointment_id"
+                <select name="appointment_id" id="appointment_id" required
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                    <option value="">-- Không liên kết --</option>
-                    <?php foreach ($appointments as $apt): ?>
-                    <option value="<?= $apt['id'] ?>">
-                        <?= htmlspecialchars($apt['appointment_code']) ?> - <?= date('d/m/Y', strtotime($apt['appointment_date'])) ?>
-                    </option>
-                    <?php endforeach; ?>
+                    <option value="">-- Chọn bệnh nhân trước --</option>
                 </select>
+                <p class="text-xs text-gray-500 mt-1">
+                    <i class="fas fa-info-circle"></i> Chỉ hiển thị lịch khám đã hoàn thành của bệnh nhân đã chọn
+                </p>
             </div>
+            
+            <!-- Hidden data for JavaScript -->
+            <script>
+            const appointmentsData = <?= json_encode(array_values($appointments)) ?>;
+            
+            function filterAppointments() {
+                const patientId = document.getElementById('patient_id').value;
+                const appointmentSelect = document.getElementById('appointment_id');
+                
+                // Clear current options
+                appointmentSelect.innerHTML = '<option value="">-- Chọn lịch khám --</option>';
+                
+                if (!patientId) {
+                    appointmentSelect.innerHTML = '<option value="">-- Chọn bệnh nhân trước --</option>';
+                    return;
+                }
+                
+                // Filter appointments by patient
+                const patientAppointments = appointmentsData.filter(apt => apt.patient_id == patientId);
+                
+                if (patientAppointments.length === 0) {
+                    appointmentSelect.innerHTML = '<option value="">-- Không có lịch khám nào --</option>';
+                    return;
+                }
+                
+                // Add filtered appointments
+                patientAppointments.forEach(apt => {
+                    const option = document.createElement('option');
+                    option.value = apt.id;
+                    option.textContent = `${apt.appointment_code} - ${apt.doctor_name} - ${new Date(apt.appointment_date).toLocaleDateString('vi-VN')}`;
+                    appointmentSelect.appendChild(option);
+                });
+            }
+            </script>
         </div>
 
         <!-- Items -->

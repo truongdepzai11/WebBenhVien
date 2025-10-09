@@ -5,6 +5,7 @@ require_once __DIR__ . '/../Models/InvoiceItem.php';
 require_once __DIR__ . '/../Models/Payment.php';
 require_once __DIR__ . '/../Models/Patient.php';
 require_once __DIR__ . '/../Models/Appointment.php';
+require_once __DIR__ . '/../Models/Doctor.php';
 require_once __DIR__ . '/../Helpers/Auth.php';
 
 class InvoiceController {
@@ -13,6 +14,7 @@ class InvoiceController {
     private $paymentModel;
     private $patientModel;
     private $appointmentModel;
+    private $doctorModel;
 
     public function __construct() {
         $this->invoiceModel = new Invoice();
@@ -20,6 +22,7 @@ class InvoiceController {
         $this->paymentModel = new Payment();
         $this->patientModel = new Patient();
         $this->appointmentModel = new Appointment();
+        $this->doctorModel = new Doctor();
     }
 
     // Danh sách hóa đơn
@@ -30,8 +33,21 @@ class InvoiceController {
             // Bệnh nhân chỉ xem hóa đơn của mình
             $patient = $this->patientModel->findByUserId(Auth::id());
             $invoices = $this->invoiceModel->getByPatientId($patient['id']);
+        } elseif (Auth::isDoctor()) {
+            // Bác sĩ chỉ xem hóa đơn của bệnh nhân đã khám với mình
+            $doctor = $this->doctorModel->findByUserId(Auth::id());
+            $appointments = $this->appointmentModel->getByDoctorId($doctor['id']);
+            
+            // Lấy danh sách patient_id từ lịch hẹn của bác sĩ
+            $patientIds = array_unique(array_column($appointments, 'patient_id'));
+            
+            // Lấy hóa đơn của các bệnh nhân này
+            $allInvoices = $this->invoiceModel->getAll();
+            $invoices = array_filter($allInvoices, function($invoice) use ($patientIds) {
+                return in_array($invoice['patient_id'], $patientIds);
+            });
         } else {
-            // Admin/Doctor xem tất cả
+            // Admin/Lễ tân xem tất cả
             $invoices = $this->invoiceModel->getAll();
         }
 
@@ -65,6 +81,15 @@ class InvoiceController {
         
         // Lấy lịch sử thanh toán
         $payments = $this->paymentModel->getByInvoiceId($id);
+        
+        // Lấy thông tin bác sĩ từ appointment (nếu có)
+        $doctor_name = null;
+        if ($invoice['appointment_id']) {
+            $appointment = $this->appointmentModel->findById($invoice['appointment_id']);
+            if ($appointment) {
+                $doctor_name = $appointment['doctor_name'];
+            }
+        }
 
         require_once APP_PATH . '/Views/invoices/show.php';
     }
@@ -73,17 +98,42 @@ class InvoiceController {
     public function create() {
         Auth::requireLogin();
         
-        if (!Auth::isAdmin() && !Auth::isDoctor()) {
+        if (!Auth::isAdmin() && !Auth::isDoctor() && !Auth::isReceptionist()) {
             $_SESSION['error'] = 'Bạn không có quyền truy cập';
             header('Location: ' . APP_URL . '/dashboard');
             exit;
         }
 
-        // Lấy danh sách bệnh nhân
-        $patients = $this->patientModel->getAll();
+        // Nếu là bác sĩ, chỉ lấy lịch hẹn của bác sĩ đó
+        if (Auth::isDoctor()) {
+            $doctor = $this->doctorModel->findByUserId(Auth::id());
+            $allAppointments = $this->appointmentModel->getByDoctorId($doctor['id']);
+        } else {
+            // Admin/Lễ tân lấy tất cả
+            $allAppointments = $this->appointmentModel->getAll();
+        }
         
-        // Lấy danh sách lịch hẹn đã hoàn thành chưa có hóa đơn
-        $appointments = $this->appointmentModel->getAll();
+        // Lấy danh sách bệnh nhân ĐÃ KHÁM (có lịch hẹn completed)
+        $patientsWithCompletedAppointments = [];
+        
+        foreach ($allAppointments as $apt) {
+            if ($apt['status'] === 'completed') {
+                $patientId = $apt['patient_id'];
+                if (!isset($patientsWithCompletedAppointments[$patientId])) {
+                    $patient = $this->patientModel->findById($patientId);
+                    if ($patient) {
+                        $patientsWithCompletedAppointments[$patientId] = $patient;
+                    }
+                }
+            }
+        }
+        
+        $patients = array_values($patientsWithCompletedAppointments);
+        
+        // Lấy danh sách lịch hẹn đã hoàn thành
+        $appointments = array_filter($allAppointments, function($apt) {
+            return $apt['status'] === 'completed';
+        });
 
         require_once APP_PATH . '/Views/invoices/create.php';
     }
@@ -92,7 +142,7 @@ class InvoiceController {
     public function createFromAppointment($appointment_id) {
         Auth::requireLogin();
         
-        if (!Auth::isAdmin() && !Auth::isDoctor()) {
+        if (!Auth::isAdmin() && !Auth::isDoctor() && !Auth::isReceptionist()) {
             $_SESSION['error'] = 'Bạn không có quyền truy cập';
             header('Location: ' . APP_URL . '/dashboard');
             exit;
@@ -133,7 +183,7 @@ class InvoiceController {
     public function store() {
         Auth::requireLogin();
         
-        if (!Auth::isAdmin() && !Auth::isDoctor()) {
+        if (!Auth::isAdmin() && !Auth::isDoctor() && !Auth::isReceptionist()) {
             $_SESSION['error'] = 'Bạn không có quyền truy cập';
             header('Location: ' . APP_URL . '/dashboard');
             exit;
@@ -241,8 +291,8 @@ class InvoiceController {
 
         if ($payment_method === 'cash') {
             // Thanh toán tiền mặt
-            if (Auth::isAdmin()) {
-                // Admin xác nhận thanh toán ngay
+            if (Auth::isAdmin() || Auth::isReceptionist()) {
+                // Admin/Lễ tân xác nhận thanh toán ngay
                 $this->paymentModel->payment_status = 'success';
                 $this->paymentModel->payment_date = date('Y-m-d H:i:s');
                 

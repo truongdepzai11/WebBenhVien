@@ -26,7 +26,7 @@ class ScheduleController {
             $doctors = [$currentDoctor];
             $selectedDoctorId = $currentDoctor['id'];
         } else {
-            // Admin → Xem tất cả bác sĩ
+            // Admin/Receptionist → Xem tất cả bác sĩ
             $doctors = $this->doctorModel->getAll();
             $selectedDoctorId = $_GET['doctor_id'] ?? ($doctors[0]['id'] ?? null);
         }
@@ -72,7 +72,7 @@ class ScheduleController {
     public function addPatient() {
         Auth::requireLogin();
 
-        if (!Auth::isAdmin() && !Auth::isDoctor()) {
+        if (!Auth::isAdmin() && !Auth::isDoctor() && !Auth::isReceptionist()) {
             $_SESSION['error'] = 'Bạn không có quyền thêm lịch hẹn';
             header('Location: ' . APP_URL . '/schedule');
             exit;
@@ -105,7 +105,7 @@ class ScheduleController {
     public function storeWalkIn() {
         Auth::requireLogin();
 
-        if (!Auth::isAdmin() && !Auth::isDoctor()) {
+        if (!Auth::isAdmin() && !Auth::isDoctor() && !Auth::isReceptionist()) {
             $_SESSION['error'] = 'Bạn không có quyền thêm lịch hẹn';
             header('Location: ' . APP_URL . '/schedule');
             exit;
@@ -120,6 +120,16 @@ class ScheduleController {
         $date = $_POST['appointment_date'];
         $time = $_POST['appointment_time'];
         $patientType = $_POST['patient_type'];
+
+        // Kiểm tra thời gian không được trong quá khứ
+        $appointmentDateTime = strtotime($date . ' ' . $time);
+        $currentDateTime = time();
+        
+        if ($appointmentDateTime <= $currentDateTime) {
+            $_SESSION['error'] = 'Không thể đặt lịch khám trong quá khứ. Vui lòng chọn thời gian sau ' . date('d/m/Y H:i', $currentDateTime);
+            header('Location: ' . APP_URL . '/schedule/add-patient?doctor_id=' . $doctorId . '&date=' . $date . '&time=' . $time);
+            exit;
+        }
 
         // Xử lý bệnh nhân
         if ($patientType === 'new') {

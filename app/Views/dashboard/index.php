@@ -1,12 +1,12 @@
 <?php 
 $page_title = 'Dashboard';
-ob_start(); 
+ob_start();
 ?>
 
 <!-- Stats Cards -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
     <?php if (Auth::isAdmin()): ?>
-        <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+        <a href="<?= APP_URL ?>/patients" class="bg-white rounded-lg shadow-md p-6 card-hover hover:shadow-xl transition">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 text-sm font-medium">Tổng bệnh nhân</p>
@@ -16,9 +16,9 @@ ob_start();
                     <i class="fas fa-users text-blue-600 text-xl"></i>
                 </div>
             </div>
-        </div>
+        </a>
 
-        <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+        <a href="<?= APP_URL ?>/doctors" class="bg-white rounded-lg shadow-md p-6 card-hover hover:shadow-xl transition">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 text-sm font-medium">Tổng bác sĩ</p>
@@ -28,9 +28,9 @@ ob_start();
                     <i class="fas fa-user-md text-green-600 text-xl"></i>
                 </div>
             </div>
-        </div>
+        </a>
 
-        <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+        <a href="<?= APP_URL ?>/appointments" class="bg-white rounded-lg shadow-md p-6 card-hover hover:shadow-xl transition">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 text-sm font-medium">Tổng lịch hẹn</p>
@@ -40,9 +40,9 @@ ob_start();
                     <i class="fas fa-calendar-check text-purple-600 text-xl"></i>
                 </div>
             </div>
-        </div>
+        </a>
 
-        <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+        <a href="<?= APP_URL ?>/medical-records" class="bg-white rounded-lg shadow-md p-6 card-hover hover:shadow-xl transition">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 text-sm font-medium">Hồ sơ bệnh án</p>
@@ -52,9 +52,9 @@ ob_start();
                     <i class="fas fa-file-medical text-orange-600 text-xl"></i>
                 </div>
             </div>
-        </div>
+        </a>
     <?php else: ?>
-        <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+        <a href="<?= APP_URL ?>/appointments" class="bg-white rounded-lg shadow-md p-6 card-hover hover:shadow-xl transition">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 text-sm font-medium">Tổng lịch hẹn</p>
@@ -64,7 +64,7 @@ ob_start();
                     <i class="fas fa-calendar-check text-blue-600 text-xl"></i>
                 </div>
             </div>
-        </div>
+        </a>
 
         <div class="bg-white rounded-lg shadow-md p-6 card-hover">
             <div class="flex items-center justify-between">
@@ -90,17 +90,17 @@ ob_start();
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+        <a href="<?= APP_URL ?>/medical-records" class="bg-white rounded-lg shadow-md p-6 card-hover hover:shadow-xl transition">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-500 text-sm font-medium"><?= Auth::isDoctor() ? 'Bệnh nhân' : 'Hồ sơ' ?></p>
+                    <p class="text-gray-500 text-sm font-medium">Hồ sơ bệnh án</p>
                     <p class="text-3xl font-bold text-gray-800 mt-2"><?= Auth::isDoctor() ? $stats['total_patients'] : $stats['total_records'] ?></p>
                 </div>
                 <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
                     <i class="fas fa-file-medical text-purple-600 text-xl"></i>
                 </div>
             </div>
-        </div>
+        </a>
     <?php endif; ?>
 </div>
 

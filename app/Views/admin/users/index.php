@@ -46,13 +46,15 @@ ob_start();
                         'admin' => 'bg-red-100 text-red-800',
                         'doctor' => 'bg-green-100 text-green-800',
                         'patient' => 'bg-blue-100 text-blue-800',
-                        'staff' => 'bg-gray-100 text-gray-800'
+                        'staff' => 'bg-gray-100 text-gray-800',
+                        'receptionist' => 'bg-purple-100 text-purple-800'
                     ];
                     $roleLabels = [
                         'admin' => 'Admin',
                         'doctor' => 'Bác sĩ',
                         'patient' => 'Bệnh nhân',
-                        'staff' => 'Nhân viên'
+                        'staff' => 'Nhân viên',
+                        'receptionist' => 'Lễ tân'
                     ];
                     ?>
                     <span class="px-2 py-1 rounded-full text-xs font-semibold <?= $roleColors[$user['role']] ?>">

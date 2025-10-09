@@ -146,6 +146,92 @@ ob_start();
     </div>
 </div>
 
+<!-- Lịch hẹn gần đây -->
+<div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold text-gray-800">
+            <i class="fas fa-calendar-alt mr-2"></i>Lịch hẹn gần đây
+        </h3>
+        <a href="<?= APP_URL ?>/appointments?patient_id=<?= $patient['id'] ?>" class="text-purple-600 hover:text-purple-700 font-semibold text-sm">
+            Xem tất cả <i class="fas fa-arrow-right ml-1"></i>
+        </a>
+    </div>
+
+    <?php if (empty($recent_appointments)): ?>
+        <div class="text-center py-8 text-gray-500">
+            <i class="fas fa-calendar-times text-4xl mb-3"></i>
+            <p>Chưa có lịch hẹn nào</p>
+        </div>
+    <?php else: ?>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mã lịch hẹn</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bác sĩ</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ngày khám</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Giờ</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lý do</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    <?php foreach ($recent_appointments as $apt): ?>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-purple-600">
+                            <?= htmlspecialchars($apt['appointment_code']) ?>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-700">
+                            <div class="flex items-center">
+                                <i class="fas fa-user-md text-purple-600 mr-2"></i>
+                                <?= htmlspecialchars($apt['doctor_name']) ?>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-700">
+                            <?= date('d/m/Y', strtotime($apt['appointment_date'])) ?>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-700">
+                            <?= date('H:i', strtotime($apt['appointment_time'])) ?>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-700">
+                            <?= htmlspecialchars(substr($apt['reason'], 0, 30)) ?><?= strlen($apt['reason']) > 30 ? '...' : '' ?>
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            <?php
+                            $statusColors = [
+                                'pending' => 'bg-yellow-100 text-yellow-800',
+                                'confirmed' => 'bg-blue-100 text-blue-800',
+                                'completed' => 'bg-green-100 text-green-800',
+                                'cancelled' => 'bg-red-100 text-red-800',
+                                'no_show' => 'bg-gray-100 text-gray-800'
+                            ];
+                            $statusLabels = [
+                                'pending' => 'Chờ xác nhận',
+                                'confirmed' => 'Đã xác nhận',
+                                'completed' => 'Hoàn thành',
+                                'cancelled' => 'Đã hủy',
+                                'no_show' => 'Vắng mặt'
+                            ];
+                            ?>
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold <?= $statusColors[$apt['status']] ?? 'bg-gray-100 text-gray-800' ?>">
+                                <?= $statusLabels[$apt['status']] ?? $apt['status'] ?>
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            <a href="<?= APP_URL ?>/appointments/<?= $apt['id'] ?>" 
+                               class="text-purple-600 hover:text-purple-700">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</div>
+
 <?php 
 $content = ob_get_clean();
 require_once APP_PATH . '/Views/layouts/main.php';
