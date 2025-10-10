@@ -302,7 +302,7 @@ class AdminController {
 
         // Cập nhật doctor
         $this->doctorModel->id = $id;
-        $this->doctorModel->specialization = $_POST['specialization'];
+        $this->doctorModel->specialization_id = $_POST['specialization_id'];
         $this->doctorModel->license_number = $_POST['license_number'];
         $this->doctorModel->qualification = $_POST['qualification'];
         $this->doctorModel->experience_years = $_POST['experience_years'];

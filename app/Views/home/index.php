@@ -275,7 +275,7 @@ ob_start();
                 <h3 class="text-xl font-bold text-gray-800 mb-2">Hỗ trợ 24/7</h3>
                 <p class="text-gray-600">Tư vấn và hỗ trợ mọi lúc</p>
                 <p class="text-gray-500 font-semibold mt-3">
-                    <i class="fas fa-phone mr-1"></i>1900 xxxx
+                    <i class="fas fa-phone mr-1"></i>0973436483
                 </p>
             </div>
         </div>

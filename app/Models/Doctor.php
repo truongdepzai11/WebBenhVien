@@ -136,7 +136,7 @@ class Doctor {
     // Cập nhật thông tin bác sĩ
     public function update() {
         $query = "UPDATE " . $this->table . " 
-                  SET specialization = :specialization,
+                  SET specialization_id = :specialization_id,
                       license_number = :license_number,
                       qualification = :qualification,
                       experience_years = :experience_years,
@@ -147,7 +147,7 @@ class Doctor {
 
         $stmt = $this->conn->prepare($query);
 
-        $stmt->bindParam(':specialization', $this->specialization);
+        $stmt->bindParam(':specialization_id', $this->specialization_id);
         $stmt->bindParam(':license_number', $this->license_number);
         $stmt->bindParam(':qualification', $this->qualification);
         $stmt->bindParam(':experience_years', $this->experience_years);

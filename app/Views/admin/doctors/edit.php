@@ -68,14 +68,14 @@ ob_start();
                     </div>
 
                     <div>
-                        <label for="specialization" class="block text-sm font-medium text-gray-700 mb-2">
+                        <label for="specialization_id" class="block text-sm font-medium text-gray-700 mb-2">
                             Chuyên khoa *
                         </label>
-                        <select id="specialization" name="specialization" required
+                        <select id="specialization_id" name="specialization_id" required
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                             <?php foreach ($specializations as $spec): ?>
-                            <option value="<?= htmlspecialchars($spec['name']) ?>"
-                                    <?= ($doctor['specialization'] === $spec['name']) ? 'selected' : '' ?>>
+                            <option value="<?= $spec['id'] ?>"
+                                    <?= ($doctor['specialization_id'] == $spec['id']) ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($spec['name']) ?>
                             </option>
                             <?php endforeach; ?>
