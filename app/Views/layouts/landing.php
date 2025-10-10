@@ -60,11 +60,43 @@
                 
                 <!-- Menu -->
                 <div class="hidden md:flex items-center space-x-8">
-                    <a href="#home" class="text-gray-700 hover:text-purple-600 font-medium transition">Trang chủ</a>
-                    <a href="#specializations" class="text-gray-700 hover:text-purple-600 font-medium transition">Chuyên khoa</a>
-                    <a href="#doctors" class="text-gray-700 hover:text-purple-600 font-medium transition">Bác sĩ</a>
-                    <a href="#services" class="text-gray-700 hover:text-purple-600 font-medium transition">Dịch vụ</a>
-                    <a href="#contact" class="text-gray-700 hover:text-purple-600 font-medium transition">Liên hệ</a>
+                    <a href="<?= APP_URL ?>/" class="text-gray-700 hover:text-purple-600 font-medium transition">Trang chủ</a>
+                    
+                    <!-- Dropdown Chuyên khoa -->
+                    <div class="relative group">
+                        <a href="<?= APP_URL ?>/specializations" class="text-gray-700 hover:text-purple-600 font-medium transition flex items-center">
+                            Chuyên khoa
+                            <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                        </a>
+                        <!-- Dropdown Menu -->
+                        <div class="absolute left-0 mt-2 w-64 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                            <div class="py-2">
+                                <?php
+                                require_once __DIR__ . '/../../Models/Specialization.php';
+                                $specModel = new Specialization();
+                                $allSpecs = $specModel->getAll();
+                                foreach ($allSpecs as $spec):
+                                ?>
+                                <a href="<?= APP_URL ?>/specializations/<?= $spec['id'] ?>" 
+                                   class="block px-4 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition">
+                                    <i class="fas <?= $spec['icon'] ?> mr-2 text-purple-500"></i>
+                                    <?= htmlspecialchars($spec['name']) ?>
+                                </a>
+                                <?php endforeach; ?>
+                                <div class="border-t mt-2 pt-2">
+                                    <a href="<?= APP_URL ?>/specializations" 
+                                       class="block px-4 py-2 text-purple-600 hover:bg-purple-50 font-semibold transition">
+                                        <i class="fas fa-arrow-right mr-2"></i>
+                                        Xem tất cả
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <a href="<?= APP_URL ?>/#doctors" class="text-gray-700 hover:text-purple-600 font-medium transition">Bác sĩ</a>
+                    <a href="<?= APP_URL ?>/#services" class="text-gray-700 hover:text-purple-600 font-medium transition">Dịch vụ</a>
+                    <a href="<?= APP_URL ?>/#contact" class="text-gray-700 hover:text-purple-600 font-medium transition">Liên hệ</a>
                 </div>
                 
                 <!-- Auth Buttons -->

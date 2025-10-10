@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../Models/Specialization.php';
 require_once __DIR__ . '/../Models/Doctor.php';
 require_once __DIR__ . '/../Helpers/Auth.php';
@@ -18,10 +19,13 @@ class SpecializationController {
         $specializations = $this->specializationModel->getAll();
         
         // Đếm số bác sĩ cho mỗi chuyên khoa
+        $database = new Database();
+        $conn = $database->getConnection();
+        
         foreach ($specializations as &$spec) {
-            $query = "SELECT COUNT(*) as total FROM doctors WHERE specialization = :specialization";
-            $stmt = $this->doctorModel->conn->prepare($query);
-            $stmt->bindParam(':specialization', $spec['name']);
+            $query = "SELECT COUNT(*) as total FROM doctors WHERE specialization_id = :specialization_id";
+            $stmt = $conn->prepare($query);
+            $stmt->bindParam(':specialization_id', $spec['id']);
             $stmt->execute();
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             $spec['doctor_count'] = $result['total'];

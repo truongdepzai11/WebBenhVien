@@ -131,6 +131,19 @@ $router->get('/doctors/search', function() {
     $controller->search();
 });
 
+// Specialization Routes (Public)
+$router->get('/specializations', function() {
+    require_once __DIR__ . '/../app/Controllers/SpecializationController.php';
+    $controller = new SpecializationController();
+    $controller->index();
+});
+
+$router->get('/specializations/{id}', function($id) {
+    require_once __DIR__ . '/../app/Controllers/SpecializationController.php';
+    $controller = new SpecializationController();
+    $controller->show($id);
+});
+
 // Appointment Routes
 $router->get('/appointments', function() {
     $controller = new AppointmentController();

@@ -33,20 +33,46 @@ class ScheduleController {
 
         // Lấy tham số từ URL
         $selectedDate = $_GET['date'] ?? date('Y-m-d');
+        $viewMode = $_GET['view'] ?? 'week';
 
-        // Lấy lịch hẹn của bác sĩ trong ngày
+        // Lấy lịch hẹn của bác sĩ
         $appointments = [];
+        $weeklyAppointments = []; // Cho weekly view
+        
         if ($selectedDoctorId) {
             $allAppointments = $this->appointmentModel->getByDoctorId($selectedDoctorId);
-            foreach ($allAppointments as $apt) {
-                if ($apt['appointment_date'] == $selectedDate && 
-                    !in_array($apt['status'], ['cancelled', 'late_cancelled'])) {
-                    $appointments[] = $apt;
+            
+            if ($viewMode == 'week') {
+                // Weekly view - Lấy appointments cả tuần
+                $currentWeek = $_GET['week'] ?? date('Y-\WW');
+                $weekStart = new DateTime();
+                $weekStart->setISODate(substr($currentWeek, 0, 4), substr($currentWeek, 6, 2));
+                $weekEnd = clone $weekStart;
+                $weekEnd->modify('+6 days');
+                
+                foreach ($allAppointments as $apt) {
+                    $aptDate = new DateTime($apt['appointment_date']);
+                    if ($aptDate >= $weekStart && $aptDate <= $weekEnd && 
+                        !in_array($apt['status'], ['cancelled', 'late_cancelled'])) {
+                        $dateKey = $apt['appointment_date'];
+                        if (!isset($weeklyAppointments[$dateKey])) {
+                            $weeklyAppointments[$dateKey] = [];
+                        }
+                        $weeklyAppointments[$dateKey][] = $apt;
+                    }
+                }
+            } else {
+                // Daily view - Lấy appointments trong ngày
+                foreach ($allAppointments as $apt) {
+                    if ($apt['appointment_date'] == $selectedDate && 
+                        !in_array($apt['status'], ['cancelled', 'late_cancelled'])) {
+                        $appointments[] = $apt;
+                    }
                 }
             }
         }
 
-        // Tạo lịch theo giờ (8h - 17h)
+        // Tạo lịch theo giờ (8h - 17h) cho daily view
         $timeSlots = [];
         for ($hour = 8; $hour <= 17; $hour++) {
             $time = sprintf('%02d:00:00', $hour);

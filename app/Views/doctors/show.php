@@ -74,16 +74,127 @@ ob_start();
         <!-- Lịch làm việc -->
         <div class="mt-6 pt-6 border-t">
             <h3 class="text-xl font-bold text-gray-800 mb-4">
-                <i class="fas fa-calendar-alt mr-2"></i>Lịch làm việc
+                <i class="fas fa-calendar-alt mr-2"></i>Lịch làm việc trong tuần
             </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-purple-50 p-4 rounded-lg">
-                    <p class="text-sm text-gray-600 mb-1">Ngày làm việc</p>
-                    <p class="font-semibold text-gray-800"><?= htmlspecialchars($doctor['available_days']) ?></p>
+            
+            <?php
+            // Parse available_days và available_hours
+            $daysMap = [
+                'Thứ 2' => 'T2',
+                'Thứ 3' => 'T3',
+                'Thứ 4' => 'T4',
+                'Thứ 5' => 'T5',
+                'Thứ 6' => 'T6',
+                'Thứ 7' => 'T7',
+                'Chủ nhật' => 'CN'
+            ];
+            
+            $availableDays = array_map('trim', explode(',', $doctor['available_days']));
+            $availableHours = $doctor['available_hours'];
+            
+            // Tất cả các ngày trong tuần
+            $weekDays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+            $weekDaysFull = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+            ?>
+            
+            <!-- Calendar Grid -->
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse">
+                    <thead>
+                        <tr class="bg-gradient-to-r from-purple-500 to-indigo-600">
+                            <th class="border border-purple-400 p-3 text-white font-semibold text-sm">Ca làm</th>
+                            <?php foreach ($weekDays as $day): ?>
+                            <th class="border border-purple-400 p-3 text-white font-semibold text-sm min-w-[100px]">
+                                <?= $day ?>
+                            </th>
+                            <?php endforeach; ?>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Ca Sáng -->
+                        <tr>
+                            <td class="border border-gray-300 p-3 bg-yellow-50 font-semibold text-gray-700">
+                                <i class="fas fa-sun text-yellow-500 mr-2"></i>Sáng
+                            </td>
+                            <?php foreach ($weekDaysFull as $dayFull): ?>
+                            <td class="border border-gray-300 p-2">
+                                <?php if (in_array($dayFull, $availableDays)): ?>
+                                <div class="bg-green-100 border-l-4 border-green-500 p-3 rounded">
+                                    <p class="text-xs text-gray-600 mb-1">
+                                        <i class="fas fa-clock text-green-600 mr-1"></i>
+                                        <?= htmlspecialchars($availableHours) ?>
+                                    </p>
+                                    <p class="text-xs font-semibold text-green-700">
+                                        <i class="fas fa-user-md mr-1"></i>
+                                        <?= htmlspecialchars($doctor['full_name']) ?>
+                                    </p>
+                                </div>
+                                <?php else: ?>
+                                <div class="text-center text-gray-400 py-4">
+                                    <i class="fas fa-times-circle"></i>
+                                </div>
+                                <?php endif; ?>
+                            </td>
+                            <?php endforeach; ?>
+                        </tr>
+                        
+                        <!-- Ca Chiều -->
+                        <tr>
+                            <td class="border border-gray-300 p-3 bg-orange-50 font-semibold text-gray-700">
+                                <i class="fas fa-cloud-sun text-orange-500 mr-2"></i>Chiều
+                            </td>
+                            <?php foreach ($weekDaysFull as $dayFull): ?>
+                            <td class="border border-gray-300 p-2">
+                                <?php if (in_array($dayFull, $availableDays)): ?>
+                                <div class="bg-blue-100 border-l-4 border-blue-500 p-3 rounded">
+                                    <p class="text-xs text-gray-600 mb-1">
+                                        <i class="fas fa-clock text-blue-600 mr-1"></i>
+                                        <?= htmlspecialchars($availableHours) ?>
+                                    </p>
+                                    <p class="text-xs font-semibold text-blue-700">
+                                        <i class="fas fa-user-md mr-1"></i>
+                                        <?= htmlspecialchars($doctor['full_name']) ?>
+                                    </p>
+                                </div>
+                                <?php else: ?>
+                                <div class="text-center text-gray-400 py-4">
+                                    <i class="fas fa-times-circle"></i>
+                                </div>
+                                <?php endif; ?>
+                            </td>
+                            <?php endforeach; ?>
+                        </tr>
+                        
+                        <!-- Ca Tối -->
+                        <tr>
+                            <td class="border border-gray-300 p-3 bg-indigo-50 font-semibold text-gray-700">
+                                <i class="fas fa-moon text-indigo-500 mr-2"></i>Tối
+                            </td>
+                            <?php foreach ($weekDaysFull as $dayFull): ?>
+                            <td class="border border-gray-300 p-2 bg-gray-50">
+                                <div class="text-center text-gray-400 py-4">
+                                    <i class="fas fa-times-circle"></i>
+                                </div>
+                            </td>
+                            <?php endforeach; ?>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Legend -->
+            <div class="mt-4 flex flex-wrap gap-4 text-sm">
+                <div class="flex items-center">
+                    <div class="w-4 h-4 bg-green-500 rounded mr-2"></div>
+                    <span class="text-gray-600">Ca sáng</span>
                 </div>
-                <div class="bg-purple-50 p-4 rounded-lg">
-                    <p class="text-sm text-gray-600 mb-1">Giờ làm việc</p>
-                    <p class="font-semibold text-gray-800"><?= htmlspecialchars($doctor['available_hours']) ?></p>
+                <div class="flex items-center">
+                    <div class="w-4 h-4 bg-blue-500 rounded mr-2"></div>
+                    <span class="text-gray-600">Ca chiều</span>
+                </div>
+                <div class="flex items-center">
+                    <i class="fas fa-times-circle text-gray-400 mr-2"></i>
+                    <span class="text-gray-600">Không làm việc</span>
                 </div>
             </div>
         </div>

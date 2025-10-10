@@ -82,8 +82,18 @@ ob_start();
             <p class="text-xl text-gray-600">Đa dạng chuyên khoa với đội ngũ bác sĩ chuyên môn cao</p>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <?php foreach ($specializations as $spec): ?>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <?php 
+            // Phân trang: 6 chuyên khoa/trang
+            $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+            $perPage = 6;
+            $offset = ($page - 1) * $perPage;
+            $totalSpecs = count($specializations);
+            $totalPages = ceil($totalSpecs / $perPage);
+            $pagedSpecs = array_slice($specializations, $offset, $perPage);
+            
+            foreach ($pagedSpecs as $spec): 
+            ?>
             <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
                 <div class="gradient-bg p-6 text-white">
                     <div class="flex items-center justify-between mb-4">
@@ -99,17 +109,64 @@ ob_start();
                         <i class="fas fa-user-clock mr-2"></i>
                         Độ tuổi: <?= $spec['min_age'] ?>-<?= $spec['max_age'] ?> tuổi
                     </div>
-                    <div class="flex items-center text-sm text-gray-500">
+                    <div class="flex items-center text-sm text-gray-500 mb-4">
                         <i class="fas fa-venus-mars mr-2"></i>
                         <?php
                         $genderLabels = ['both' => 'Cả hai', 'male' => 'Nam', 'female' => 'Nữ'];
                         echo $genderLabels[$spec['gender_requirement']];
                         ?>
                     </div>
+                    <a href="<?= APP_URL ?>/specializations/<?= $spec['id'] ?>" 
+                       class="block w-full text-center px-4 py-2 border-2 border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition font-semibold">
+                        Xem chi tiết
+                    </a>
                 </div>
             </div>
             <?php endforeach; ?>
         </div>
+        
+        <!-- Pagination -->
+        <?php if ($totalPages > 1): ?>
+        <div class="flex justify-center items-center space-x-2">
+            <!-- Previous -->
+            <?php if ($page > 1): ?>
+            <a href="?page=<?= $page - 1 ?>#specializations" 
+               class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            <?php else: ?>
+            <span class="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-400 cursor-not-allowed">
+                <i class="fas fa-chevron-left"></i>
+            </span>
+            <?php endif; ?>
+            
+            <!-- Page Numbers -->
+            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                <?php if ($i == $page): ?>
+                <span class="px-4 py-2 gradient-bg text-white rounded-lg font-semibold">
+                    <?= $i ?>
+                </span>
+                <?php else: ?>
+                <a href="?page=<?= $i ?>#specializations" 
+                   class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    <?= $i ?>
+                </a>
+                <?php endif; ?>
+            <?php endfor; ?>
+            
+            <!-- Next -->
+            <?php if ($page < $totalPages): ?>
+            <a href="?page=<?= $page + 1 ?>#specializations" 
+               class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+            <?php else: ?>
+            <span class="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-400 cursor-not-allowed">
+                <i class="fas fa-chevron-right"></i>
+            </span>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
     </div>
 </section>
 

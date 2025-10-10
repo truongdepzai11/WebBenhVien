@@ -3,45 +3,61 @@ $page_title = $specialization['name'];
 ob_start(); 
 ?>
 
-<div class="mb-6">
-    <a href="<?= APP_URL ?>/specializations" class="text-purple-600 hover:text-purple-700 mb-4 inline-block">
-        <i class="fas fa-arrow-left mr-2"></i>Quay lại danh sách
-    </a>
-    
-    <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-8 text-white shadow-lg">
-        <div class="flex items-center space-x-4">
-            <div class="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <i class="fas fa-stethoscope text-4xl"></i>
+<!-- Breadcrumb -->
+<div class="bg-gray-50 py-4">
+    <div class="container mx-auto px-6">
+        <a href="<?= APP_URL ?>" class="text-purple-600 hover:text-purple-700 inline-flex items-center font-medium">
+            <i class="fas fa-arrow-left mr-2"></i>Quay lại trang chủ
+        </a>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container mx-auto px-6 py-8">
+
+<!-- Header Card -->
+<div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+    <div class="bg-gradient-to-br from-purple-500 to-indigo-600 p-8 md:p-12">
+        <div class="flex items-start space-x-6">
+            <div class="w-24 h-24 bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-shrink-0">
+                <i class="fas <?= $specialization['icon'] ?? 'fa-stethoscope' ?> text-5xl text-white"></i>
             </div>
-            <div>
-                <h1 class="text-4xl font-bold"><?= htmlspecialchars($specialization['name']) ?></h1>
-                <p class="text-blue-100 mt-2"><?= htmlspecialchars($specialization['description']) ?></p>
+            <div class="flex-1">
+                <h1 class="text-3xl md:text-4xl font-bold text-white mb-3"><?= htmlspecialchars($specialization['name']) ?></h1>
+                <p class="text-purple-100 text-lg leading-relaxed"><?= htmlspecialchars($specialization['description']) ?></p>
             </div>
         </div>
+    </div>
+    
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-200">
+        <div class="p-6 text-center">
+            <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl mb-3">
+                <i class="fas fa-user-clock text-2xl text-blue-600"></i>
+            </div>
+            <p class="text-sm text-gray-600 mb-1">Độ tuổi phù hợp</p>
+            <p class="text-2xl font-bold text-gray-800"><?= $specialization['min_age'] ?>-<?= $specialization['max_age'] ?> tuổi</p>
+        </div>
         
-        <div class="grid grid-cols-3 gap-4 mt-6">
-            <div class="bg-white bg-opacity-10 rounded-lg p-4">
-                <i class="fas fa-user-clock text-2xl mb-2"></i>
-                <p class="text-sm opacity-75">Độ tuổi</p>
-                <p class="text-xl font-bold"><?= $specialization['min_age'] ?>-<?= $specialization['max_age'] ?> tuổi</p>
+        <div class="p-6 text-center">
+            <div class="inline-flex items-center justify-center w-12 h-12 bg-purple-100 rounded-xl mb-3">
+                <i class="fas fa-venus-mars text-2xl text-purple-600"></i>
             </div>
-            
-            <div class="bg-white bg-opacity-10 rounded-lg p-4">
-                <i class="fas fa-venus-mars text-2xl mb-2"></i>
-                <p class="text-sm opacity-75">Giới tính</p>
-                <p class="text-xl font-bold">
-                    <?php
-                    $genderLabels = ['both' => 'Cả hai', 'male' => 'Nam', 'female' => 'Nữ'];
-                    echo $genderLabels[$specialization['gender_requirement']];
-                    ?>
-                </p>
+            <p class="text-sm text-gray-600 mb-1">Giới tính</p>
+            <p class="text-2xl font-bold text-gray-800">
+                <?php
+                $genderLabels = ['both' => 'Cả hai', 'male' => 'Nam', 'female' => 'Nữ'];
+                echo $genderLabels[$specialization['gender_requirement']];
+                ?>
+            </p>
+        </div>
+        
+        <div class="p-6 text-center">
+            <div class="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-xl mb-3">
+                <i class="fas fa-user-md text-2xl text-green-600"></i>
             </div>
-            
-            <div class="bg-white bg-opacity-10 rounded-lg p-4">
-                <i class="fas fa-user-md text-2xl mb-2"></i>
-                <p class="text-sm opacity-75">Số bác sĩ</p>
-                <p class="text-xl font-bold"><?= count($doctors) ?> bác sĩ</p>
-            </div>
+            <p class="text-sm text-gray-600 mb-1">Đội ngũ bác sĩ</p>
+            <p class="text-2xl font-bold text-gray-800"><?= count($doctors) ?> bác sĩ</p>
         </div>
     </div>
 </div>
@@ -124,7 +140,10 @@ ob_start();
     </div>
 <?php endif; ?>
 
+</div>
+<!-- End Main Content -->
+
 <?php 
 $content = ob_get_clean();
-require_once APP_PATH . '/Views/layouts/main.php';
+require_once APP_PATH . '/Views/layouts/landing.php';
 ?>

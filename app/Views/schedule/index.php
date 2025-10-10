@@ -3,15 +3,237 @@ $page_title = 'Lịch làm việc Bác sĩ';
 ob_start(); 
 ?>
 
-<div class="mb-6">
+<div class="mb-6 flex items-center justify-between">
     <h3 class="text-2xl font-bold text-gray-800">
-        <i class="fas fa-calendar-alt mr-2"></i>Lịch làm việc Bác sĩ
+        <?php if (Auth::isReceptionist()): ?>
+            <i class="fas fa-user-plus mr-2"></i>Đăng ký khám Walk-in
+        <?php else: ?>
+            <i class="fas fa-calendar-alt mr-2"></i>Lịch làm việc Bác sĩ
+        <?php endif; ?>
     </h3>
+    
+    <!-- View Toggle (chỉ cho Admin/Doctor) -->
+    <?php if (!Auth::isReceptionist()): ?>
+    <div class="flex bg-gray-100 rounded-lg p-1">
+        <a href="?view=week<?= isset($_GET['doctor_id']) ? '&doctor_id=' . $_GET['doctor_id'] : '' ?>" 
+           class="px-4 py-2 rounded-lg transition <?= (!isset($_GET['view']) || $_GET['view'] == 'week') ? 'bg-white shadow text-purple-600 font-semibold' : 'text-gray-600 hover:text-gray-800' ?>">
+            <i class="fas fa-calendar-week mr-2"></i>Lịch tuần
+        </a>
+        <a href="?view=day<?= isset($_GET['doctor_id']) ? '&doctor_id=' . $_GET['doctor_id'] : '' ?><?= isset($_GET['date']) ? '&date=' . $_GET['date'] : '' ?>" 
+           class="px-4 py-2 rounded-lg transition <?= (isset($_GET['view']) && $_GET['view'] == 'day') ? 'bg-white shadow text-purple-600 font-semibold' : 'text-gray-600 hover:text-gray-800' ?>">
+            <i class="fas fa-calendar-day mr-2"></i>Lịch ngày
+        </a>
+    </div>
+    <?php endif; ?>
 </div>
 
+<?php 
+// Receptionist luôn xem daily view (walk-in form)
+if (Auth::isReceptionist()) {
+    $viewMode = 'day';
+} else {
+    $viewMode = $_GET['view'] ?? 'week';
+}
+?>
+
+<?php if ($viewMode == 'week' && !Auth::isReceptionist()): ?>
+<!-- WEEKLY VIEW -->
+<?php 
+// Lấy tuần hiện tại
+$currentWeek = isset($_GET['week']) ? $_GET['week'] : date('Y-\WW');
+$weekStart = new DateTime();
+$weekStart->setISODate(substr($currentWeek, 0, 4), substr($currentWeek, 6, 2));
+$weekDays = [];
+for ($i = 0; $i < 7; $i++) {
+    $weekDays[] = clone $weekStart;
+    $weekStart->modify('+1 day');
+}
+?>
+
+<!-- Doctor Selector for Weekly View -->
+<?php if (Auth::isAdmin()): ?>
+<div class="bg-white rounded-lg shadow-md p-4 mb-6">
+    <form method="GET" class="flex items-center gap-4">
+        <input type="hidden" name="view" value="week">
+        <label class="text-sm font-medium text-gray-700">Chọn bác sĩ:</label>
+        <select name="doctor_id" onchange="this.form.submit()" 
+                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+            <?php foreach ($doctors as $doc): ?>
+            <option value="<?= $doc['id'] ?>" <?= $doc['id'] == $selectedDoctorId ? 'selected' : '' ?>>
+                <?= htmlspecialchars($doc['full_name']) ?> - <?= htmlspecialchars($doc['specialization']) ?>
+            </option>
+            <?php endforeach; ?>
+        </select>
+    </form>
+</div>
+<?php endif; ?>
+
+<div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+        <h4 class="text-lg font-bold text-gray-800">
+            Tuần <?= substr($currentWeek, 6, 2) ?>, <?= substr($currentWeek, 0, 4) ?>
+        </h4>
+        <div class="flex space-x-2">
+            <a href="?view=week&week=<?= date('Y-\WW', strtotime('-1 week', strtotime($currentWeek))) ?><?= isset($_GET['doctor_id']) ? '&doctor_id=' . $_GET['doctor_id'] : '' ?>" 
+               class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            <a href="?view=week<?= isset($_GET['doctor_id']) ? '&doctor_id=' . $_GET['doctor_id'] : '' ?>" 
+               class="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition">
+                Tuần này
+            </a>
+            <a href="?view=week&week=<?= date('Y-\WW', strtotime('+1 week', strtotime($currentWeek))) ?><?= isset($_GET['doctor_id']) ? '&doctor_id=' . $_GET['doctor_id'] : '' ?>" 
+               class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Calendar Table -->
+    <div class="overflow-x-auto">
+        <table class="w-full border-collapse">
+            <thead>
+                <tr class="bg-gradient-to-r from-purple-500 to-indigo-600">
+                    <th class="border border-purple-400 p-3 text-white font-semibold text-sm min-w-[80px]">Ca làm</th>
+                    <?php foreach ($weekDays as $day): ?>
+                    <th class="border border-purple-400 p-3 text-white font-semibold text-sm min-w-[120px]">
+                        <div><?= $day->format('l') == 'Monday' ? 'Thứ 2' : ($day->format('l') == 'Tuesday' ? 'Thứ 3' : ($day->format('l') == 'Wednesday' ? 'Thứ 4' : ($day->format('l') == 'Thursday' ? 'Thứ 5' : ($day->format('l') == 'Friday' ? 'Thứ 6' : ($day->format('l') == 'Saturday' ? 'Thứ 7' : 'CN'))))) ?></div>
+                        <div class="text-xs text-purple-100"><?= $day->format('d/m/Y') ?></div>
+                    </th>
+                    <?php endforeach; ?>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Ca Sáng -->
+                <tr>
+                    <td class="border border-gray-300 p-3 bg-yellow-50 font-semibold text-gray-700">
+                        <i class="fas fa-sun text-yellow-500 mr-2"></i>Sáng
+                    </td>
+                    <?php foreach ($weekDays as $day): 
+                        $dateKey = $day->format('Y-m-d');
+                        $morningApts = [];
+                        if (isset($weeklyAppointments[$dateKey])) {
+                            foreach ($weeklyAppointments[$dateKey] as $apt) {
+                                $hour = (int)substr($apt['appointment_time'], 0, 2);
+                                if ($hour >= 8 && $hour < 12) {
+                                    $morningApts[] = $apt;
+                                }
+                            }
+                        }
+                    ?>
+                    <td class="border border-gray-300 p-2 align-top">
+                        <?php if (!empty($morningApts)): ?>
+                            <?php foreach ($morningApts as $apt): ?>
+                            <div class="bg-green-100 border-l-4 border-green-500 p-2 rounded text-xs mb-1">
+                                <p class="text-gray-600 mb-1">
+                                    <i class="fas fa-clock text-green-600 mr-1"></i>
+                                    <?= substr($apt['appointment_time'], 0, 5) ?>
+                                </p>
+                                <p class="font-semibold text-green-700">
+                                    <i class="fas fa-user mr-1"></i>
+                                    <?= htmlspecialchars($apt['patient_name']) ?>
+                                </p>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                        <div class="text-center text-gray-400 py-4">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <?php endif; ?>
+                    </td>
+                    <?php endforeach; ?>
+                </tr>
+                
+                <!-- Ca Chiều -->
+                <tr>
+                    <td class="border border-gray-300 p-3 bg-orange-50 font-semibold text-gray-700">
+                        <i class="fas fa-cloud-sun text-orange-500 mr-2"></i>Chiều
+                    </td>
+                    <?php foreach ($weekDays as $day): 
+                        $dateKey = $day->format('Y-m-d');
+                        $afternoonApts = [];
+                        if (isset($weeklyAppointments[$dateKey])) {
+                            foreach ($weeklyAppointments[$dateKey] as $apt) {
+                                $hour = (int)substr($apt['appointment_time'], 0, 2);
+                                if ($hour >= 12 && $hour < 18) {
+                                    $afternoonApts[] = $apt;
+                                }
+                            }
+                        }
+                    ?>
+                    <td class="border border-gray-300 p-2 align-top">
+                        <?php if (!empty($afternoonApts)): ?>
+                            <?php foreach ($afternoonApts as $apt): ?>
+                            <div class="bg-blue-100 border-l-4 border-blue-500 p-2 rounded text-xs mb-1">
+                                <p class="text-gray-600 mb-1">
+                                    <i class="fas fa-clock text-blue-600 mr-1"></i>
+                                    <?= substr($apt['appointment_time'], 0, 5) ?>
+                                </p>
+                                <p class="font-semibold text-blue-700">
+                                    <i class="fas fa-user mr-1"></i>
+                                    <?= htmlspecialchars($apt['patient_name']) ?>
+                                </p>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                        <div class="text-center text-gray-400 py-4">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <?php endif; ?>
+                    </td>
+                    <?php endforeach; ?>
+                </tr>
+                
+                <!-- Ca Tối -->
+                <tr>
+                    <td class="border border-gray-300 p-3 bg-indigo-50 font-semibold text-gray-700">
+                        <i class="fas fa-moon text-indigo-500 mr-2"></i>Tối
+                    </td>
+                    <?php foreach ($weekDays as $day): 
+                        $dateKey = $day->format('Y-m-d');
+                        $eveningApts = [];
+                        if (isset($weeklyAppointments[$dateKey])) {
+                            foreach ($weeklyAppointments[$dateKey] as $apt) {
+                                $hour = (int)substr($apt['appointment_time'], 0, 2);
+                                if ($hour >= 18) {
+                                    $eveningApts[] = $apt;
+                                }
+                            }
+                        }
+                    ?>
+                    <td class="border border-gray-300 p-2 bg-gray-50 align-top">
+                        <?php if (!empty($eveningApts)): ?>
+                            <?php foreach ($eveningApts as $apt): ?>
+                            <div class="bg-indigo-100 border-l-4 border-indigo-500 p-2 rounded text-xs mb-1">
+                                <p class="text-gray-600 mb-1">
+                                    <i class="fas fa-clock text-indigo-600 mr-1"></i>
+                                    <?= substr($apt['appointment_time'], 0, 5) ?>
+                                </p>
+                                <p class="font-semibold text-indigo-700">
+                                    <i class="fas fa-user mr-1"></i>
+                                    <?= htmlspecialchars($apt['patient_name']) ?>
+                                </p>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                        <div class="text-center text-gray-400 py-4">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <?php endif; ?>
+                    </td>
+                    <?php endforeach; ?>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<?php else: ?>
+<!-- DAILY VIEW (Original) -->
 <!-- Filters -->
 <div class="bg-white rounded-lg shadow-md p-6 mb-6">
     <form method="GET" action="<?= APP_URL ?>/schedule" class="grid grid-cols-1 md:grid-cols-<?= (Auth::isAdmin() || Auth::isReceptionist()) ? '3' : '2' ?> gap-4">
+        <input type="hidden" name="view" value="day">
         <!-- Chọn bác sĩ - ADMIN/RECEPTIONIST -->
         <?php if (Auth::isAdmin() || Auth::isReceptionist()): ?>
         <div>
@@ -160,11 +382,13 @@ ob_start();
     </div>
 </div>
 <?php else: ?>
+<!-- No doctor selected in daily view -->
 <div class="bg-white rounded-lg shadow-md p-12 text-center">
     <i class="fas fa-user-md text-6xl text-gray-300 mb-4"></i>
     <p class="text-gray-500 text-lg">Chọn bác sĩ để xem lịch làm việc</p>
 </div>
-<?php endif; ?>
+<?php endif; ?> <!-- End selectedDoctor check -->
+<?php endif; ?> <!-- End view mode check -->
 
 <?php 
 $content = ob_get_clean();
