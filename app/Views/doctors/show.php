@@ -73,29 +73,42 @@ ob_start();
 
         <!-- Lịch làm việc -->
         <div class="mt-6 pt-6 border-t">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">
-                <i class="fas fa-calendar-alt mr-2"></i>Lịch làm việc trong tuần
-            </h3>
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-800">
+                    <i class="fas fa-calendar-alt mr-2"></i>Lịch làm việc trong tuần
+                </h3>
+                
+                <!-- Week Navigation -->
+                <?php
+                $currentWeek = isset($_GET['week']) ? $_GET['week'] : date('Y-\WW');
+                $weekStart = new DateTime();
+                $weekStart->setISODate(substr($currentWeek, 0, 4), substr($currentWeek, 6, 2));
+                $weekDays = [];
+                for ($i = 0; $i < 7; $i++) {
+                    $weekDays[] = clone $weekStart;
+                    $weekStart->modify('+1 day');
+                }
+                ?>
+                
+                <div class="flex items-center space-x-2">
+                    <a href="?week=<?= date('Y-\WW', strtotime('-1 week', strtotime($currentWeek))) ?>" 
+                       class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <a href="<?= APP_URL ?>/doctors/<?= $doctor['id'] ?>" 
+                       class="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition text-sm">
+                        Tuần này
+                    </a>
+                    <a href="?week=<?= date('Y-\WW', strtotime('+1 week', strtotime($currentWeek))) ?>" 
+                       class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
             
-            <?php
-            // Parse available_days và available_hours
-            $daysMap = [
-                'Thứ 2' => 'T2',
-                'Thứ 3' => 'T3',
-                'Thứ 4' => 'T4',
-                'Thứ 5' => 'T5',
-                'Thứ 6' => 'T6',
-                'Thứ 7' => 'T7',
-                'Chủ nhật' => 'CN'
-            ];
-            
-            $availableDays = array_map('trim', explode(',', $doctor['available_days']));
-            $availableHours = $doctor['available_hours'];
-            
-            // Tất cả các ngày trong tuần
-            $weekDays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-            $weekDaysFull = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
-            ?>
+            <div class="text-sm text-gray-600 mb-4">
+                Tuần <?= substr($currentWeek, 6, 2) ?>, <?= substr($currentWeek, 0, 4) ?>
+            </div>
             
             <!-- Calendar Grid -->
             <div class="overflow-x-auto">
@@ -105,7 +118,8 @@ ob_start();
                             <th class="border border-purple-400 p-3 text-white font-semibold text-sm">Ca làm</th>
                             <?php foreach ($weekDays as $day): ?>
                             <th class="border border-purple-400 p-3 text-white font-semibold text-sm min-w-[100px]">
-                                <?= $day ?>
+                                <div><?= $day->format('l') == 'Monday' ? 'T2' : ($day->format('l') == 'Tuesday' ? 'T3' : ($day->format('l') == 'Wednesday' ? 'T4' : ($day->format('l') == 'Thursday' ? 'T5' : ($day->format('l') == 'Friday' ? 'T6' : ($day->format('l') == 'Saturday' ? 'T7' : 'CN'))))) ?></div>
+                                <div class="text-xs text-purple-100"><?= $day->format('d/m') ?></div>
                             </th>
                             <?php endforeach; ?>
                         </tr>
@@ -116,19 +130,32 @@ ob_start();
                             <td class="border border-gray-300 p-3 bg-yellow-50 font-semibold text-gray-700">
                                 <i class="fas fa-sun text-yellow-500 mr-2"></i>Sáng
                             </td>
-                            <?php foreach ($weekDaysFull as $dayFull): ?>
-                            <td class="border border-gray-300 p-2">
-                                <?php if (in_array($dayFull, $availableDays)): ?>
-                                <div class="bg-green-100 border-l-4 border-green-500 p-3 rounded">
-                                    <p class="text-xs text-gray-600 mb-1">
-                                        <i class="fas fa-clock text-green-600 mr-1"></i>
-                                        <?= htmlspecialchars($availableHours) ?>
-                                    </p>
-                                    <p class="text-xs font-semibold text-green-700">
-                                        <i class="fas fa-user-md mr-1"></i>
-                                        <?= htmlspecialchars($doctor['full_name']) ?>
-                                    </p>
-                                </div>
+                            <?php foreach ($weekDays as $day): 
+                                $dateKey = $day->format('Y-m-d');
+                                $morningApts = [];
+                                if (isset($weeklyAppointments[$dateKey])) {
+                                    foreach ($weeklyAppointments[$dateKey] as $apt) {
+                                        $hour = (int)substr($apt['appointment_time'], 0, 2);
+                                        if ($hour >= 8 && $hour < 12) {
+                                            $morningApts[] = $apt;
+                                        }
+                                    }
+                                }
+                            ?>
+                            <td class="border border-gray-300 p-2 align-top">
+                                <?php if (!empty($morningApts)): ?>
+                                    <?php foreach ($morningApts as $apt): ?>
+                                    <div class="bg-green-100 border-l-4 border-green-500 p-2 rounded text-xs mb-1">
+                                        <p class="text-gray-600 mb-1">
+                                            <i class="fas fa-clock text-green-600 mr-1"></i>
+                                            <?= substr($apt['appointment_time'], 0, 5) ?>
+                                        </p>
+                                        <p class="font-semibold text-green-700">
+                                            <i class="fas fa-user mr-1"></i>
+                                            <?= htmlspecialchars($apt['patient_name']) ?>
+                                        </p>
+                                    </div>
+                                    <?php endforeach; ?>
                                 <?php else: ?>
                                 <div class="text-center text-gray-400 py-4">
                                     <i class="fas fa-times-circle"></i>
@@ -143,19 +170,32 @@ ob_start();
                             <td class="border border-gray-300 p-3 bg-orange-50 font-semibold text-gray-700">
                                 <i class="fas fa-cloud-sun text-orange-500 mr-2"></i>Chiều
                             </td>
-                            <?php foreach ($weekDaysFull as $dayFull): ?>
-                            <td class="border border-gray-300 p-2">
-                                <?php if (in_array($dayFull, $availableDays)): ?>
-                                <div class="bg-blue-100 border-l-4 border-blue-500 p-3 rounded">
-                                    <p class="text-xs text-gray-600 mb-1">
-                                        <i class="fas fa-clock text-blue-600 mr-1"></i>
-                                        <?= htmlspecialchars($availableHours) ?>
-                                    </p>
-                                    <p class="text-xs font-semibold text-blue-700">
-                                        <i class="fas fa-user-md mr-1"></i>
-                                        <?= htmlspecialchars($doctor['full_name']) ?>
-                                    </p>
-                                </div>
+                            <?php foreach ($weekDays as $day): 
+                                $dateKey = $day->format('Y-m-d');
+                                $afternoonApts = [];
+                                if (isset($weeklyAppointments[$dateKey])) {
+                                    foreach ($weeklyAppointments[$dateKey] as $apt) {
+                                        $hour = (int)substr($apt['appointment_time'], 0, 2);
+                                        if ($hour >= 12 && $hour < 18) {
+                                            $afternoonApts[] = $apt;
+                                        }
+                                    }
+                                }
+                            ?>
+                            <td class="border border-gray-300 p-2 align-top">
+                                <?php if (!empty($afternoonApts)): ?>
+                                    <?php foreach ($afternoonApts as $apt): ?>
+                                    <div class="bg-blue-100 border-l-4 border-blue-500 p-2 rounded text-xs mb-1">
+                                        <p class="text-gray-600 mb-1">
+                                            <i class="fas fa-clock text-blue-600 mr-1"></i>
+                                            <?= substr($apt['appointment_time'], 0, 5) ?>
+                                        </p>
+                                        <p class="font-semibold text-blue-700">
+                                            <i class="fas fa-user mr-1"></i>
+                                            <?= htmlspecialchars($apt['patient_name']) ?>
+                                        </p>
+                                    </div>
+                                    <?php endforeach; ?>
                                 <?php else: ?>
                                 <div class="text-center text-gray-400 py-4">
                                     <i class="fas fa-times-circle"></i>
@@ -170,11 +210,37 @@ ob_start();
                             <td class="border border-gray-300 p-3 bg-indigo-50 font-semibold text-gray-700">
                                 <i class="fas fa-moon text-indigo-500 mr-2"></i>Tối
                             </td>
-                            <?php foreach ($weekDaysFull as $dayFull): ?>
-                            <td class="border border-gray-300 p-2 bg-gray-50">
+                            <?php foreach ($weekDays as $day): 
+                                $dateKey = $day->format('Y-m-d');
+                                $eveningApts = [];
+                                if (isset($weeklyAppointments[$dateKey])) {
+                                    foreach ($weeklyAppointments[$dateKey] as $apt) {
+                                        $hour = (int)substr($apt['appointment_time'], 0, 2);
+                                        if ($hour >= 18) {
+                                            $eveningApts[] = $apt;
+                                        }
+                                    }
+                                }
+                            ?>
+                            <td class="border border-gray-300 p-2 bg-gray-50 align-top">
+                                <?php if (!empty($eveningApts)): ?>
+                                    <?php foreach ($eveningApts as $apt): ?>
+                                    <div class="bg-indigo-100 border-l-4 border-indigo-500 p-2 rounded text-xs mb-1">
+                                        <p class="text-gray-600 mb-1">
+                                            <i class="fas fa-clock text-indigo-600 mr-1"></i>
+                                            <?= substr($apt['appointment_time'], 0, 5) ?>
+                                        </p>
+                                        <p class="font-semibold text-indigo-700">
+                                            <i class="fas fa-user mr-1"></i>
+                                            <?= htmlspecialchars($apt['patient_name']) ?>
+                                        </p>
+                                    </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
                                 <div class="text-center text-gray-400 py-4">
                                     <i class="fas fa-times-circle"></i>
                                 </div>
+                                <?php endif; ?>
                             </td>
                             <?php endforeach; ?>
                         </tr>
@@ -186,15 +252,19 @@ ob_start();
             <div class="mt-4 flex flex-wrap gap-4 text-sm">
                 <div class="flex items-center">
                     <div class="w-4 h-4 bg-green-500 rounded mr-2"></div>
-                    <span class="text-gray-600">Ca sáng</span>
+                    <span class="text-gray-600">Ca sáng (8h-12h)</span>
                 </div>
                 <div class="flex items-center">
                     <div class="w-4 h-4 bg-blue-500 rounded mr-2"></div>
-                    <span class="text-gray-600">Ca chiều</span>
+                    <span class="text-gray-600">Ca chiều (12h-18h)</span>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-4 h-4 bg-indigo-500 rounded mr-2"></div>
+                    <span class="text-gray-600">Ca tối (18h+)</span>
                 </div>
                 <div class="flex items-center">
                     <i class="fas fa-times-circle text-gray-400 mr-2"></i>
-                    <span class="text-gray-600">Không làm việc</span>
+                    <span class="text-gray-600">Không có lịch</span>
                 </div>
             </div>
         </div>

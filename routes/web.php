@@ -33,8 +33,10 @@ class Router {
 
         // Kiểm tra route có tham số
         foreach ($this->routes[$method] ?? [] as $route => $callback) {
-            $pattern = preg_replace('/\{[^}]+\}/', '([^/]+)', $route);
-            if (preg_match('#^' . $pattern . '$#', $uri, $matches)) {
+            // Escape dấu / trong route pattern
+            $pattern = str_replace('/', '\/', $route);
+            $pattern = preg_replace('/\{[^}]+\}/', '([^\/]+)', $pattern);
+            if (preg_match('/^' . $pattern . '$/', $uri, $matches)) {
                 array_shift($matches);
                 return call_user_func_array($callback, $matches);
             }
@@ -241,6 +243,16 @@ $router->get('/admin/specializations/create', function() {
 $router->post('/admin/specializations/store', function() {
     $controller = new AdminController();
     $controller->storeSpecialization();
+});
+
+$router->get('/admin/specializations/{id}/edit', function($id) {
+    $controller = new AdminController();
+    $controller->editSpecialization($id);
+});
+
+$router->post('/admin/specializations/{id}/update', function($id) {
+    $controller = new AdminController();
+    $controller->updateSpecialization($id);
 });
 
 $router->post('/admin/specializations/{id}/delete', function($id) {

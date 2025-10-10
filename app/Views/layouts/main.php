@@ -120,10 +120,12 @@
                         </a>
                         <?php endif; ?>
                         
+                        <?php if (!Auth::isDoctor()): ?>
                         <a href="<?= APP_URL ?>/doctors" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg <?= (strpos($_SERVER['REQUEST_URI'], '/doctors') !== false && strpos($_SERVER['REQUEST_URI'], '/admin') === false) ? 'active' : '' ?>">
                             <i class="fas fa-user-md w-5"></i>
                             <span>Bác sĩ</span>
                         </a>
+                        <?php endif; ?>
                         
                         <a href="<?= APP_URL ?>/appointments" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg <?= (strpos($_SERVER['REQUEST_URI'], '/appointments') !== false) ? 'active' : '' ?>">
                             <i class="fas fa-calendar-check w-5"></i>

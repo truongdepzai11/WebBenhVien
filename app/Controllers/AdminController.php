@@ -71,12 +71,16 @@ class AdminController {
             exit;
         }
 
+        $database = new Database();
+        $conn = $database->getConnection();
+        
         $query = "INSERT INTO specializations (name, description, min_age, max_age, gender_requirement) 
                   VALUES (:name, :description, :min_age, :max_age, :gender_requirement)";
         
-        $stmt = $this->specializationModel->conn->prepare($query);
+        $stmt = $conn->prepare($query);
         $stmt->bindParam(':name', $_POST['name']);
-        $stmt->bindParam(':description', $_POST['description']);
+        $description = $_POST['description'] ?? '';
+        $stmt->bindParam(':description', $description);
         $stmt->bindParam(':min_age', $_POST['min_age']);
         $stmt->bindParam(':max_age', $_POST['max_age']);
         $stmt->bindParam(':gender_requirement', $_POST['gender_requirement']);
@@ -91,12 +95,78 @@ class AdminController {
         exit;
     }
 
+    // Form sửa chuyên khoa
+    public function editSpecialization($id) {
+        Auth::requireAdmin();
+        
+        $specialization = $this->specializationModel->findById($id);
+        if (!$specialization) {
+            $_SESSION['error'] = 'Không tìm thấy chuyên khoa!';
+            header('Location: ' . APP_URL . '/admin/specializations');
+            exit;
+        }
+        
+        require_once APP_PATH . '/Views/admin/specializations/edit.php';
+    }
+
+    // Cập nhật chuyên khoa
+    public function updateSpecialization($id) {
+        Auth::requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . APP_URL . '/admin/specializations/' . $id . '/edit');
+            exit;
+        }
+
+        $validator = new Validator($_POST);
+        $validator->required(['name', 'min_age', 'max_age', 'gender_requirement']);
+
+        if ($validator->fails()) {
+            $_SESSION['error'] = $validator->firstError();
+            $_SESSION['old'] = $_POST;
+            header('Location: ' . APP_URL . '/admin/specializations/' . $id . '/edit');
+            exit;
+        }
+
+        $database = new Database();
+        $conn = $database->getConnection();
+        
+        $query = "UPDATE specializations 
+                  SET name = :name, 
+                      description = :description, 
+                      min_age = :min_age, 
+                      max_age = :max_age, 
+                      gender_requirement = :gender_requirement 
+                  WHERE id = :id";
+        
+        $stmt = $conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':name', $_POST['name']);
+        $description = $_POST['description'] ?? '';
+        $stmt->bindParam(':description', $description);
+        $stmt->bindParam(':min_age', $_POST['min_age']);
+        $stmt->bindParam(':max_age', $_POST['max_age']);
+        $stmt->bindParam(':gender_requirement', $_POST['gender_requirement']);
+
+        if ($stmt->execute()) {
+            $_SESSION['success'] = 'Cập nhật chuyên khoa thành công!';
+            header('Location: ' . APP_URL . '/admin/specializations');
+        } else {
+            $_SESSION['error'] = 'Cập nhật chuyên khoa thất bại!';
+            header('Location: ' . APP_URL . '/admin/specializations/' . $id . '/edit');
+        }
+        exit;
+    }
+
     // Xóa chuyên khoa
     public function deleteSpecialization($id) {
         Auth::requireAdmin();
 
+        $database = new Database();
+        $conn = $database->getConnection();
+        
         $query = "DELETE FROM specializations WHERE id = :id";
-        $stmt = $this->specializationModel->conn->prepare($query);
+        $stmt = $conn->prepare($query);
         $stmt->bindParam(':id', $id);
 
         if ($stmt->execute()) {

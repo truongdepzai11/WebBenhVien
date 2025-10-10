@@ -9,9 +9,19 @@ class Validator {
     }
 
     // Kiểm tra required
-    public function required($field, $message = null) {
-        if (!isset($this->data[$field]) || empty(trim($this->data[$field]))) {
-            $this->errors[$field] = $message ?? "Trường này là bắt buộc";
+    public function required($fields, $message = null) {
+        // Nếu là array, kiểm tra từng field
+        if (is_array($fields)) {
+            foreach ($fields as $field) {
+                $this->required($field, $message);
+            }
+            return $this;
+        }
+        
+        // Kiểm tra single field
+        // Chấp nhận 0 là giá trị hợp lệ (cho min_age)
+        if (!isset($this->data[$fields]) || (trim($this->data[$fields]) === '' && $this->data[$fields] !== '0')) {
+            $this->errors[$fields] = $message ?? "Trường này là bắt buộc";
         }
         return $this;
     }
