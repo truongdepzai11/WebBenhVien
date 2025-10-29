@@ -5,8 +5,10 @@ require_once __DIR__ . '/../Models/Patient.php';
 require_once __DIR__ . '/../Models/Doctor.php';
 require_once __DIR__ . '/../Models/Specialization.php';
 require_once __DIR__ . '/../Models/Invoice.php';
+require_once __DIR__ . '/../Models/HealthPackage.php';
 require_once __DIR__ . '/../Helpers/Auth.php';
 require_once __DIR__ . '/../Helpers/Validator.php';
+require_once __DIR__ . '/../../config/database.php';
 
 class AppointmentController {
     private $appointmentModel;
@@ -14,6 +16,7 @@ class AppointmentController {
     private $doctorModel;
     private $specializationModel;
     private $invoiceModel;
+    private $packageModel;
 
     public function __construct() {
         $this->appointmentModel = new Appointment();
@@ -21,6 +24,7 @@ class AppointmentController {
         $this->doctorModel = new Doctor();
         $this->specializationModel = new Specialization();
         $this->invoiceModel = new Invoice();
+        $this->packageModel = new HealthPackage();
     }
 
     // Danh sách lịch hẹn
@@ -49,6 +53,14 @@ class AppointmentController {
         $doctors = $this->doctorModel->getAll();
         $specializations = $this->specializationModel->getAll();
         
+        // Kiểm tra nếu đặt theo gói khám
+        $package_id = $_GET['package_id'] ?? null;
+        $selected_package = null;
+        
+        if ($package_id) {
+            $selected_package = $this->packageModel->findById($package_id);
+        }
+        
         // Nếu là bệnh nhân, lấy thông tin của họ
         if (Auth::isPatient()) {
             $patient = $this->patientModel->findByUserId(Auth::id());
@@ -62,7 +74,13 @@ class AppointmentController {
                 
                 // Lấy chuyên khoa phù hợp
                 $eligible_specializations = $this->specializationModel->getEligibleForPatient($patient_age, $patient_gender);
+                
+                // Lấy gói khám phù hợp
+                $eligible_packages = $this->packageModel->getPackagesForPatient($patient_gender, $patient_age);
             }
+        } else {
+            // Admin/Receptionist có thể xem tất cả gói
+            $eligible_packages = $this->packageModel->getAllActive();
         }
 
         require_once APP_PATH . '/Views/appointments/create.php';
@@ -150,14 +168,36 @@ class AppointmentController {
 
         // Tạo lịch hẹn
         $this->appointmentModel->patient_id = $patient_id;
-        $this->appointmentModel->doctor_id = $_POST['doctor_id'];
         $this->appointmentModel->appointment_date = $_POST['appointment_date'];
         $this->appointmentModel->appointment_time = $_POST['appointment_time'];
         $this->appointmentModel->reason = $_POST['reason'];
         $this->appointmentModel->status = 'pending';
         $this->appointmentModel->notes = $_POST['notes'] ?? null;
+        
+        // Lưu package_id nếu đặt theo gói
+        $is_package = !empty($_POST['package_id']);
+        $this->appointmentModel->package_id = $_POST['package_id'] ?? null;
+        $this->appointmentModel->appointment_type = $is_package ? 'package' : 'regular';
+        $this->appointmentModel->total_price = $_POST['total_price'] ?? 0;
+        
+        // Với gói khám: doctor_id là coordinator (tùy chọn)
+        // Với khám thường: doctor_id là bác sĩ khám (bắt buộc)
+        if ($is_package) {
+            $this->appointmentModel->doctor_id = null;
+            $this->appointmentModel->coordinator_doctor_id = !empty($_POST['doctor_id']) ? $_POST['doctor_id'] : null;
+        } else {
+            $this->appointmentModel->doctor_id = $_POST['doctor_id'];
+            $this->appointmentModel->coordinator_doctor_id = null;
+        }
 
         if ($this->appointmentModel->create()) {
+            $appointment_id = $this->appointmentModel->id;
+            
+            // Nếu là gói khám, lưu các dịch vụ đã chọn
+            if (!empty($_POST['package_id']) && !empty($_POST['selected_services'])) {
+                $this->saveAppointmentServices($appointment_id, $_POST['selected_services']);
+            }
+            
             $_SESSION['success'] = 'Đặt lịch hẹn thành công!';
             header('Location: ' . APP_URL . '/appointments');
             exit;
@@ -165,6 +205,33 @@ class AppointmentController {
             $_SESSION['error'] = 'Đặt lịch hẹn thất bại. Vui lòng thử lại.';
             header('Location: ' . APP_URL . '/appointments/create');
             exit;
+        }
+    }
+    
+    // Lưu dịch vụ đã chọn cho appointment
+    private function saveAppointmentServices($appointment_id, $service_ids) {
+        $database = new Database();
+        $conn = $database->getConnection();
+        
+        // Lấy thông tin dịch vụ
+        $placeholders = str_repeat('?,', count($service_ids) - 1) . '?';
+        $query = "SELECT id, service_price FROM package_services WHERE id IN ($placeholders)";
+        $stmt = $conn->prepare($query);
+        $stmt->execute($service_ids);
+        $services = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Insert vào appointment_package_services
+        $insertQuery = "INSERT INTO appointment_package_services 
+                        (appointment_id, service_id, service_price, status) 
+                        VALUES (?, ?, ?, 'pending')";
+        $insertStmt = $conn->prepare($insertQuery);
+        
+        foreach ($services as $service) {
+            $insertStmt->execute([
+                $appointment_id,
+                $service['id'],
+                $service['service_price']
+            ]);
         }
     }
 

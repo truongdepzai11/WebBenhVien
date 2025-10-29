@@ -10,6 +10,10 @@ class Appointment {
     public $appointment_code;
     public $patient_id;
     public $doctor_id;
+    public $coordinator_doctor_id;
+    public $package_id;
+    public $appointment_type;
+    public $total_price;
     public $appointment_date;
     public $appointment_time;
     public $reason;
@@ -26,14 +30,18 @@ class Appointment {
         $this->appointment_code = $this->generateAppointmentCode();
 
         $query = "INSERT INTO " . $this->table . " 
-                  (appointment_code, patient_id, doctor_id, appointment_date, appointment_time, reason, status, notes) 
-                  VALUES (:appointment_code, :patient_id, :doctor_id, :appointment_date, :appointment_time, :reason, :status, :notes)";
+                  (appointment_code, patient_id, doctor_id, coordinator_doctor_id, package_id, appointment_type, total_price, appointment_date, appointment_time, reason, status, notes) 
+                  VALUES (:appointment_code, :patient_id, :doctor_id, :coordinator_doctor_id, :package_id, :appointment_type, :total_price, :appointment_date, :appointment_time, :reason, :status, :notes)";
 
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(':appointment_code', $this->appointment_code);
         $stmt->bindParam(':patient_id', $this->patient_id);
         $stmt->bindParam(':doctor_id', $this->doctor_id);
+        $stmt->bindParam(':coordinator_doctor_id', $this->coordinator_doctor_id);
+        $stmt->bindParam(':package_id', $this->package_id);
+        $stmt->bindParam(':appointment_type', $this->appointment_type);
+        $stmt->bindParam(':total_price', $this->total_price);
         $stmt->bindParam(':appointment_date', $this->appointment_date);
         $stmt->bindParam(':appointment_time', $this->appointment_time);
         $stmt->bindParam(':reason', $this->reason);

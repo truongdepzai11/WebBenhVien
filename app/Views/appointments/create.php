@@ -13,7 +13,107 @@ ob_start();
 
     <div class="bg-white rounded-lg shadow-md p-8">
         <form action="<?= APP_URL ?>/appointments/store" method="POST" class="space-y-6">
-            <!-- Chọn chuyên khoa -->
+            
+            <!-- Chọn loại khám -->
+            <div class="border-b pb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-3">
+                    <i class="fas fa-clipboard-list mr-2"></i>Loại khám *
+                </label>
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="relative flex items-center p-4 border-2 rounded-lg cursor-pointer hover:border-purple-500 transition <?= empty($selected_package) ? 'border-purple-500 bg-purple-50' : 'border-gray-300' ?>">
+                        <input type="radio" name="appointment_type_choice" value="regular" 
+                               <?= empty($selected_package) ? 'checked' : '' ?>
+                               onchange="toggleAppointmentType('regular')"
+                               class="mr-3">
+                        <div>
+                            <div class="font-semibold text-gray-800">
+                                <i class="fas fa-stethoscope mr-2"></i>Khám thường
+                            </div>
+                            <div class="text-sm text-gray-500">Khám bệnh theo triệu chứng</div>
+                        </div>
+                    </label>
+                    
+                    <label class="relative flex items-center p-4 border-2 rounded-lg cursor-pointer hover:border-purple-500 transition <?= !empty($selected_package) ? 'border-purple-500 bg-purple-50' : 'border-gray-300' ?>">
+                        <input type="radio" name="appointment_type_choice" value="package"
+                               <?= !empty($selected_package) ? 'checked' : '' ?>
+                               onchange="toggleAppointmentType('package')"
+                               class="mr-3">
+                        <div>
+                            <div class="font-semibold text-gray-800">
+                                <i class="fas fa-box-open mr-2"></i>Khám theo gói
+                            </div>
+                            <div class="text-sm text-gray-500">Khám sức khỏe tổng quát</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Chọn gói khám (ẩn nếu chọn khám thường) -->
+            <div id="package_selection" style="display: <?= !empty($selected_package) ? 'block' : 'none' ?>">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-box-open mr-2"></i>Chọn gói khám *
+                </label>
+                <select name="package_id" id="package_id" 
+                        onchange="updatePackageInfo(this.value)"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                    <option value="">-- Chọn gói khám --</option>
+                    <?php if (isset($eligible_packages)): ?>
+                        <?php foreach ($eligible_packages as $pkg): ?>
+                        <option value="<?= $pkg['id'] ?>" 
+                                data-name="<?= htmlspecialchars($pkg['name']) ?>"
+                                <?= ($selected_package && $selected_package['id'] == $pkg['id']) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($pkg['name']) ?>
+                        </option>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </select>
+                
+                <!-- Hiển thị thông tin gói -->
+                <div id="package_info" class="mt-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200" style="display:<?= !empty($selected_package) ? 'block' : 'none' ?>">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800 mb-2" id="package_name">
+                                <?= $selected_package['name'] ?? '' ?>
+                            </h4>
+                            <div class="text-sm text-gray-600 mb-3" id="package_price">
+                                <span class="text-xs text-gray-500">Giá sẽ hiển thị sau khi chọn dịch vụ</span>
+                            </div>
+                        </div>
+                        <a href="#" id="package_detail_link" target="_blank" class="text-purple-600 hover:text-purple-800 text-sm">
+                            <i class="fas fa-external-link-alt mr-1"></i>Xem chi tiết
+                        </a>
+                    </div>
+                </div>
+                
+                <p class="text-xs text-gray-500 mt-2">
+                    <i class="fas fa-info-circle"></i> Gói khám bao gồm nhiều dịch vụ xét nghiệm và khám chuyên khoa
+                </p>
+                
+                <!-- Danh sách dịch vụ trong gói (cho phép chọn/bỏ) -->
+                <div id="package_services_list" class="mt-6" style="display:none">
+                    <h4 class="font-semibold text-gray-800 mb-3">
+                        <i class="fas fa-list-check mr-2"></i>Chọn dịch vụ khám
+                    </h4>
+                    <div id="services_container" class="space-y-2 max-h-96 overflow-y-auto">
+                        <!-- Services will be loaded here via AJAX -->
+                    </div>
+                    
+                    <!-- Tổng giá -->
+                    <div class="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="font-semibold text-gray-700">Tổng chi phí:</span>
+                            <span class="text-2xl font-bold text-green-600" id="total_price_display">0 đ</span>
+                        </div>
+                        <input type="hidden" name="total_price" id="total_price_input" value="0">
+                        <p class="text-xs text-gray-500 mt-2">
+                            <i class="fas fa-info-circle"></i> Giá đã bao gồm tất cả dịch vụ được chọn
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chọn chuyên khoa (chỉ hiện khi khám thường) -->
+            <div id="specialization_selection" style="display: <?= empty($selected_package) ? 'block' : 'none' ?>">
             <?php if (Auth::isPatient() && isset($eligible_specializations)): ?>
             <div>
                 <label for="specialization" class="block text-sm font-medium text-gray-700 mb-2">
@@ -40,13 +140,14 @@ ob_start();
                 </p>
             </div>
             <?php endif; ?>
+            </div>
 
-            <!-- Chọn bác sĩ -->
-            <div>
+            <!-- Chọn bác sĩ (chỉ cho khám thường) -->
+            <div id="doctor_selection">
                 <label for="doctor_id" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-user-md mr-2"></i>Chọn bác sĩ *
+                    <i class="fas fa-user-md mr-2"></i>Chọn bác sĩ <span id="doctor_required_label">*</span>
                 </label>
-                <select id="doctor_id" name="doctor_id" required
+                <select id="doctor_id" name="doctor_id"
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
                     <option value="">-- Chọn bác sĩ --</option>
                     <?php foreach ($doctors as $doctor): ?>
@@ -58,6 +159,9 @@ ob_start();
                     </option>
                     <?php endforeach; ?>
                 </select>
+                <p class="text-xs text-gray-500 mt-1" id="doctor_note">
+                    <i class="fas fa-info-circle"></i> <span id="doctor_note_text">Chọn bác sĩ khám chính</span>
+                </p>
             </div>
             
             <script>
@@ -176,6 +280,142 @@ ob_start();
 </div>
 
 <script>
+// Toggle giữa khám thường và khám theo gói
+function toggleAppointmentType(type) {
+    const packageSelection = document.getElementById('package_selection');
+    const specializationSelection = document.getElementById('specialization_selection');
+    const packageIdInput = document.getElementById('package_id');
+    const doctorSelect = document.getElementById('doctor_id');
+    const doctorLabel = document.getElementById('doctor_note_text');
+    const doctorRequired = document.getElementById('doctor_required_label');
+    
+    if (type === 'package') {
+        packageSelection.style.display = 'block';
+        specializationSelection.style.display = 'none';
+        
+        // Thay đổi label bác sĩ
+        doctorLabel.textContent = 'Bác sĩ điều phối chính (tùy chọn). Bác sĩ cho từng dịch vụ sẽ được phân công sau.';
+        doctorRequired.style.display = 'none';
+        doctorSelect.removeAttribute('required');
+    } else {
+        packageSelection.style.display = 'none';
+        specializationSelection.style.display = 'block';
+        packageIdInput.value = '';
+        document.getElementById('package_info').style.display = 'none';
+        
+        // Khôi phục label bác sĩ
+        doctorLabel.textContent = 'Chọn bác sĩ khám chính';
+        doctorRequired.style.display = 'inline';
+        doctorSelect.setAttribute('required', 'required');
+    }
+}
+
+// Cập nhật thông tin gói khám và load dịch vụ
+function updatePackageInfo(packageId) {
+    const packageInfo = document.getElementById('package_info');
+    const packageName = document.getElementById('package_name');
+    const packagePrice = document.getElementById('package_price');
+    const packageLink = document.getElementById('package_detail_link');
+    const servicesList = document.getElementById('package_services_list');
+    
+    if (!packageId) {
+        packageInfo.style.display = 'none';
+        servicesList.style.display = 'none';
+        return;
+    }
+    
+    const select = document.getElementById('package_id');
+    const option = select.options[select.selectedIndex];
+    
+    const name = option.dataset.name;
+    
+    packageName.textContent = name;
+    packagePrice.innerHTML = '<span class="text-xs text-gray-500">Đang tải dịch vụ...</span>';
+    packageLink.href = '<?= APP_URL ?>/packages/' + packageId;
+    packageInfo.style.display = 'block';
+    
+    // Load danh sách dịch vụ
+    loadPackageServices(packageId);
+}
+
+// Load danh sách dịch vụ trong gói
+function loadPackageServices(packageId) {
+    const servicesContainer = document.getElementById('services_container');
+    const servicesList = document.getElementById('package_services_list');
+    
+    // Show loading
+    servicesContainer.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-purple-600"></i> Đang tải dịch vụ...</div>';
+    servicesList.style.display = 'block';
+    
+    // Fetch services via AJAX
+    fetch('<?= APP_URL ?>/api/package-services/' + packageId)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.services.length > 0) {
+                renderServices(data.services);
+            } else {
+                servicesContainer.innerHTML = '<div class="text-center py-4 text-gray-500">Không có dịch vụ nào</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            servicesContainer.innerHTML = '<div class="text-center py-4 text-red-500">Lỗi tải dịch vụ</div>';
+        });
+}
+
+// Render danh sách dịch vụ
+function renderServices(services) {
+    const servicesContainer = document.getElementById('services_container');
+    let html = '';
+    
+    services.forEach(service => {
+        const isRequired = service.is_required == 1;
+        const price = parseFloat(service.service_price || 0);
+        
+        html += `
+            <div class="flex items-start p-3 border rounded-lg hover:bg-gray-50 ${isRequired ? 'bg-blue-50 border-blue-200' : 'border-gray-200'}">
+                <input type="checkbox" 
+                       name="selected_services[]" 
+                       value="${service.id}" 
+                       data-price="${price}"
+                       data-required="${isRequired ? '1' : '0'}"
+                       ${isRequired ? 'checked disabled' : 'checked'}
+                       onchange="calculateTotalPrice()"
+                       class="mt-1 mr-3 w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                       id="service_${service.id}">
+                <label for="service_${service.id}" class="flex-1 cursor-pointer">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-800">${service.service_name}</div>
+                            ${service.notes ? `<div class="text-xs text-gray-500 mt-1">${service.notes}</div>` : ''}
+                        </div>
+                        <div class="ml-4 text-right">
+                            <div class="font-bold text-purple-600">${price.toLocaleString('vi-VN')} đ</div>
+                            ${isRequired ? '<span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">Bắt buộc</span>' : '<span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Tùy chọn</span>'}
+                        </div>
+                    </div>
+                </label>
+            </div>
+        `;
+    });
+    
+    servicesContainer.innerHTML = html;
+    calculateTotalPrice();
+}
+
+// Tính tổng giá
+function calculateTotalPrice() {
+    const checkboxes = document.querySelectorAll('input[name="selected_services[]"]:checked');
+    let total = 0;
+    
+    checkboxes.forEach(checkbox => {
+        total += parseFloat(checkbox.dataset.price || 0);
+    });
+    
+    document.getElementById('total_price_display').textContent = total.toLocaleString('vi-VN') + ' đ';
+    document.getElementById('total_price_input').value = total;
+}
+
 // Validate thời gian không được trong quá khứ
 function validateDateTime() {
     const dateInput = document.getElementById('appointment_date');
@@ -202,6 +442,13 @@ document.querySelector('form').addEventListener('submit', function(e) {
         return false;
     }
 });
+
+// Initialize nếu có package được chọn từ URL
+<?php if (!empty($selected_package)): ?>
+document.addEventListener('DOMContentLoaded', function() {
+    updatePackageInfo(<?= $selected_package['id'] ?>);
+});
+<?php endif; ?>
 </script>
 
 <?php 

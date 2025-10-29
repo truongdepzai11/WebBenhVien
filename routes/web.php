@@ -63,6 +63,7 @@ require_once __DIR__ . '/../app/Controllers/InvoiceController.php';
 require_once __DIR__ . '/../app/Controllers/ScheduleController.php';
 require_once __DIR__ . '/../app/Controllers/MedicalRecordController.php';
 require_once __DIR__ . '/../app/Controllers/ValidationController.php';
+require_once __DIR__ . '/../app/Controllers/PackageController.php';
 
 // Home Route (Landing Page)
 $router->get('/', function() {
@@ -399,6 +400,82 @@ $router->get('/api/validate/email', function() {
 $router->get('/api/validate/phone', function() {
     $controller = new ValidationController();
     $controller->checkPhone();
+});
+
+// ==================== HEALTH PACKAGES ====================
+
+// Public - Packages
+$router->get('/packages', function() {
+    $controller = new PackageController();
+    $controller->index();
+});
+
+$router->get('/packages/{id}', function($id) {
+    $controller = new PackageController();
+    $controller->show($id);
+});
+
+// Admin - Packages Management
+$router->get('/admin/packages', function() {
+    $controller = new PackageController();
+    $controller->adminIndex();
+});
+
+$router->get('/admin/packages/create', function() {
+    $controller = new PackageController();
+    $controller->create();
+});
+
+$router->post('/admin/packages/store', function() {
+    $controller = new PackageController();
+    $controller->store();
+});
+
+$router->get('/admin/packages/{id}/edit', function($id) {
+    $controller = new PackageController();
+    $controller->edit($id);
+});
+
+$router->post('/admin/packages/{id}/update', function($id) {
+    $controller = new PackageController();
+    $controller->update($id);
+});
+
+$router->post('/admin/packages/{id}/delete', function($id) {
+    $controller = new PackageController();
+    $controller->delete($id);
+});
+
+$router->post('/admin/packages/{id}/toggle-status', function($id) {
+    $controller = new PackageController();
+    $controller->toggleStatus($id);
+});
+
+// Admin - Package Services Management
+$router->get('/admin/packages/{id}/services', function($id) {
+    $controller = new PackageController();
+    $controller->manageServices($id);
+});
+
+$router->post('/admin/packages/{package_id}/services/add', function($package_id) {
+    $controller = new PackageController();
+    $controller->addService($package_id);
+});
+
+$router->post('/admin/packages/{package_id}/services/{service_id}/delete', function($package_id, $service_id) {
+    $controller = new PackageController();
+    $controller->deleteService($package_id, $service_id);
+});
+
+$router->post('/admin/packages/{package_id}/services/{service_id}/update-price', function($package_id, $service_id) {
+    $controller = new PackageController();
+    $controller->updateServicePrice($package_id, $service_id);
+});
+
+// API - Get package services
+$router->get('/api/package-services/{package_id}', function($package_id) {
+    $controller = new PackageController();
+    $controller->getServicesJson($package_id);
 });
 
 return $router;

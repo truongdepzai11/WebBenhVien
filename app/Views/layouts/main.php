@@ -103,6 +103,11 @@
                             <span>QL Chuyên khoa</span>
                         </a>
                         
+                        <a href="<?= APP_URL ?>/admin/packages" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg <?= (strpos($_SERVER['REQUEST_URI'], '/admin/packages') !== false) ? 'active' : '' ?>">
+                            <i class="fas fa-box-open w-5"></i>
+                            <span>QL Gói khám</span>
+                        </a>
+                        
                         <a href="<?= APP_URL ?>/admin/users" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg <?= (strpos($_SERVER['REQUEST_URI'], '/admin/users') !== false) ? 'active' : '' ?>">
                             <i class="fas fa-users-cog w-5"></i>
                             <span>QL Users</span>
@@ -126,6 +131,11 @@
                             <span>Bác sĩ</span>
                         </a>
                         <?php endif; ?>
+                        
+                        <a href="<?= APP_URL ?>/packages" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg <?= (strpos($_SERVER['REQUEST_URI'], '/packages') !== false && strpos($_SERVER['REQUEST_URI'], '/admin') === false) ? 'active' : '' ?>">
+                            <i class="fas fa-box-open w-5"></i>
+                            <span>Gói khám</span>
+                        </a>
                         
                         <a href="<?= APP_URL ?>/appointments" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg <?= (strpos($_SERVER['REQUEST_URI'], '/appointments') !== false) ? 'active' : '' ?>">
                             <i class="fas fa-calendar-check w-5"></i>
