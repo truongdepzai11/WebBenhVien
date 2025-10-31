@@ -1,40 +1,61 @@
 <?php 
-$page_title = 'Thêm Bệnh nhân Walk-in';
+$page_title = 'Đăng ký Gói khám Walk-in';
 ob_start(); 
 ?>
 
-<div class="max-w-2xl mx-auto">
+<div class="max-w-3xl mx-auto">
     <div class="mb-6">
-        <a href="<?= APP_URL ?>/schedule?doctor_id=<?= $doctor['id'] ?>&date=<?= $date ?>" class="text-purple-600 hover:text-purple-700">
-            <i class="fas fa-arrow-left mr-2"></i>Quay lại lịch làm việc
+        <a href="<?= APP_URL ?>/schedule/select-type" class="text-purple-600 hover:text-purple-700">
+            <i class="fas fa-arrow-left mr-2"></i>Quay lại chọn loại khám
         </a>
     </div>
 
     <div class="bg-white rounded-lg shadow-md p-8">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6">
-            <i class="fas fa-user-plus mr-2"></i>Thêm Bệnh nhân Walk-in
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-box-open mr-2"></i>Đăng ký Gói khám Walk-in
         </h2>
+        <p class="text-gray-600 mb-6">Đăng ký gói khám sức khỏe cho bệnh nhân tại quầy</p>
 
-        <!-- Thông tin slot -->
-        <div class="bg-purple-50 p-6 rounded-lg mb-6">
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <p class="text-sm text-gray-600">Bác sĩ</p>
-                    <p class="font-bold text-gray-900"><?= htmlspecialchars($doctor['full_name']) ?></p>
-                    <p class="text-sm text-gray-500"><?= htmlspecialchars($doctor['specialization']) ?></p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600">Thời gian</p>
-                    <p class="font-bold text-gray-900"><?= date('d/m/Y', strtotime($date)) ?></p>
-                    <p class="text-sm text-gray-500"><?= date('H:i', strtotime($time)) ?></p>
+        <form method="POST" action="<?= APP_URL ?>/schedule/store-package-walkin">
+            <!-- Chọn gói khám -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Chọn gói khám <span class="text-red-500">*</span>
+                </label>
+                <select name="package_id" id="packageSelect" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        onchange="loadPackageInfo(this.value)">
+                    <option value="">-- Chọn gói khám --</option>
+                    <?php
+                    // Lấy danh sách gói khám
+                    require_once APP_PATH . '/Models/HealthPackage.php';
+                    $packageModel = new HealthPackage();
+                    $packages = $packageModel->getAllActive();
+                    foreach ($packages as $pkg):
+                    ?>
+                    <option value="<?= $pkg['id'] ?>" 
+                            data-name="<?= htmlspecialchars($pkg['name']) ?>"
+                            data-price="<?= $pkg['price'] ?>">
+                        <?= htmlspecialchars($pkg['name']) ?> - <?= number_format($pkg['price']) ?> VNĐ
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+                
+                <!-- Thông tin gói -->
+                <div id="packageInfo" class="hidden mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <h4 class="font-semibold text-gray-800 mb-3" id="packageName"></h4>
+                    <div class="text-sm text-gray-600 mb-3">
+                        <p class="font-medium mb-2">Danh sách dịch vụ:</p>
+                        <div id="packageServices" class="space-y-1 ml-4"></div>
+                    </div>
+                    <div class="pt-3 border-t border-purple-200">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-700">Tổng chi phí:</span>
+                            <span class="text-xl font-bold text-purple-600" id="packagePrice">0 đ</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <form method="POST" action="<?= APP_URL ?>/schedule/store-walk-in">
-            <input type="hidden" name="doctor_id" value="<?= $doctor['id'] ?>">
-            <input type="hidden" name="appointment_date" value="<?= $date ?>">
-            <input type="hidden" name="appointment_time" value="<?= $time ?>">
 
             <!-- Chọn loại bệnh nhân -->
             <div class="mb-6">
@@ -65,7 +86,12 @@ ob_start();
                 <select name="patient_id" id="patientSelect"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                     <option value="">-- Chọn bệnh nhân --</option>
-                    <?php foreach ($patients as $patient): ?>
+                    <?php
+                    require_once APP_PATH . '/Models/Patient.php';
+                    $patientModel = new Patient();
+                    $patients = $patientModel->getAll();
+                    foreach ($patients as $patient):
+                    ?>
                     <option value="<?= $patient['id'] ?>">
                         <?= htmlspecialchars($patient['full_name']) ?> 
                         (<?= htmlspecialchars($patient['patient_code']) ?>) - 
@@ -99,15 +125,6 @@ ob_start();
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Email
-                        </label>
-                        <input type="email" name="new_patient_email" id="newPatientEmail"
-                               placeholder="example@gmail.com (không bắt buộc)"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                        <p class="text-xs text-gray-500 mt-1">Nếu có email, bệnh nhân có thể đăng nhập sau</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
                             Số điện thoại <span class="text-red-500">*</span>
                         </label>
                         <input type="tel" name="new_patient_phone" id="newPatientPhone"
@@ -125,7 +142,7 @@ ob_start();
                             <option value="other">Khác</option>
                         </select>
                     </div>
-                    <div>
+                    <div class="col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Địa chỉ <span class="text-red-500">*</span>
                         </label>
@@ -136,35 +153,37 @@ ob_start();
                 </div>
             </div>
 
+            <!-- Ngày khám -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Ngày khám dự kiến <span class="text-red-500">*</span>
+                </label>
+                <input type="date" name="appointment_date" required
+                       min="<?= date('Y-m-d') ?>"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                <p class="text-xs text-gray-500 mt-1">Ngày bắt đầu thực hiện các dịch vụ trong gói</p>
+            </div>
+
             <!-- Lý do khám -->
             <div class="mb-6">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Lý do khám <span class="text-red-500">*</span>
+                    Lý do khám / Ghi chú
                 </label>
-                <input type="text" name="reason" required placeholder="Ví dụ: Khám tổng quát, Đau đầu..."
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-            </div>
-
-            <!-- Triệu chứng -->
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Triệu chứng
-                </label>
-                <textarea name="symptoms" rows="3" placeholder="Mô tả triệu chứng của bệnh nhân..."
+                <textarea name="reason" rows="3" placeholder="Ghi chú thêm về tình trạng sức khỏe..."
                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"></textarea>
             </div>
 
             <!-- Ghi chú -->
-            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+            <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
                 <div class="flex items-start">
-                    <i class="fas fa-info-circle text-blue-500 text-xl mr-3 mt-1"></i>
+                    <i class="fas fa-info-circle text-green-500 text-xl mr-3 mt-1"></i>
                     <div>
-                        <p class="font-semibold text-blue-800 mb-1">Lưu ý về Walk-in:</p>
-                        <ul class="text-sm text-blue-700 space-y-1">
+                        <p class="font-semibold text-green-800 mb-1">Lưu ý về Gói khám Walk-in:</p>
+                        <ul class="text-sm text-green-700 space-y-1">
                             <li>• Lịch hẹn sẽ tự động được <strong>xác nhận</strong></li>
-                            <li id="feeNote">• Phí khám: <strong><?= number_format($doctor['consultation_fee']) ?> VNĐ</strong></li>
-                            <li>• Sau khám, vui lòng tạo hóa đơn cho bệnh nhân</li>
-                            <li id="packageNote" class="hidden">• Với gói khám: Bác sĩ sẽ được phân công cho từng dịch vụ sau</li>
+                            <li>• Bác sĩ sẽ được <strong>phân công</strong> cho từng dịch vụ sau</li>
+                            <li>• Bệnh nhân có thể thực hiện các dịch vụ trong nhiều ngày</li>
+                            <li>• Sau đăng ký, vui lòng tạo hóa đơn cho bệnh nhân</li>
                         </ul>
                     </div>
                 </div>
@@ -172,13 +191,13 @@ ob_start();
 
             <!-- Actions -->
             <div class="flex space-x-4">
-                <a href="<?= APP_URL ?>/schedule?doctor_id=<?= $doctor['id'] ?>&date=<?= $date ?>" 
+                <a href="<?= APP_URL ?>/schedule/select-type" 
                    class="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-center">
                     Hủy
                 </a>
                 <button type="submit" 
                         class="flex-1 px-6 py-3 gradient-bg text-white rounded-lg hover:opacity-90 transition">
-                    <i class="fas fa-check mr-2"></i>Xác nhận thêm
+                    <i class="fas fa-check mr-2"></i>Xác nhận đăng ký
                 </button>
             </div>
         </form>
@@ -186,51 +205,6 @@ ob_start();
 </div>
 
 <script>
-// Toggle loại khám (Thường / Gói)
-function toggleAppointmentType() {
-    const appointmentType = document.querySelector('input[name="appointment_type"]:checked').value;
-    const packageSelection = document.getElementById('packageSelection');
-    const patientTypeSelection = document.getElementById('patientTypeSelection');
-    const packageSelect = document.getElementById('packageSelect');
-    const patientSelect = document.getElementById('patientSelect');
-    const feeNote = document.getElementById('feeNote');
-    const packageNote = document.getElementById('packageNote');
-    
-    console.log('Toggle appointment type:', appointmentType);
-    console.log('patientTypeSelection element:', patientTypeSelection);
-    
-    if (appointmentType === 'package') {
-        // Hiện: Chọn gói
-        packageSelection.classList.remove('hidden');
-        packageSelect.required = true;
-        
-        // ẨN: Chọn loại bệnh nhân (cũ/mới) + Chọn bệnh nhân
-        patientTypeSelection.classList.add('hidden');
-        if (patientSelect) patientSelect.required = false;
-        
-        // Update note
-        if (feeNote) feeNote.classList.add('hidden');
-        if (packageNote) packageNote.classList.remove('hidden');
-        
-        console.log('→ Đã ẨN patientTypeSelection');
-    } else {
-        // Ẩn: Chọn gói
-        packageSelection.classList.add('hidden');
-        packageSelect.required = false;
-        document.getElementById('packageInfo').classList.add('hidden');
-        
-        // HIỆN: Chọn loại bệnh nhân
-        patientTypeSelection.classList.remove('hidden');
-        if (patientSelect) patientSelect.required = true;
-        
-        // Update note
-        if (feeNote) feeNote.classList.remove('hidden');
-        if (packageNote) packageNote.classList.add('hidden');
-        
-        console.log('→ Đã HIỆN patientTypeSelection');
-    }
-}
-
 // Load thông tin gói khám
 async function loadPackageInfo(packageId) {
     const packageInfo = document.getElementById('packageInfo');
@@ -261,11 +235,11 @@ async function loadPackageInfo(packageId) {
                 totalPrice += price;
                 
                 const serviceDiv = document.createElement('div');
-                serviceDiv.className = 'flex items-center text-xs';
+                serviceDiv.className = 'flex items-center text-sm';
                 serviceDiv.innerHTML = `
                     <i class="fas fa-check-circle text-green-500 mr-2"></i>
                     <span class="flex-1">${service.service_name}</span>
-                    <span class="text-gray-500">${new Intl.NumberFormat('vi-VN').format(price)} đ</span>
+                    ${service.is_required ? '<span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded ml-2">Bắt buộc</span>' : ''}
                 `;
                 packageServices.appendChild(serviceDiv);
             });
@@ -278,7 +252,6 @@ async function loadPackageInfo(packageId) {
         }
     } catch (error) {
         console.error('Lỗi load gói khám:', error);
-        alert('Không thể tải thông tin gói khám!');
     }
 }
 

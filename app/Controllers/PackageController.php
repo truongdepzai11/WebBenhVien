@@ -14,20 +14,47 @@ class PackageController {
     
     // Danh sách gói khám (Public)
     public function index() {
-        $gender = $_GET['gender'] ?? '';
-        $age = $_GET['age'] ?? '';
-
-        // Lọc gói khám theo điều kiện
-        if ($gender && $age) {
-            $packages = $this->packageModel->getPackagesForPatient($gender, $age);
-        } else {
+        // Kiểm tra user đang login
+        $isLoggedIn = isset($_SESSION['user_id']);
+        $userRole = $_SESSION['role'] ?? null;
+        
+        // Admin/Doctor thấy TẤT CẢ gói
+        if ($isLoggedIn && in_array($userRole, ['admin', 'doctor', 'receptionist'])) {
             $packages = $this->packageModel->getAllActive();
+        } 
+        // Bệnh nhân thấy gói phù hợp với giới tính
+        else if ($isLoggedIn && $userRole === 'patient') {
+            // Lấy thông tin bệnh nhân
+            require_once APP_PATH . '/Models/Patient.php';
+            $patientModel = new Patient();
+            $patient = $patientModel->findByUserId($_SESSION['user_id']);
+            
+            if ($patient) {
+                $gender = $patient['gender'];
+                $age = date('Y') - date('Y', strtotime($patient['date_of_birth']));
+                $packages = $this->packageModel->getPackagesForPatient($gender, $age);
+            } else {
+                $packages = $this->packageModel->getAllActive();
+            }
+        }
+        // Guest: Lọc theo query params hoặc hiện tất cả
+        else {
+            $gender = $_GET['gender'] ?? '';
+            $age = $_GET['age'] ?? '';
+            
+            if ($gender && $age) {
+                $packages = $this->packageModel->getPackagesForPatient($gender, $age);
+            } else {
+                $packages = $this->packageModel->getAllActive();
+            }
         }
 
         // Lấy danh sách dịch vụ cho mỗi gói
         foreach ($packages as &$package) {
             $package['services'] = $this->packageModel->getServices($package['id']);
         }
+        // Quan trọng: giải phóng tham chiếu để tránh leak tham chiếu khi render View
+        unset($package);
 
         require_once APP_PATH . '/Views/packages/index.php';
     }

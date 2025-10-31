@@ -142,8 +142,8 @@ ob_start();
             <?php endif; ?>
             </div>
 
-            <!-- Chọn bác sĩ (chỉ cho khám thường) -->
-            <div id="doctor_selection">
+            <!-- Chọn bác sĩ (CHỈ cho khám thường, ẨN khi đặt gói) -->
+            <div id="doctor_selection" style="display: <?= empty($selected_package) ? 'block' : 'none' ?>">
                 <label for="doctor_id" class="block text-sm font-medium text-gray-700 mb-2">
                     <i class="fas fa-user-md mr-2"></i>Chọn bác sĩ <span id="doctor_required_label">*</span>
                 </label>
@@ -202,12 +202,12 @@ ob_start();
                 </p>
             </div>
 
-            <!-- Giờ khám -->
-            <div>
+            <!-- Giờ khám (CHỈ cho khám thường, ẨN khi đặt gói) -->
+            <div id="time_selection" style="display: <?= empty($selected_package) ? 'block' : 'none' ?>">
                 <label for="appointment_time" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-clock mr-2"></i>Giờ khám *
+                    <i class="fas fa-clock mr-2"></i>Giờ khám <span id="time_required_label">*</span>
                 </label>
-                <select id="appointment_time" name="appointment_time" required
+                <select id="appointment_time" name="appointment_time"
                         onchange="validateDateTime()"
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
                     <option value="">-- Chọn giờ --</option>
@@ -227,6 +227,9 @@ ob_start();
                     <option value="16:00:00">16:00</option>
                     <option value="16:30:00">16:30</option>
                 </select>
+                <p class="text-xs text-gray-500 mt-1">
+                    <i class="fas fa-info-circle"></i> Giờ khám sẽ được sắp xếp bởi lễ tân khi đặt gói
+                </p>
             </div>
 
             <!-- Lý do khám -->
@@ -284,29 +287,43 @@ ob_start();
 function toggleAppointmentType(type) {
     const packageSelection = document.getElementById('package_selection');
     const specializationSelection = document.getElementById('specialization_selection');
+    const doctorSelection = document.getElementById('doctor_selection');
+    const timeSelection = document.getElementById('time_selection');
     const packageIdInput = document.getElementById('package_id');
     const doctorSelect = document.getElementById('doctor_id');
-    const doctorLabel = document.getElementById('doctor_note_text');
-    const doctorRequired = document.getElementById('doctor_required_label');
+    const timeSelect = document.getElementById('appointment_time');
+    const timeRequired = document.getElementById('time_required_label');
     
     if (type === 'package') {
+        // Hiện: Chọn gói
         packageSelection.style.display = 'block';
-        specializationSelection.style.display = 'none';
         
-        // Thay đổi label bác sĩ
-        doctorLabel.textContent = 'Bác sĩ điều phối chính (tùy chọn). Bác sĩ cho từng dịch vụ sẽ được phân công sau.';
-        doctorRequired.style.display = 'none';
+        // Ẩn: Chuyên khoa, Bác sĩ, Giờ khám
+        specializationSelection.style.display = 'none';
+        doctorSelection.style.display = 'none';
+        timeSelection.style.display = 'none';
+        
+        // Bỏ required
         doctorSelect.removeAttribute('required');
+        timeSelect.removeAttribute('required');
+        
+        // Reset giá trị
+        doctorSelect.value = '';
+        timeSelect.value = '';
     } else {
+        // Ẩn: Chọn gói
         packageSelection.style.display = 'none';
-        specializationSelection.style.display = 'block';
         packageIdInput.value = '';
         document.getElementById('package_info').style.display = 'none';
         
-        // Khôi phục label bác sĩ
-        doctorLabel.textContent = 'Chọn bác sĩ khám chính';
-        doctorRequired.style.display = 'inline';
+        // Hiện: Chuyên khoa, Bác sĩ, Giờ khám
+        specializationSelection.style.display = 'block';
+        doctorSelection.style.display = 'block';
+        timeSelection.style.display = 'block';
+        
+        // Thêm required
         doctorSelect.setAttribute('required', 'required');
+        timeSelect.setAttribute('required', 'required');
     }
 }
 

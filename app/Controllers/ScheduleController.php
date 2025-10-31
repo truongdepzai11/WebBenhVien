@@ -230,4 +230,80 @@ class ScheduleController {
             exit;
         }
     }
+
+    // Lưu đăng ký gói khám walk-in
+    public function storePackageWalkin() {
+        Auth::requireLogin();
+        
+        // Chỉ cho phép Receptionist
+        if (!Auth::isReceptionist()) {
+            $_SESSION['error'] = 'Bạn không có quyền thực hiện chức năng này';
+            header('Location: ' . APP_URL . '/dashboard');
+            exit;
+        }
+
+        require_once APP_PATH . '/Models/Patient.php';
+        require_once APP_PATH . '/Models/PackageAppointment.php';
+        require_once APP_PATH . '/Models/User.php';
+
+        $patientModel = new Patient();
+        $packageAppointmentModel = new PackageAppointment();
+        $userModel = new User();
+
+        // Xử lý bệnh nhân
+        $patientId = null;
+        if ($_POST['patient_type_pkg'] == 'existing') {
+            // Bệnh nhân cũ
+            $patientId = $_POST['patient_id'];
+        } else {
+            // Bệnh nhân mới - Tạo user account trước
+            $timestamp = date('YmdHis');
+            $userModel->username = 'patient_' . $timestamp; // Username tự động
+            $userModel->full_name = $_POST['new_patient_name'];
+            $userModel->email = 'patient_' . $timestamp . '@temp.com'; // Email tạm
+            $userModel->phone = $_POST['new_patient_phone'];
+            $userModel->password = password_hash('123456', PASSWORD_DEFAULT); // Mật khẩu mặc định
+            $userModel->role = 'patient';
+            $userModel->is_active = 1;
+            
+            if (!$userModel->create()) {
+                $_SESSION['error'] = 'Tạo tài khoản bệnh nhân thất bại';
+                header('Location: ' . APP_URL . '/schedule');
+                exit;
+            }
+            
+            // Tạo patient record
+            $patientModel->user_id = $userModel->id;
+            $patientModel->patient_code = 'BN' . date('YmdHis');
+            $patientModel->date_of_birth = $_POST['new_patient_dob'];
+            $patientModel->gender = $_POST['new_patient_gender'];
+            $patientModel->address = $_POST['new_patient_address'];
+            
+            if ($patientModel->create()) {
+                $patientId = $patientModel->id;
+            } else {
+                $_SESSION['error'] = 'Tạo hồ sơ bệnh nhân thất bại';
+                header('Location: ' . APP_URL . '/schedule');
+                exit;
+            }
+        }
+
+        // Tạo đăng ký gói khám
+        $packageAppointmentModel->patient_id = $patientId;
+        $packageAppointmentModel->package_id = $_POST['package_id'];
+        $packageAppointmentModel->appointment_date = $_POST['appointment_date'];
+        $packageAppointmentModel->status = 'scheduled';
+        $packageAppointmentModel->notes = $_POST['reason'] ?? '';
+        $packageAppointmentModel->created_by = Auth::id();
+
+        if ($packageAppointmentModel->create()) {
+            $_SESSION['success'] = 'Đăng ký gói khám Walk-in thành công';
+            header('Location: ' . APP_URL . '/schedule');
+            exit;
+        } else {
+            $_SESSION['error'] = 'Đăng ký gói khám thất bại';
+            header('Location: ' . APP_URL . '/schedule');
+            exit;
+        }
+    }
 }

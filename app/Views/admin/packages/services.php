@@ -194,8 +194,9 @@ $categoryNames = [
                                         <?php endif; ?>
                                     </div>
                                     
-                                    <!-- Giá dịch vụ - Có thể sửa inline -->
-                                    <div class="flex items-center gap-2 mt-2">
+                                    <!-- Giá dịch vụ & Bắt buộc - Có thể sửa inline -->
+                                    <div class="flex items-center gap-4 mt-2">
+                                        <!-- Sửa giá -->
                                         <form action="<?= APP_URL ?>/admin/packages/<?= $package['id'] ?>/services/<?= $service['id'] ?>/update-price" 
                                               method="POST" class="flex items-center gap-2">
                                             <label class="text-sm text-gray-600">Giá:</label>
@@ -205,6 +206,18 @@ $categoryNames = [
                                                    class="w-32 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-purple-500"
                                                    onchange="this.form.submit()">
                                             <span class="text-sm text-gray-600">đ</span>
+                                        </form>
+                                        
+                                        <!-- Toggle bắt buộc -->
+                                        <form action="<?= APP_URL ?>/admin/packages/<?= $package['id'] ?>/services/<?= $service['id'] ?>/toggle-required" 
+                                              method="POST" class="flex items-center gap-2">
+                                            <label class="flex items-center cursor-pointer">
+                                                <input type="checkbox" name="is_required" value="1" 
+                                                       <?= $service['is_required'] ? 'checked' : '' ?>
+                                                       onchange="this.form.submit()"
+                                                       class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                                                <span class="ml-2 text-sm text-gray-600">Bắt buộc</span>
+                                            </label>
                                         </form>
                                     </div>
                                     

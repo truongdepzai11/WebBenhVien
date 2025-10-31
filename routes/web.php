@@ -314,6 +314,11 @@ $router->post('/schedule/store-walk-in', function() {
     $controller->storeWalkIn();
 });
 
+$router->post('/schedule/store-package-walkin', function() {
+    $controller = new ScheduleController();
+    $controller->storePackageWalkin();
+});
+
 // ==================== INVOICE ROUTES ====================
 $router->get('/invoices', function() {
     $controller = new InvoiceController();

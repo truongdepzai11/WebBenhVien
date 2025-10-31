@@ -124,10 +124,17 @@ ob_start();
                        class="flex-1 text-center px-4 py-2 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition">
                         <i class="fas fa-info-circle mr-2"></i>Chi tiết
                     </a>
+                    
+                    <?php 
+                    // Chỉ bệnh nhân mới được đặt lịch
+                    $userRole = $_SESSION['role'] ?? null;
+                    if ($userRole === 'patient' || !isset($_SESSION['user_id'])): 
+                    ?>
                     <a href="<?= APP_URL ?>/appointments/create?package_id=<?= $package['id'] ?>" 
                        class="flex-1 text-center px-4 py-2 gradient-bg text-white rounded-lg hover:opacity-90 transition">
                         <i class="fas fa-calendar-plus mr-2"></i>Đặt lịch
                     </a>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

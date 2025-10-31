@@ -27,13 +27,62 @@ ob_start();
     <?php endif; ?>
 </div>
 
+<!-- WRAPPER CHO RECEPTIONIST -->
+<?php if (Auth::isReceptionist()): ?>
+<!-- CHỌN LOẠI KHÁM -->
+<div id="appointmentTypeSelector" class="mb-6 bg-white rounded-lg shadow-md p-6">
+    <label class="block text-lg font-medium text-gray-700 mb-4">
+        Chọn loại khám <span class="text-red-500">*</span>
+    </label>
+    
+    <div class="grid grid-cols-2 gap-4">
+    <!-- Khám thường -->
+    <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-purple-500 transition cursor-pointer"
+         onclick="selectAppointmentType('regular')" id="regularCard">
+        <label class="flex items-start cursor-pointer">
+            <input type="radio" name="walkin_type" value="regular" id="typeRegular"
+                   onchange="selectAppointmentType('regular')"
+                   class="mt-1 mr-3 w-5 h-5 text-purple-600">
+            <div class="flex-1">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-stethoscope text-blue-600 text-xl mr-2"></i>
+                    <h3 class="text-lg font-bold text-gray-800">Khám thường</h3>
+                </div>
+                <p class="text-sm text-gray-600">
+                    Đăng ký khám bệnh với bác sĩ chuyên khoa
+                </p>
+            </div>
+        </label>
+    </div>
+
+    <!-- Khám theo gói -->
+    <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-purple-500 transition cursor-pointer"
+         onclick="selectAppointmentType('package')" id="packageCard">
+        <label class="flex items-start cursor-pointer">
+            <input type="radio" name="walkin_type" value="package" id="typePackage"
+                   onchange="selectAppointmentType('package')"
+                   class="mt-1 mr-3 w-5 h-5 text-purple-600">
+            <div class="flex-1">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-box-open text-green-600 text-xl mr-2"></i>
+                    <h3 class="text-lg font-bold text-gray-800">Khám theo gói</h3>
+                </div>
+                <p class="text-sm text-gray-600">
+                    Đăng ký gói khám sức khỏe tổng quát
+                </p>
+            </div>
+        </label>
+    </div>
+</div>
+</div>
+<!-- End appointmentTypeSelector -->
+<?php endif; ?>
+
+<!-- LỊCH BÁC SĨ -->
+<div id="scheduleSection" class="<?= Auth::isReceptionist() ? 'hidden' : '' ?>">
+
 <?php 
-// Receptionist luôn xem daily view (walk-in form)
-if (Auth::isReceptionist()) {
-    $viewMode = 'day';
-} else {
-    $viewMode = $_GET['view'] ?? 'week';
-}
+$viewMode = $_GET['view'] ?? 'week';
 ?>
 
 <?php if ($viewMode == 'week' && !Auth::isReceptionist()): ?>
@@ -389,6 +438,363 @@ for ($i = 0; $i < 7; $i++) {
 </div>
 <?php endif; ?> <!-- End selectedDoctor check -->
 <?php endif; ?> <!-- End view mode check -->
+
+    </div>
+    <!-- End scheduleSection -->
+
+<!-- FORM ĐĂNG KÝ GÓI (CHỈ CHO RECEPTIONIST) -->
+<?php if (Auth::isReceptionist()): ?>
+<div id="packageSection" class="hidden">
+    <div class="max-w-3xl mx-auto">
+        <div class="bg-white rounded-lg shadow-md p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-box-open mr-2"></i>Đăng ký Gói khám Walk-in
+            </h2>
+            <p class="text-gray-600 mb-6">Đăng ký gói khám sức khỏe cho bệnh nhân tại quầy</p>
+
+            <form method="POST" action="<?= APP_URL ?>/schedule/store-package-walkin">
+                <!-- Chọn loại bệnh nhân (ĐẦU TIÊN) -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Loại bệnh nhân <span class="text-red-500">*</span>
+                    </label>
+                    <div class="flex space-x-4">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="radio" name="patient_type_pkg" value="existing" checked
+                                   onchange="togglePatientFormPkg()"
+                                   class="mr-2">
+                            <span>Bệnh nhân cũ (đã có hồ sơ)</span>
+                        </label>
+                        <label class="flex items-center cursor-pointer">
+                            <input type="radio" name="patient_type_pkg" value="new"
+                                   onchange="togglePatientFormPkg()"
+                                   class="mr-2">
+                            <span>Bệnh nhân mới (lần đầu khám)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Form chọn bệnh nhân cũ -->
+                <div id="existingPatientFormPkg" class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Chọn bệnh nhân <span class="text-red-500">*</span>
+                    </label>
+                    <select name="patient_id" id="patientSelectPkg"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        <option value="">-- Chọn bệnh nhân --</option>
+                        <?php
+                        require_once APP_PATH . '/Models/Patient.php';
+                        $ptModel = new Patient();
+                        $pts = $ptModel->getAll();
+                        foreach ($pts as $pt):
+                        ?>
+                        <option value="<?= $pt['id'] ?>">
+                            <?= htmlspecialchars($pt['full_name']) ?> (<?= $pt['patient_code'] ?>)
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <!-- Form tạo bệnh nhân mới -->
+                <div id="newPatientFormPkg" class="hidden mb-6 p-6 bg-blue-50 rounded-lg border-2 border-blue-200">
+                    <h3 class="font-bold text-gray-800 mb-4">
+                        <i class="fas fa-user-plus mr-2"></i>Thông tin bệnh nhân mới
+                    </h3>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Họ tên <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="new_patient_name" id="newPatientNamePkg"
+                                   placeholder="Nguyễn Văn A"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Ngày sinh <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" name="new_patient_dob" id="newPatientDobPkg"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Số điện thoại <span class="text-red-500">*</span>
+                            </label>
+                            <input type="tel" name="new_patient_phone" id="newPatientPhonePkg"
+                                   placeholder="0912345678"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Giới tính <span class="text-red-500">*</span>
+                            </label>
+                            <select name="new_patient_gender" id="newPatientGenderPkg"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <option value="male">Nam</option>
+                                <option value="female">Nữ</option>
+                                <option value="other">Khác</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Địa chỉ <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="new_patient_address" id="newPatientAddressPkg"
+                                   placeholder="123 Đường ABC, Quận 1, TP.HCM"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chọn gói khám (SAU KHI ĐÃ CHỌN BỆNH NHÂN) -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Chọn gói khám <span class="text-red-500">*</span>
+                    </label>
+                    <select name="package_id" id="packageSelectWalkin" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                            onchange="loadPackageInfoWalkin(this.value)">
+                        <option value="">-- Chọn gói khám --</option>
+                        <?php
+                        require_once APP_PATH . '/Models/HealthPackage.php';
+                        
+                        $pkgModel = new HealthPackage();
+                        $pkgs = $pkgModel->getAllActive();
+                        
+                        // Tạo kết nối riêng để tính giá (Database đã được load trong public/index.php)
+                        $database = new Database();
+                        $conn = $database->getConnection();
+                        
+                        foreach ($pkgs as $p):
+                            // Tính giá từ tổng dịch vụ
+                            $query = "SELECT SUM(service_price) as total_price FROM package_services WHERE package_id = :package_id";
+                            $stmt = $conn->prepare($query);
+                            $stmt->bindParam(':package_id', $p['id']);
+                            $stmt->execute();
+                            $priceData = $stmt->fetch(PDO::FETCH_ASSOC);
+                            $totalPrice = $priceData['total_price'] ?? 0;
+                            
+                            $genderReq = $p['gender_requirement'] ?? 'both';
+                        ?>
+                        <option value="<?= $p['id'] ?>" 
+                                data-gender="<?= $genderReq ?>"
+                                data-price="<?= $totalPrice ?>">
+                            <?= htmlspecialchars($p['name']) ?> - <?= number_format($totalPrice) ?> VNĐ
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                    
+                    <div id="packageInfoWalkin" class="hidden mt-4 p-4 bg-purple-50 rounded-lg">
+                        <h4 class="font-semibold mb-2" id="packageNameWalkin"></h4>
+                        <div id="packageServicesWalkin" class="text-sm"></div>
+                        <div class="mt-3 pt-3 border-t">
+                            <span class="font-bold text-purple-600" id="packagePriceWalkin">0 đ</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ngày khám -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Ngày khám dự kiến <span class="text-red-500">*</span>
+                    </label>
+                    <input type="date" name="appointment_date" required min="<?= date('Y-m-d') ?>"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                </div>
+
+                <!-- Lý do -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Lý do khám / Ghi chú</label>
+                    <textarea name="reason" rows="3"
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"></textarea>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex space-x-4">
+                    <button type="button" onclick="selectAppointmentType('regular')"
+                            class="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-center">
+                        Hủy
+                    </button>
+                    <button type="submit" 
+                            class="flex-1 px-6 py-3 gradient-bg text-white rounded-lg hover:opacity-90 transition">
+                        <i class="fas fa-check mr-2"></i>Xác nhận đăng ký
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    </div>
+    <!-- End packageSection -->
+<?php endif; ?>
+
+<script>
+function selectAppointmentType(type) {
+    const regularCard = document.getElementById('regularCard');
+    const packageCard = document.getElementById('packageCard');
+    const scheduleSection = document.getElementById('scheduleSection');
+    const packageSection = document.getElementById('packageSection');
+    const typeRegular = document.getElementById('typeRegular');
+    const typePackage = document.getElementById('typePackage');
+    
+    // Reset borders
+    regularCard.classList.remove('border-purple-500', 'bg-purple-50');
+    packageCard.classList.remove('border-purple-500', 'bg-purple-50');
+    regularCard.classList.add('border-gray-200');
+    packageCard.classList.add('border-gray-200');
+    
+    if (type === 'regular') {
+        // Check radio
+        typeRegular.checked = true;
+        
+        // Highlight card
+        regularCard.classList.remove('border-gray-200');
+        regularCard.classList.add('border-purple-500', 'bg-purple-50');
+        
+        // Show schedule, hide package
+        scheduleSection.classList.remove('hidden');
+        packageSection.classList.add('hidden');
+    } else {
+        // Check radio
+        typePackage.checked = true;
+        
+        // Highlight card
+        packageCard.classList.remove('border-gray-200');
+        packageCard.classList.add('border-purple-500', 'bg-purple-50');
+        
+        // Hide schedule, show package
+        scheduleSection.classList.add('hidden');
+        packageSection.classList.remove('hidden');
+    }
+}
+
+// Load thông tin gói khám cho walk-in
+async function loadPackageInfoWalkin(packageId) {
+    const packageInfo = document.getElementById('packageInfoWalkin');
+    const packageName = document.getElementById('packageNameWalkin');
+    const packageServices = document.getElementById('packageServicesWalkin');
+    const packagePrice = document.getElementById('packagePriceWalkin');
+    
+    if (!packageId) {
+        packageInfo.classList.add('hidden');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`<?= APP_URL ?>/api/package-services/${packageId}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const selectedOption = document.querySelector(`#packageSelectWalkin option[value="${packageId}"]`);
+            packageName.textContent = selectedOption.textContent.split(' - ')[0];
+            
+            packageServices.innerHTML = '';
+            let totalPrice = 0;
+            
+            data.services.forEach(service => {
+                const price = parseInt(service.service_price) || 0;
+                totalPrice += price;
+                
+                const serviceDiv = document.createElement('div');
+                serviceDiv.className = 'flex items-center mb-1';
+                serviceDiv.innerHTML = `
+                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                    <span>${service.service_name}</span>
+                `;
+                packageServices.appendChild(serviceDiv);
+            });
+            
+            packagePrice.textContent = new Intl.NumberFormat('vi-VN').format(totalPrice) + ' đ';
+            packageInfo.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Lỗi load gói khám:', error);
+    }
+}
+
+// Toggle form bệnh nhân (cũ/mới) cho gói khám
+function togglePatientFormPkg() {
+    const patientType = document.querySelector('input[name="patient_type_pkg"]:checked').value;
+    const existingForm = document.getElementById('existingPatientFormPkg');
+    const newForm = document.getElementById('newPatientFormPkg');
+    const patientSelect = document.getElementById('patientSelectPkg');
+    
+    if (patientType === 'existing') {
+        existingForm.classList.remove('hidden');
+        newForm.classList.add('hidden');
+        patientSelect.required = true;
+        
+        // Bỏ required cho form mới
+        document.getElementById('newPatientNamePkg').required = false;
+        document.getElementById('newPatientDobPkg').required = false;
+        document.getElementById('newPatientPhonePkg').required = false;
+        document.getElementById('newPatientAddressPkg').required = false;
+    } else {
+        existingForm.classList.add('hidden');
+        newForm.classList.remove('hidden');
+        patientSelect.required = false;
+        
+        // Thêm required cho form mới
+        document.getElementById('newPatientNamePkg').required = true;
+        document.getElementById('newPatientDobPkg').required = true;
+        document.getElementById('newPatientPhonePkg').required = true;
+        document.getElementById('newPatientAddressPkg').required = true;
+    }
+}
+
+// Lọc gói khám theo giới tính
+function filterPackagesByGender(gender) {
+    const packageSelect = document.getElementById('packageSelectWalkin');
+    const options = packageSelect.querySelectorAll('option');
+    
+    options.forEach(option => {
+        if (option.value === '') return; // Giữ option "-- Chọn gói khám --"
+        
+        const pkgGender = option.dataset.gender;
+        
+        // Hiển thị nếu:
+        // - Gói dành cho cả 2 giới (both)
+        // - Hoặc gói khớp với giới tính đã chọn
+        if (pkgGender === 'both' || pkgGender === gender) {
+            option.style.display = '';
+        } else {
+            option.style.display = 'none';
+        }
+    });
+    
+    // Reset selection nếu option hiện tại bị ẩn
+    const selectedOption = packageSelect.options[packageSelect.selectedIndex];
+    if (selectedOption && selectedOption.style.display === 'none') {
+        packageSelect.value = '';
+        document.getElementById('packageInfoWalkin').classList.add('hidden');
+    }
+}
+
+// Lắng nghe thay đổi giới tính (bệnh nhân mới)
+document.addEventListener('DOMContentLoaded', function() {
+    const genderSelect = document.getElementById('newPatientGenderPkg');
+    if (genderSelect) {
+        genderSelect.addEventListener('change', function() {
+            filterPackagesByGender(this.value);
+        });
+    }
+    
+    // Lắng nghe thay đổi bệnh nhân cũ
+    const patientSelect = document.getElementById('patientSelectPkg');
+    if (patientSelect) {
+        patientSelect.addEventListener('change', function() {
+            if (this.value) {
+                // Lấy giới tính từ option đã chọn
+                const selectedOption = this.options[this.selectedIndex];
+                const patientData = selectedOption.textContent;
+                
+                // TODO: Fetch giới tính từ API hoặc lưu trong data attribute
+                // Tạm thời không lọc cho bệnh nhân cũ
+            }
+        });
+    }
+});
+</script>
 
 <?php 
 $content = ob_get_clean();
