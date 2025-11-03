@@ -12,6 +12,7 @@ class Appointment {
     public $doctor_id;
     public $coordinator_doctor_id;
     public $package_id;
+    public $package_appointment_id;
     public $appointment_type;
     public $total_price;
     public $appointment_date;
@@ -30,8 +31,8 @@ class Appointment {
         $this->appointment_code = $this->generateAppointmentCode();
 
         $query = "INSERT INTO " . $this->table . " 
-                  (appointment_code, patient_id, doctor_id, coordinator_doctor_id, package_id, appointment_type, total_price, appointment_date, appointment_time, reason, status, notes) 
-                  VALUES (:appointment_code, :patient_id, :doctor_id, :coordinator_doctor_id, :package_id, :appointment_type, :total_price, :appointment_date, :appointment_time, :reason, :status, :notes)";
+                  (appointment_code, patient_id, doctor_id, coordinator_doctor_id, package_id, package_appointment_id, appointment_type, total_price, appointment_date, appointment_time, reason, status, notes) 
+                  VALUES (:appointment_code, :patient_id, :doctor_id, :coordinator_doctor_id, :package_id, :package_appointment_id, :appointment_type, :total_price, :appointment_date, :appointment_time, :reason, :status, :notes)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -40,6 +41,7 @@ class Appointment {
         $stmt->bindParam(':doctor_id', $this->doctor_id);
         $stmt->bindParam(':coordinator_doctor_id', $this->coordinator_doctor_id);
         $stmt->bindParam(':package_id', $this->package_id);
+        $stmt->bindParam(':package_appointment_id', $this->package_appointment_id);
         $stmt->bindParam(':appointment_type', $this->appointment_type);
         $stmt->bindParam(':total_price', $this->total_price);
         $stmt->bindParam(':appointment_date', $this->appointment_date);
@@ -90,13 +92,15 @@ class Appointment {
         $query = "SELECT a.*, 
                          p.patient_code, pu.full_name as patient_name, pu.phone as patient_phone,
                          d.doctor_code, du.full_name as doctor_name, d.consultation_fee,
-                         s.name as specialization
+                         s.name as specialization,
+                         hp.name as package_name, hp.price as package_price
                   FROM " . $this->table . " a
                   LEFT JOIN patients p ON a.patient_id = p.id
                   LEFT JOIN users pu ON p.user_id = pu.id
                   LEFT JOIN doctors d ON a.doctor_id = d.id
                   LEFT JOIN users du ON d.user_id = du.id
                   LEFT JOIN specializations s ON d.specialization_id = s.id
+                  LEFT JOIN health_packages hp ON a.package_id = hp.id
                   WHERE a.id = :id LIMIT 1";
 
         $stmt = $this->conn->prepare($query);

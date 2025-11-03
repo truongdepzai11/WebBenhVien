@@ -156,15 +156,23 @@ ob_start();
                         <?php endif; ?>
                         <?php if (!Auth::isDoctor()): ?>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900"><?= htmlspecialchars($apt['doctor_name']) ?></div>
-                            <div class="text-xs text-gray-500"><?= htmlspecialchars($apt['specialization']) ?></div>
+                            <?php if (!empty($apt['doctor_name'])): ?>
+                                <div class="text-sm text-gray-900"><?= htmlspecialchars($apt['doctor_name']) ?></div>
+                                <div class="text-xs text-gray-500"><?= htmlspecialchars($apt['specialization']) ?></div>
+                            <?php else: ?>
+                                <div class="text-sm text-gray-400 italic">Chưa phân công</div>
+                            <?php endif; ?>
                         </td>
                         <?php endif; ?>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                             <?= date('d/m/Y', strtotime($apt['appointment_date'])) ?>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                            <?= date('H:i', strtotime($apt['appointment_time'])) ?>
+                            <?php if (!empty($apt['appointment_time'])): ?>
+                                <?= date('H:i', strtotime($apt['appointment_time'])) ?>
+                            <?php else: ?>
+                                <span class="text-gray-400 italic">Chưa xác định</span>
+                            <?php endif; ?>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <?php if ($isPackageAppointment): ?>

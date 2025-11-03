@@ -12,6 +12,7 @@ class PackageAppointment {
     public $appointment_date;
     public $status;
     public $notes;
+    public $total_price;
     public $created_by;
     public $created_at;
 
@@ -23,9 +24,9 @@ class PackageAppointment {
     // Tạo đăng ký gói khám mới
     public function create() {
         $query = "INSERT INTO " . $this->table . " 
-                  (patient_id, package_id, appointment_date, status, notes, created_by, created_at) 
+                  (patient_id, package_id, appointment_date, status, notes, total_price, created_by, created_at) 
                   VALUES 
-                  (:patient_id, :package_id, :appointment_date, :status, :notes, :created_by, NOW())";
+                  (:patient_id, :package_id, :appointment_date, :status, :notes, :total_price, :created_by, NOW())";
 
         $stmt = $this->conn->prepare($query);
 
@@ -34,6 +35,7 @@ class PackageAppointment {
         $stmt->bindParam(':appointment_date', $this->appointment_date);
         $stmt->bindParam(':status', $this->status);
         $stmt->bindParam(':notes', $this->notes);
+        $stmt->bindParam(':total_price', $this->total_price);
         $stmt->bindParam(':created_by', $this->created_by);
 
         if ($stmt->execute()) {

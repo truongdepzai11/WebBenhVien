@@ -14,7 +14,7 @@ ob_start();
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-gray-800 mb-2">Lịch hẹn #<?= htmlspecialchars($appointment['appointment_code']) ?></h1>
-            <p class="text-gray-600">Ngày khám: <?= date('d/m/Y', strtotime($appointment['appointment_date'])) ?> - <?= date('H:i', strtotime($appointment['appointment_time'])) ?></p>
+            <p class="text-gray-600">Ngày khám: <?= date('d/m/Y', strtotime($appointment['appointment_date'])) ?><?php if (!empty($appointment['appointment_time'])): ?> - <?= date('H:i', strtotime($appointment['appointment_time'])) ?><?php endif; ?></p>
         </div>
             <?php
             $statusColors = [
@@ -52,16 +52,29 @@ ob_start();
             </div>
         </div>
 
-        <!-- Thông tin bác sĩ -->
+        <!-- Thông tin bác sĩ / Gói khám -->
         <div>
-            <h3 class="text-lg font-bold text-gray-800 mb-4">
-                <i class="fas fa-user-md mr-2"></i>Thông tin bác sĩ
-            </h3>
-            <div class="space-y-2 text-gray-700">
-                <p><strong>Bác sĩ:</strong> <?= htmlspecialchars($appointment['doctor_name']) ?></p>
-                <p><strong>Chuyên khoa:</strong> <?= htmlspecialchars($appointment['specialization']) ?></p>
-                <p><strong>Phí khám:</strong> <?= number_format($appointment['consultation_fee']) ?> VNĐ</p>
-            </div>
+            <?php if ($appointment['appointment_type'] === 'package'): ?>
+                <!-- Hiện thông tin gói khám -->
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-box-open mr-2"></i>Thông tin gói khám
+                </h3>
+                <div class="space-y-2 text-gray-700">
+                    <p><strong>Gói khám:</strong> <?= htmlspecialchars($appointment['package_name'] ?? 'Gói khám sức khỏe') ?></p>
+                    <p><strong>Tổng giá trị:</strong> <?= number_format($appointment['total_price']) ?> VNĐ</p>
+                    <p><strong>Trạng thái:</strong> <span class="text-yellow-600">Chờ phân công bác sĩ</span></p>
+                </div>
+            <?php else: ?>
+                <!-- Hiện thông tin bác sĩ -->
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-user-md mr-2"></i>Thông tin bác sĩ
+                </h3>
+                <div class="space-y-2 text-gray-700">
+                    <p><strong>Bác sĩ:</strong> <?= !empty($appointment['doctor_name']) ? htmlspecialchars($appointment['doctor_name']) : '<span class="text-gray-400 italic">Chưa phân công</span>' ?></p>
+                    <p><strong>Chuyên khoa:</strong> <?= !empty($appointment['specialization']) ? htmlspecialchars($appointment['specialization']) : '<span class="text-gray-400 italic">-</span>' ?></p>
+                    <p><strong>Phí khám:</strong> <?= number_format($appointment['consultation_fee']) ?> VNĐ</p>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 
