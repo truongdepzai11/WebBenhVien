@@ -144,4 +144,18 @@ class HealthPackage {
 
         return $stmt->execute();
     }
+
+    // Lấy danh sách dịch vụ trong gói
+    public function getPackageServices($packageId) {
+        $query = "SELECT * 
+                  FROM package_services 
+                  WHERE package_id = :package_id
+                  ORDER BY display_order, service_category, service_name";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':package_id', $packageId);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

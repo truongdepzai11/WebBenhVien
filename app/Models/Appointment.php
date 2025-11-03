@@ -226,4 +226,42 @@ class Appointment {
 
         return $stmt->execute();
     }
+
+    // Lấy appointments theo package_appointment_id
+    public function getByPackageAppointmentId($packageAppointmentId) {
+        $query = "SELECT a.*, 
+                         u.full_name as doctor_name, 
+                         s.name as specialization
+                  FROM " . $this->table . " a
+                  LEFT JOIN doctors d ON a.doctor_id = d.id
+                  LEFT JOIN users u ON d.user_id = u.id
+                  LEFT JOIN specializations s ON d.specialization_id = s.id
+                  WHERE a.package_appointment_id = :package_appointment_id
+                  ORDER BY a.appointment_date, a.appointment_time";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':package_appointment_id', $packageAppointmentId);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Kiểm tra bác sĩ có rảnh không
+    public function isDoctorAvailable($doctorId, $date, $time) {
+        $query = "SELECT COUNT(*) as count 
+                  FROM " . $this->table . " 
+                  WHERE doctor_id = :doctor_id 
+                  AND appointment_date = :date 
+                  AND appointment_time = :time
+                  AND status NOT IN ('cancelled', 'late_cancelled')";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':doctor_id', $doctorId);
+        $stmt->bindParam(':date', $date);
+        $stmt->bindParam(':time', $time);
+        $stmt->execute();
+
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row['count'] == 0; // True nếu không có lịch trùng
+    }
 }

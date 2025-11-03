@@ -137,9 +137,14 @@
                             <span>Gói khám</span>
                         </a>
                         
-                        <a href="<?= APP_URL ?>/appointments" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg <?= (strpos($_SERVER['REQUEST_URI'], '/appointments') !== false) ? 'active' : '' ?>">
+                        <a href="<?= APP_URL ?>/appointments" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg <?= (strpos($_SERVER['REQUEST_URI'], '/appointments') !== false && strpos($_SERVER['REQUEST_URI'], '/package-appointments') === false) ? 'active' : '' ?>">
                             <i class="fas fa-calendar-check w-5"></i>
                             <span>Lịch hẹn</span>
+                        </a>
+                        
+                        <a href="<?= APP_URL ?>/package-appointments" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg <?= (strpos($_SERVER['REQUEST_URI'], '/package-appointments') !== false) ? 'active' : '' ?>">
+                            <i class="fas fa-clipboard-list w-5"></i>
+                            <span>Quản lý Gói khám</span>
                         </a>
 
                         <?php if (Auth::isReceptionist()): ?>

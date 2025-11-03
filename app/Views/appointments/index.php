@@ -1,11 +1,11 @@
 <?php 
-$page_title = 'Quản lý Lịch hẹn';
+$page_title = isset($pageTitle) ? $pageTitle : 'Quản lý Lịch hẹn';
 ob_start(); 
 ?>
 
 <div class="mb-6 flex items-center justify-between">
     <h3 class="text-2xl font-bold text-gray-800">
-        <i class="fas fa-calendar-check mr-2"></i>Quản lý Lịch hẹn
+        <i class="fas fa-calendar-check mr-2"></i><?= $page_title ?>
     </h3>
     <?php if (Auth::isPatient()): ?>
     <a href="<?= APP_URL ?>/appointments/create" 
@@ -17,7 +17,11 @@ ob_start();
 
 <!-- Appointments Table -->
 <div class="bg-white rounded-lg shadow-md overflow-hidden">
-    <?php if (empty($appointments)): ?>
+    <?php 
+    // Kiểm tra có appointments không (bao gồm cả regular và package)
+    $hasAppointments = !empty($appointments) || !empty($regularAppointments) || !empty($packageAppointments);
+    ?>
+    <?php if (!$hasAppointments): ?>
         <div class="p-12 text-center">
             <i class="fas fa-calendar-times text-6xl text-gray-300 mb-4"></i>
             <p class="text-gray-500 text-lg mb-4">Chưa có lịch hẹn nào</p>
@@ -42,14 +46,102 @@ ob_start();
                         <?php endif; ?>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày khám</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giờ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại khám</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lý do</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    <?php foreach ($appointments as $apt): ?>
-                    <tr class="hover:bg-gray-50">
+                    <!-- Hiển thị gói khám trước -->
+                    <?php if (isset($packageAppointments) && !empty($packageAppointments)): ?>
+                        <?php foreach ($packageAppointments as $pkgIndex => $pkg): ?>
+                        <!-- Dòng tổng hợp gói khám (màu vàng) - Click để xem lịch hẹn -->
+                        <tr class="hover:bg-yellow-100 bg-yellow-50" 
+                            onclick="window.location.href='<?= APP_URL ?>/package-appointments/<?= $pkg['id'] ?>/appointments'"
+                            style="cursor: pointer;">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-purple-600 font-bold">#PKG<?= $pkg['id'] ?></span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-user text-purple-600"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium text-gray-900">
+                                            <?= htmlspecialchars($pkg['patient_name']) ?>
+                                        </p>
+                                        <p class="text-sm text-gray-500">
+                                            <?= htmlspecialchars($pkg['patient_code']) ?>
+                                        </p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-box-open text-purple-600 mr-2"></i>
+                                    <span class="text-sm font-medium text-gray-900">Khám theo gói</span>
+                                </div>
+                                <p class="text-sm text-gray-500 mt-1">
+                                    <?= htmlspecialchars($pkg['package_name']) ?>
+                                </p>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <?= date('d/m/Y', strtotime($pkg['appointment_date'])) ?>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                Nhiều dịch vụ
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                                    <i class="fas fa-box-open mr-1"></i>Khám theo gói
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="text-sm text-gray-500"><?= htmlspecialchars($pkg['package_name']) ?></span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <?php
+                                $statusColors = [
+                                    'scheduled' => 'bg-yellow-100 text-yellow-800',
+                                    'in_progress' => 'bg-purple-100 text-purple-800',
+                                    'completed' => 'bg-green-100 text-green-800',
+                                    'cancelled' => 'bg-red-100 text-red-800'
+                                ];
+                                $statusLabels = [
+                                    'scheduled' => 'Chờ khám',
+                                    'in_progress' => 'Đang khám',
+                                    'completed' => 'Hoàn thành',
+                                    'cancelled' => 'Đã hủy'
+                                ];
+                                $colorClass = $statusColors[$pkg['status']] ?? 'bg-gray-100 text-gray-800';
+                                $label = $statusLabels[$pkg['status']] ?? $pkg['status'];
+                                ?>
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full <?= $colorClass ?>">
+                                    <?= $label ?>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <i class="fas fa-arrow-right text-purple-600"></i>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                    
+                    <!-- Hiển thị appointments thường hoặc appointments của gói -->
+                    <?php 
+                    // Nếu đang xem appointments theo package, dùng $appointments
+                    // Nếu đang xem trang thường, dùng $regularAppointments
+                    $displayAppointments = !empty($appointments) ? $appointments : $regularAppointments;
+                    ?>
+                    <?php foreach ($displayAppointments as $apt): ?>
+                    <?php 
+                    // Nếu appointment thuộc gói khám → màu vàng
+                    $isPackageAppointment = !empty($apt['package_appointment_id']);
+                    $rowClass = $isPackageAppointment ? 'bg-yellow-50 hover:bg-yellow-100' : 'hover:bg-gray-50';
+                    ?>
+                    <tr class="<?= $rowClass ?>">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <a href="<?= APP_URL ?>/appointments/<?= $apt['id'] ?>" 
                                class="text-sm font-medium text-purple-600 hover:text-purple-900">
@@ -73,6 +165,17 @@ ob_start();
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                             <?= date('H:i', strtotime($apt['appointment_time'])) ?>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <?php if ($isPackageAppointment): ?>
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                                    <i class="fas fa-box-open mr-1"></i>Khám theo gói
+                                </span>
+                            <?php else: ?>
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    <i class="fas fa-user-md mr-1"></i>Khám thường
+                                </span>
+                            <?php endif; ?>
                         </td>
                         <td class="px-6 py-4">
                             <div class="text-sm text-gray-700 max-w-xs truncate"><?= htmlspecialchars($apt['reason']) ?></div>

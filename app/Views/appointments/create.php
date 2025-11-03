@@ -438,7 +438,10 @@ function validateDateTime() {
     const dateInput = document.getElementById('appointment_date');
     const timeInput = document.getElementById('appointment_time');
     
-    if (!dateInput.value || !timeInput.value) return;
+    // Nếu chưa chọn ngày/giờ, cho phép submit (server sẽ validate)
+    if (!dateInput || !timeInput || !dateInput.value || !timeInput.value) {
+        return true;
+    }
     
     const selectedDate = new Date(dateInput.value + ' ' + timeInput.value);
     const now = new Date();

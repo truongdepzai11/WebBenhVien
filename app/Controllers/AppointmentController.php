@@ -42,6 +42,51 @@ class AppointmentController {
         } else {
             $appointments = $this->appointmentModel->getAll();
         }
+        
+        // Lọc ra chỉ appointments KHÔNG thuộc gói khám
+        // (Appointments thuộc gói sẽ hiện ở /package-appointments)
+        $regularAppointments = array_filter($appointments, function($apt) {
+            return empty($apt['package_appointment_id']);
+        });
+        
+        // Lấy danh sách gói khám (nếu cần hiển thị chung)
+        require_once APP_PATH . '/Models/PackageAppointment.php';
+        $packageAppointmentModel = new PackageAppointment();
+        
+        if ($role === 'patient') {
+            $patient = $this->patientModel->findByUserId(Auth::id());
+            $packageAppointments = $packageAppointmentModel->getByPatientId($patient['id']);
+        } else {
+            $packageAppointments = $packageAppointmentModel->getAll();
+        }
+
+        require_once APP_PATH . '/Views/appointments/index.php';
+    }
+
+    // Danh sách lịch hẹn theo gói khám
+    public function indexByPackage($packageAppointmentId) {
+        Auth::requireLogin();
+
+        // Lấy thông tin gói khám
+        require_once APP_PATH . '/Models/PackageAppointment.php';
+        $packageAppointmentModel = new PackageAppointment();
+        $packageAppointment = $packageAppointmentModel->findById($packageAppointmentId);
+        
+        if (!$packageAppointment) {
+            $_SESSION['error'] = 'Không tìm thấy gói khám';
+            header('Location: ' . APP_URL . '/appointments');
+            exit;
+        }
+
+        // Lấy tất cả appointments của gói này
+        $appointments = $this->appointmentModel->getByPackageAppointmentId($packageAppointmentId);
+        
+        // Không có regularAppointments và packageAppointments
+        $regularAppointments = [];
+        $packageAppointments = [];
+        
+        // Đặt title
+        $pageTitle = 'Lịch hẹn - ' . $packageAppointment['package_name'];
 
         require_once APP_PATH . '/Views/appointments/index.php';
     }
@@ -176,7 +221,21 @@ class AppointmentController {
         
         // Lưu package_id nếu đặt theo gói
         $is_package = !empty($_POST['package_id']);
-        $this->appointmentModel->package_id = $_POST['package_id'] ?? null;
+        
+        // Kiểm tra package_id có tồn tại không
+        if ($is_package) {
+            $package = $this->packageModel->findById($_POST['package_id']);
+            if (!$package) {
+                $_SESSION['error'] = 'Gói khám không tồn tại';
+                $_SESSION['old'] = $_POST;
+                header('Location: ' . APP_URL . '/appointments/create');
+                exit;
+            }
+            $this->appointmentModel->package_id = $_POST['package_id'];
+        } else {
+            $this->appointmentModel->package_id = null;
+        }
+        
         $this->appointmentModel->appointment_type = $is_package ? 'package' : 'regular';
         $this->appointmentModel->total_price = $_POST['total_price'] ?? 0;
         

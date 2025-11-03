@@ -64,6 +64,7 @@ require_once __DIR__ . '/../app/Controllers/ScheduleController.php';
 require_once __DIR__ . '/../app/Controllers/MedicalRecordController.php';
 require_once __DIR__ . '/../app/Controllers/ValidationController.php';
 require_once __DIR__ . '/../app/Controllers/PackageController.php';
+require_once __DIR__ . '/../app/Controllers/PackageAppointmentController.php';
 
 // Home Route (Landing Page)
 $router->get('/', function() {
@@ -481,6 +482,43 @@ $router->post('/admin/packages/{package_id}/services/{service_id}/update-price',
 $router->get('/api/package-services/{package_id}', function($package_id) {
     $controller = new PackageController();
     $controller->getServicesJson($package_id);
+});
+
+// ==================== PACKAGE APPOINTMENT ROUTES ====================
+// Danh sách đăng ký gói khám
+$router->get('/package-appointments', function() {
+    $controller = new PackageAppointmentController();
+    $controller->index();
+});
+
+// Xem lịch hẹn của gói khám (hiện danh sách appointments)
+$router->get('/package-appointments/{id}/appointments', function($id) {
+    $controller = new AppointmentController();
+    $controller->indexByPackage($id);
+});
+
+// Chi tiết đăng ký gói khám
+$router->get('/package-appointments/{id}', function($id) {
+    $controller = new PackageAppointmentController();
+    $controller->show($id);
+});
+
+// Phân công bác sĩ tự động
+$router->post('/package-appointments/{id}/auto-assign', function($id) {
+    $controller = new PackageAppointmentController();
+    $controller->autoAssignDoctors($id);
+});
+
+// Phân công bác sĩ thủ công
+$router->post('/package-appointments/assign-doctor', function() {
+    $controller = new PackageAppointmentController();
+    $controller->assignDoctor();
+});
+
+// Hủy đăng ký gói khám
+$router->post('/package-appointments/{id}/cancel', function($id) {
+    $controller = new PackageAppointmentController();
+    $controller->cancel($id);
 });
 
 return $router;

@@ -46,12 +46,16 @@ class PackageAppointment {
 
     // Lấy tất cả đăng ký gói khám
     public function getAll() {
-        $query = "SELECT pa.*, p.full_name as patient_name, p.patient_code, 
-                         hp.name as package_name, u.full_name as created_by_name
+        $query = "SELECT pa.*, 
+                         u_patient.full_name as patient_name, 
+                         p.patient_code, 
+                         hp.name as package_name, 
+                         u_creator.full_name as created_by_name
                   FROM " . $this->table . " pa
                   LEFT JOIN patients p ON pa.patient_id = p.id
+                  LEFT JOIN users u_patient ON p.user_id = u_patient.id
                   LEFT JOIN health_packages hp ON pa.package_id = hp.id
-                  LEFT JOIN users u ON pa.created_by = u.id
+                  LEFT JOIN users u_creator ON pa.created_by = u_creator.id
                   ORDER BY pa.created_at DESC";
 
         $stmt = $this->conn->prepare($query);
@@ -60,12 +64,37 @@ class PackageAppointment {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Lấy theo patient_id
+    public function getByPatientId($patientId) {
+        $query = "SELECT pa.*, 
+                         u_patient.full_name as patient_name, 
+                         p.patient_code, 
+                         hp.name as package_name, 
+                         u_creator.full_name as created_by_name
+                  FROM " . $this->table . " pa
+                  LEFT JOIN patients p ON pa.patient_id = p.id
+                  LEFT JOIN users u_patient ON p.user_id = u_patient.id
+                  LEFT JOIN health_packages hp ON pa.package_id = hp.id
+                  LEFT JOIN users u_creator ON pa.created_by = u_creator.id
+                  WHERE pa.patient_id = :patient_id
+                  ORDER BY pa.created_at DESC";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':patient_id', $patientId);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     // Lấy theo ID
     public function findById($id) {
-        $query = "SELECT pa.*, p.full_name as patient_name, p.patient_code, 
+        $query = "SELECT pa.*, 
+                         u_patient.full_name as patient_name, 
+                         p.patient_code, 
                          hp.name as package_name
                   FROM " . $this->table . " pa
                   LEFT JOIN patients p ON pa.patient_id = p.id
+                  LEFT JOIN users u_patient ON p.user_id = u_patient.id
                   LEFT JOIN health_packages hp ON pa.package_id = hp.id
                   WHERE pa.id = :id
                   LIMIT 1";
