@@ -329,23 +329,28 @@ class PackageAppointmentController {
 
         $packageAppointment = $this->packageAppointmentModel->findById($packageAppointmentId);
 
-        // Tạo appointment
-        $this->appointmentModel->appointment_code = 'APT' . date('YmdHis') . rand(100, 999);
-        $this->appointmentModel->patient_id = $packageAppointment['patient_id'];
-        $this->appointmentModel->doctor_id = $doctorId;
-        $this->appointmentModel->package_id = $packageAppointment['package_id'];
-        $this->appointmentModel->package_appointment_id = $packageAppointmentId;
-        $this->appointmentModel->appointment_date = $appointmentDate;
-        $this->appointmentModel->appointment_time = $appointmentTime;
-        $this->appointmentModel->appointment_type = 'package';
-        $this->appointmentModel->reason = $_POST['service_name'];
-        $this->appointmentModel->status = 'pending';
-        $this->appointmentModel->notes = 'Phân công thủ công - Gói khám: ' . $packageAppointment['package_name'];
+        // Tìm appointment TỔNG HỢP đã được tạo khi đặt gói
+        $summary = $this->appointmentModel->findSummaryByPackageAppointmentId($packageAppointmentId);
 
-        if ($this->appointmentModel->create()) {
-            $_SESSION['success'] = 'Phân công bác sĩ thành công';
+        if (!$summary) {
+            $_SESSION['error'] = 'Không tìm thấy lịch hẹn tổng hợp của gói để cập nhật.';
+            header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId);
+            exit;
+        }
+
+        // Cập nhật bác sĩ và thời gian CHO LỊCH HẸN TỔNG HỢP (không tạo lịch mới)
+        $updated = $this->appointmentModel->updateFields($summary['id'], [
+            'doctor_id' => $doctorId,
+            'appointment_date' => $appointmentDate,
+            'appointment_time' => $appointmentTime,
+            // Giữ nguyên reason là "Khám theo gói: ..." để không biến thành dịch vụ đơn
+            'status' => 'pending',
+        ]);
+
+        if ($updated) {
+            $_SESSION['success'] = 'Đã phân công bác sĩ cho lịch hẹn của gói.';
         } else {
-            $_SESSION['error'] = 'Phân công bác sĩ thất bại';
+            $_SESSION['error'] = 'Không thể cập nhật lịch hẹn tổng hợp của gói.';
         }
 
         header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId);

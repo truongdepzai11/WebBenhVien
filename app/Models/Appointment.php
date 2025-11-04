@@ -93,7 +93,7 @@ class Appointment {
                          p.patient_code, pu.full_name as patient_name, pu.phone as patient_phone,
                          d.doctor_code, du.full_name as doctor_name, d.consultation_fee,
                          s.name as specialization,
-                         hp.name as package_name, hp.price as package_price
+                         hp.name as package_name
                   FROM " . $this->table . " a
                   LEFT JOIN patients p ON a.patient_id = p.id
                   LEFT JOIN users pu ON p.user_id = pu.id
@@ -108,6 +108,37 @@ class Appointment {
         $stmt->execute();
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // Tìm appointment tổng hợp của gói (được tạo khi đặt gói)
+    public function findSummaryByPackageAppointmentId($packageAppointmentId) {
+        $query = "SELECT * FROM " . $this->table . "
+                  WHERE package_appointment_id = :pkg_id AND appointment_type = 'package'
+                  ORDER BY id ASC LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':pkg_id', $packageAppointmentId);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // Cập nhật một số field cho appointment theo id
+    public function updateFields($id, $data) {
+        $allowed = ['doctor_id','appointment_date','appointment_time','reason','status','notes'];
+        $sets = [];
+        $params = [':id' => $id];
+        foreach ($data as $k => $v) {
+            if (in_array($k, $allowed, true)) {
+                $sets[] = "$k = :$k";
+                $params[":$k"] = $v;
+            }
+        }
+        if (empty($sets)) return false;
+        $query = "UPDATE " . $this->table . " SET " . implode(', ', $sets) . " WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        foreach ($params as $p => $val) {
+            $stmt->bindValue($p, $val);
+        }
+        return $stmt->execute();
     }
 
     // Lấy lịch hẹn theo bệnh nhân

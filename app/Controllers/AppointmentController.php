@@ -43,20 +43,20 @@ class AppointmentController {
             $appointments = $this->appointmentModel->getAll();
         }
         
-        // Lọc appointments:
+        // Lọc appointments để chỉ hiển thị 1 dòng cho gói khám (summary)
         // - Giữ: Khám thường (package_appointment_id = NULL)
-        // - Giữ: Appointment tổng hợp gói khám (package_appointment_id != NULL, doctor_id = NULL)
-        // - Bỏ: Appointment chi tiết gói khám (package_appointment_id != NULL, doctor_id != NULL)
+        // - Giữ: Appointment tổng hợp gói khám (reason bắt đầu bằng 'Khám theo gói')
+        // - Bỏ: Các appointment dịch vụ trong gói (reason không phải 'Khám theo gói')
         $regularAppointments = array_filter($appointments, function($apt) {
             // Khám thường
             if (empty($apt['package_appointment_id'])) {
                 return true;
             }
-            // Appointment tổng hợp gói khám (chưa phân công bác sĩ)
-            if (!empty($apt['package_appointment_id']) && empty($apt['doctor_id'])) {
+            // Appointment tổng hợp gói khám
+            $reason = $apt['reason'] ?? '';
+            if (stripos($reason, 'Khám theo gói') === 0) {
                 return true;
             }
-            // Appointment chi tiết gói khám (đã phân công) → Bỏ
             return false;
         });
         

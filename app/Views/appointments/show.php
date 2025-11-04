@@ -61,7 +61,7 @@ ob_start();
                 </h3>
                 <div class="space-y-2 text-gray-700">
                     <p><strong>Gói khám:</strong> <?= htmlspecialchars($appointment['package_name'] ?? 'Gói khám sức khỏe') ?></p>
-                    <p><strong>Tổng giá trị:</strong> <?= number_format($appointment['total_price']) ?> VNĐ</p>
+                    <p><strong>Tổng giá trị:</strong> <?= isset($appointment['total_price']) ? number_format((float)$appointment['total_price']) . ' VNĐ' : '<span class="text-gray-400">-</span>' ?></p>
                     <p><strong>Trạng thái:</strong> <span class="text-yellow-600">Chờ phân công bác sĩ</span></p>
                 </div>
             <?php else: ?>

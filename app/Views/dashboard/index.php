@@ -134,6 +134,7 @@ ob_start();
                         <?php endif; ?>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ngày khám</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Giờ</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Loại khám</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
                     </tr>
                 </thead>
@@ -145,10 +146,21 @@ ob_start();
                         <td class="px-4 py-3 text-sm text-gray-700"><?= htmlspecialchars($apt['patient_name']) ?></td>
                         <?php endif; ?>
                         <?php if (!Auth::isDoctor()): ?>
-                        <td class="px-4 py-3 text-sm text-gray-700"><?= htmlspecialchars($apt['doctor_name']) ?></td>
+                        <td class="px-4 py-3 text-sm text-gray-700"><?= !empty($apt['doctor_name']) ? htmlspecialchars($apt['doctor_name']) : '<span class="text-gray-400 italic">Chưa phân công</span>' ?></td>
                         <?php endif; ?>
                         <td class="px-4 py-3 text-sm text-gray-700"><?= date('d/m/Y', strtotime($apt['appointment_date'])) ?></td>
-                        <td class="px-4 py-3 text-sm text-gray-700"><?= date('H:i', strtotime($apt['appointment_time'])) ?></td>
+                        <td class="px-4 py-3 text-sm text-gray-700"><?php if (!empty($apt['appointment_time'])): ?><?= date('H:i', strtotime($apt['appointment_time'])) ?><?php else: ?><span class="text-gray-400 italic">Chưa xác định</span><?php endif; ?></td>
+                        <td class="px-4 py-3 text-sm">
+                            <?php if (($apt['appointment_type'] ?? 'regular') === 'package'): ?>
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                                    <i class="fas fa-box-open mr-1"></i>Khám theo gói
+                                </span>
+                            <?php else: ?>
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    <i class="fas fa-user-md mr-1"></i>Khám thường
+                                </span>
+                            <?php endif; ?>
+                        </td>
                         <td class="px-4 py-3 text-sm">
                             <?php
                             $statusColors = [
