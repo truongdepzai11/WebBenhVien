@@ -26,6 +26,17 @@ class Appointment {
         $this->conn = $database->getConnection();
     }
 
+    // Đếm số lịch dịch vụ đã được phân công (có doctor_id) cho gói
+    public function countAssignedByPackageAppointmentId($packageAppointmentId) {
+        $query = "SELECT COUNT(*) AS c FROM " . $this->table . "
+                  WHERE package_appointment_id = :pkg_id AND doctor_id IS NOT NULL";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':pkg_id', $packageAppointmentId);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)($row['c'] ?? 0);
+    }
+
     // Tạo lịch hẹn mới
     public function create() {
         $this->appointment_code = $this->generateAppointmentCode();
@@ -139,6 +150,20 @@ class Appointment {
             $stmt->bindValue($p, $val);
         }
         return $stmt->execute();
+    }
+
+    // Lấy danh sách bác sĩ đã được phân công cho gói (từ các appointment chi tiết)
+    public function getAssignedDoctorsByPackageAppointmentId($packageAppointmentId) {
+        $query = "SELECT du.full_name AS doctor_name, s.name AS specialization
+                  FROM " . $this->table . " a
+                  LEFT JOIN doctors d ON a.doctor_id = d.id
+                  LEFT JOIN users du ON d.user_id = du.id
+                  LEFT JOIN specializations s ON d.specialization_id = s.id
+                  WHERE a.package_appointment_id = :pkg_id AND a.doctor_id IS NOT NULL";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':pkg_id', $packageAppointmentId);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     // Lấy lịch hẹn theo bệnh nhân

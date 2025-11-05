@@ -54,25 +54,33 @@ ob_start();
 
         <!-- Thông tin bác sĩ / Gói khám -->
         <div>
-            <?php if ($appointment['appointment_type'] === 'package'): ?>
-                <!-- Hiện thông tin gói khám -->
+            <?php 
+            // Xác định đây có phải là lịch TỔNG HỢP của gói hay không
+            $reason = $appointment['reason'] ?? '';
+            $isPackageSummary = (
+                ($appointment['appointment_type'] ?? '') === 'package' &&
+                empty($appointment['doctor_id']) &&
+                stripos($reason, 'Khám theo gói') === 0
+            );
+            ?>
+            <?php if ($isPackageSummary): ?>
+                <!-- Thông tin gói khám (lịch tổng hợp) -->
                 <h3 class="text-lg font-bold text-gray-800 mb-4">
                     <i class="fas fa-box-open mr-2"></i>Thông tin gói khám
                 </h3>
                 <div class="space-y-2 text-gray-700">
                     <p><strong>Gói khám:</strong> <?= htmlspecialchars($appointment['package_name'] ?? 'Gói khám sức khỏe') ?></p>
-                    <p><strong>Tổng giá trị:</strong> <?= isset($appointment['total_price']) ? number_format((float)$appointment['total_price']) . ' VNĐ' : '<span class="text-gray-400">-</span>' ?></p>
-                    <p><strong>Trạng thái:</strong> <span class="text-yellow-600">Chờ phân công bác sĩ</span></p>
+                    <p><strong>Tổng giá trị:</strong> <?= isset($appointment['total_price']) && $appointment['total_price'] !== null ? number_format((float)$appointment['total_price']) . ' VNĐ' : '<span class="text-gray-400">-</span>' ?></p>
                 </div>
             <?php else: ?>
-                <!-- Hiện thông tin bác sĩ -->
+                <!-- Thông tin bác sĩ (lịch dịch vụ trong gói hoặc khám thường) -->
                 <h3 class="text-lg font-bold text-gray-800 mb-4">
                     <i class="fas fa-user-md mr-2"></i>Thông tin bác sĩ
                 </h3>
                 <div class="space-y-2 text-gray-700">
                     <p><strong>Bác sĩ:</strong> <?= !empty($appointment['doctor_name']) ? htmlspecialchars($appointment['doctor_name']) : '<span class="text-gray-400 italic">Chưa phân công</span>' ?></p>
                     <p><strong>Chuyên khoa:</strong> <?= !empty($appointment['specialization']) ? htmlspecialchars($appointment['specialization']) : '<span class="text-gray-400 italic">-</span>' ?></p>
-                    <p><strong>Phí khám:</strong> <?= number_format($appointment['consultation_fee']) ?> VNĐ</p>
+                    <p><strong>Giá dịch vụ:</strong> <?= isset($appointment['total_price']) && $appointment['total_price'] !== null ? number_format((float)$appointment['total_price']) . ' VNĐ' : '<span class="text-gray-400">-</span>' ?></p>
                 </div>
             <?php endif; ?>
         </div>
@@ -80,7 +88,7 @@ ob_start();
 
     <?php if (!empty($appointment['reason'])): ?>
     <div class="mt-6 pt-6 border-t">
-        <h3 class="text-lg font-bold text-gray-800 mb-2">Lý do khám</h3>
+        <h3 class="text-lg font-bold text-gray-800 mb-2">Dịch vụ khám</h3>
         <p class="text-gray-700"><?= nl2br(htmlspecialchars($appointment['reason'])) ?></p>
     </div>
     <?php endif; ?>

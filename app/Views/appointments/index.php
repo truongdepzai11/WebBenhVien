@@ -143,10 +143,17 @@ ob_start();
                     ?>
                     <tr class="<?= $rowClass ?>">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <a href="<?= APP_URL ?>/appointments/<?= $apt['id'] ?>" 
-                               class="text-sm font-medium text-purple-600 hover:text-purple-900">
-                                <?= htmlspecialchars($apt['appointment_code']) ?>
-                            </a>
+                            <?php if ($isPackageAppointment): ?>
+                                <a href="<?= APP_URL ?>/package-appointments/<?= $apt['package_appointment_id'] ?>" 
+                                   class="text-sm font-medium text-purple-600 hover:text-purple-900">
+                                    <?= htmlspecialchars($apt['appointment_code']) ?>
+                                </a>
+                            <?php else: ?>
+                                <a href="<?= APP_URL ?>/appointments/<?= $apt['id'] ?>" 
+                                   class="text-sm font-medium text-purple-600 hover:text-purple-900">
+                                    <?= htmlspecialchars($apt['appointment_code']) ?>
+                                </a>
+                            <?php endif; ?>
                         </td>
                         <?php if (!Auth::isPatient()): ?>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -156,11 +163,55 @@ ob_start();
                         <?php endif; ?>
                         <?php if (!Auth::isDoctor()): ?>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <?php if (!empty($apt['doctor_name'])): ?>
-                                <div class="text-sm text-gray-900"><?= htmlspecialchars($apt['doctor_name']) ?></div>
-                                <div class="text-xs text-gray-500"><?= htmlspecialchars($apt['specialization']) ?></div>
+                            <?php if ($isPackageAppointment && !empty($apt['assigned_doctors'])): ?>
+                                <div class="flex flex-col gap-1">
+                                    <?php foreach ($apt['assigned_doctors'] as $doc): ?>
+                                        <div class="text-sm text-gray-900 flex items-center gap-2">
+                                            <i class="fas fa-user-md text-purple-600"></i>
+                                            <span><?= htmlspecialchars($doc['doctor_name']) ?></span>
+                                        </div>
+                                        <div class="text-xs text-gray-500 ml-6"><?= htmlspecialchars($doc['specialization']) ?></div>
+                                    <?php endforeach; ?>
+                                    <?php 
+                                    $as = (int)($apt['assigned_count'] ?? 0);
+                                    $ts = (int)($apt['total_services'] ?? 0);
+                                    if ($ts > 0) {
+                                        if ($as === 0) {
+                                            $assignLabel = '<span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800">Chưa phân công</span>';
+                                        } elseif ($as < $ts) {
+                                            $assignLabel = '<span class="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-800">Đã phân công (còn thiếu) '. $as .'/'. $ts .'</span>';
+                                        } else {
+                                            $assignLabel = '<span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800">Đã phân công đầy đủ '. $as .'/'. $ts .'</span>';
+                                        }
+                                        echo '<div class="mt-1">'. $assignLabel .'</div>';
+                                    }
+                                    ?>
+                                </div>
                             <?php else: ?>
-                                <div class="text-sm text-gray-400 italic">Chưa phân công</div>
+                                <?php if (!empty($apt['doctor_name'])): ?>
+                                    <div class="text-sm text-gray-900"><?= htmlspecialchars($apt['doctor_name']) ?></div>
+                                    <div class="text-xs text-gray-500"><?= htmlspecialchars($apt['specialization']) ?></div>
+                                <?php else: ?>
+                                    <?php 
+                                    if ($isPackageAppointment) {
+                                        $as = (int)($apt['assigned_count'] ?? 0);
+                                        $ts = (int)($apt['total_services'] ?? 0);
+                                        if ($ts > 0) {
+                                            if ($as === 0) {
+                                                echo '<div class="text-sm text-gray-400 italic">Chưa phân công</div>';
+                                            } elseif ($as < $ts) {
+                                                echo '<div class="text-sm text-gray-700">Đã phân công (còn thiếu) '. $as .'/'. $ts .'</div>';
+                                            } else {
+                                                echo '<div class="text-sm text-gray-700">Đã phân công đầy đủ '. $as .'/'. $ts .'</div>';
+                                            }
+                                        } else {
+                                            echo '<div class="text-sm text-gray-400 italic">Chưa phân công</div>';
+                                        }
+                                    } else {
+                                        echo '<div class="text-sm text-gray-400 italic">Chưa phân công</div>';
+                                    }
+                                    ?>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </td>
                         <?php endif; ?>

@@ -59,8 +59,26 @@ class AppointmentController {
             }
             return false;
         });
+        // Bổ sung danh sách bác sĩ đã phân công cho các lịch gói (để hiển thị tất cả bác sĩ)
+        $regularAppointments = array_map(function($apt) {
+            if (!empty($apt['package_appointment_id'])) {
+                $assigned = $this->appointmentModel->getAssignedDoctorsByPackageAppointmentId($apt['package_appointment_id']);
+                $apt['assigned_doctors'] = $assigned ?: [];
+                // Đếm số đã phân công và tổng số dịch vụ trong gói
+                $apt['assigned_count'] = $this->appointmentModel->countAssignedByPackageAppointmentId($apt['package_appointment_id']);
+                if (!isset($this->packageModel)) {
+                    require_once APP_PATH . '/Models/HealthPackage.php';
+                    $this->packageModel = new HealthPackage();
+                }
+                $services = $this->packageModel->getPackageServices($apt['package_id']);
+                $apt['total_services'] = is_array($services) ? count($services) : 0;
+            }
+            return $apt;
+        }, array_values($regularAppointments));
         
-        // Không cần lấy packageAppointments nữa vì đã có appointment tổng hợp
+        // Chỉ sử dụng danh sách đã lọc cho view (ẩn các lịch chi tiết dịch vụ)
+        $appointments = array_values($regularAppointments);
+        $regularAppointments = [];
         $packageAppointments = [];
 
         require_once APP_PATH . '/Views/appointments/index.php';
@@ -407,6 +425,34 @@ class AppointmentController {
                 $_SESSION['error'] = 'Bạn không có quyền xem lịch hẹn này';
                 header('Location: ' . APP_URL . '/appointments');
                 exit;
+            }
+        }
+
+        // Bổ sung giá dịch vụ nếu là lịch thuộc gói mà chưa có total_price
+        if (!empty($appointment['package_id'])) {
+            $priceIsMissing = !isset($appointment['total_price']) || $appointment['total_price'] === null;
+            if ($priceIsMissing) {
+                require_once APP_PATH . '/Models/HealthPackage.php';
+                $pkgModel = new HealthPackage();
+                $services = $pkgModel->getPackageServices($appointment['package_id']);
+                $reason = strtolower(trim($appointment['reason'] ?? ''));
+                // 1) So khop chinh xac
+                foreach ($services as $svc) {
+                    if (strtolower(trim($svc['service_name'])) === $reason) {
+                        $appointment['total_price'] = (float)$svc['service_price'];
+                        break;
+                    }
+                }
+                // 2) Neu chua tim thay, so khop gan dung (chua/bi chua)
+                if (!isset($appointment['total_price']) || $appointment['total_price'] === null) {
+                    foreach ($services as $svc) {
+                        $name = strtolower(trim($svc['service_name']));
+                        if ($name !== '' && ($name === $reason || strpos($name, $reason) !== false || strpos($reason, $name) !== false)) {
+                            $appointment['total_price'] = (float)$svc['service_price'];
+                            break;
+                        }
+                    }
+                }
             }
         }
 

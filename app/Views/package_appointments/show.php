@@ -151,7 +151,7 @@ ob_start();
             <i class="fas fa-list-check mr-2"></i>
             Danh sách dịch vụ & Lịch khám
             <span class="ml-2 text-sm font-normal text-gray-600">
-                (<?= count($appointments) ?>/<?= count($packageServices) ?> đã phân công)
+                (<?= isset($assignedCount) ? (int)$assignedCount : 0 ?>/<?= count($packageServices) ?> đã phân công)
             </span>
         </h4>
     </div>
@@ -167,7 +167,8 @@ ob_start();
             <?php 
             // Tạo map appointments theo service (match linh hoạt)
             $appointmentMap = [];
-            foreach ($appointments as $apt) {
+            $sourceAppointments = isset($serviceAppointments) ? $serviceAppointments : $appointments;
+            foreach ($sourceAppointments as $apt) {
                 // Lưu theo reason chính xác
                 $appointmentMap[$apt['reason']] = $apt;
                 
@@ -190,7 +191,7 @@ ob_start();
                 
                 // Nếu vẫn không match, thử tìm appointment có chứa tên service
                 if (!$hasAppointment) {
-                    foreach ($appointments as $apt) {
+                    foreach ($sourceAppointments as $apt) {
                         if (stripos($apt['reason'], $service['service_name']) !== false ||
                             stripos($service['service_name'], $apt['reason']) !== false) {
                             $hasAppointment = true;

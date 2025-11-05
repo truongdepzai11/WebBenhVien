@@ -65,12 +65,21 @@ class PackageAppointmentController {
         // Lấy danh sách dịch vụ trong gói
         $packageServices = $this->packageModel->getPackageServices($packageAppointment['package_id']);
 
-        // Lấy danh sách appointments đã được tạo cho gói này
+        // Lấy tất cả appointments thuộc gói
         $appointments = $this->appointmentModel->getByPackageAppointmentId($id);
-        
-        // Debug: Log số lượng appointments
-        error_log("Package Appointment ID: " . $id);
-        error_log("Total appointments found: " . count($appointments));
+        // Chỉ tính các lịch có bác sĩ (bất kể appointment_type) → tránh bỏ sót dữ liệu cũ
+        $serviceAppointments = array_values(array_filter($appointments, function($a){
+            return !empty($a['doctor_id']);
+        }));
+        // Đếm theo dịch vụ duy nhất dựa trên reason (tên dịch vụ)
+        $uniqueReasons = [];
+        foreach ($serviceAppointments as $apt) {
+            $key = strtolower(trim($apt['reason'] ?? ''));
+            if ($key !== '' && !in_array($key, $uniqueReasons, true)) {
+                $uniqueReasons[] = $key;
+            }
+        }
+        $assignedCount = count($uniqueReasons);
 
         // Lấy danh sách bác sĩ (cho phân công)
         $doctors = $this->doctorModel->getAll();
@@ -90,6 +99,12 @@ class PackageAppointmentController {
         }
 
         $packageAppointment = $this->packageAppointmentModel->findById($packageAppointmentId);
+        // Lấy giá dịch vụ từ package_services theo service_id
+        $servicePrice = null;
+        $services = $this->packageModel->getPackageServices($packageAppointment['package_id']);
+        foreach ($services as $svc) {
+            if ((string)$svc['id'] === (string)$serviceId) { $servicePrice = $svc['service_price']; break; }
+        }
 
         if (!$packageAppointment) {
             $_SESSION['error'] = 'Không tìm thấy đăng ký gói khám';
@@ -132,8 +147,9 @@ class PackageAppointmentController {
                 $this->appointmentModel->package_appointment_id = $packageAppointmentId;
                 $this->appointmentModel->appointment_date = $startDate->format('Y-m-d');
                 $this->appointmentModel->appointment_time = $currentTime->format('H:i:s');
-                $this->appointmentModel->appointment_type = 'package';
+                $this->appointmentModel->appointment_type = 'package_detail';
                 $this->appointmentModel->reason = $service['service_name'];
+                $this->appointmentModel->total_price = $service['service_price'] ?? null;
                 $this->appointmentModel->status = 'pending';
                 $this->appointmentModel->notes = 'Tự động phân công - Gói khám: ' . $packageAppointment['package_name'];
 
@@ -329,28 +345,23 @@ class PackageAppointmentController {
 
         $packageAppointment = $this->packageAppointmentModel->findById($packageAppointmentId);
 
-        // Tìm appointment TỔNG HỢP đã được tạo khi đặt gói
-        $summary = $this->appointmentModel->findSummaryByPackageAppointmentId($packageAppointmentId);
+        // Tạo appointment CHI TIẾT cho dịch vụ (để có thể có nhiều bác sĩ cho 1 gói)
+        $this->appointmentModel->appointment_code = 'APT' . date('YmdHis') . rand(100, 999);
+        $this->appointmentModel->patient_id = $packageAppointment['patient_id'];
+        $this->appointmentModel->doctor_id = $doctorId;
+        $this->appointmentModel->package_id = $packageAppointment['package_id'];
+        $this->appointmentModel->package_appointment_id = $packageAppointmentId;
+        $this->appointmentModel->appointment_date = $appointmentDate;
+        $this->appointmentModel->appointment_time = $appointmentTime;
+        $this->appointmentModel->appointment_type = 'package_detail';
+        $this->appointmentModel->reason = $_POST['service_name'];
+        $this->appointmentModel->status = 'pending';
+        $this->appointmentModel->notes = 'Phân công thủ công - Gói khám: ' . $packageAppointment['package_name'];
 
-        if (!$summary) {
-            $_SESSION['error'] = 'Không tìm thấy lịch hẹn tổng hợp của gói để cập nhật.';
-            header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId);
-            exit;
-        }
-
-        // Cập nhật bác sĩ và thời gian CHO LỊCH HẸN TỔNG HỢP (không tạo lịch mới)
-        $updated = $this->appointmentModel->updateFields($summary['id'], [
-            'doctor_id' => $doctorId,
-            'appointment_date' => $appointmentDate,
-            'appointment_time' => $appointmentTime,
-            // Giữ nguyên reason là "Khám theo gói: ..." để không biến thành dịch vụ đơn
-            'status' => 'pending',
-        ]);
-
-        if ($updated) {
-            $_SESSION['success'] = 'Đã phân công bác sĩ cho lịch hẹn của gói.';
+        if ($this->appointmentModel->create()) {
+            $_SESSION['success'] = 'Đã phân công bác sĩ cho dịch vụ trong gói.';
         } else {
-            $_SESSION['error'] = 'Không thể cập nhật lịch hẹn tổng hợp của gói.';
+            $_SESSION['error'] = 'Không thể tạo lịch hẹn cho dịch vụ.';
         }
 
         header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId);
