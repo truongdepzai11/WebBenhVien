@@ -97,7 +97,12 @@ class PackageController {
         // Lấy tất cả gói khám (bao gồm cả inactive)
         $query = "SELECT hp.*, 
                          COUNT(DISTINCT ps.id) as service_count,
-                         COUNT(DISTINCT a.id) as appointment_count
+                         COUNT(DISTINCT a.id) as appointment_count,
+                         COALESCE(
+                            (SELECT SUM(service_price) 
+                             FROM package_services 
+                             WHERE package_id = hp.id), 0
+                         ) as total_price
                   FROM health_packages hp
                   LEFT JOIN package_services ps ON hp.id = ps.package_id
                   LEFT JOIN appointments a ON hp.id = a.package_id

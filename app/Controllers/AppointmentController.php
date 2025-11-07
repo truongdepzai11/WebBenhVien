@@ -72,6 +72,8 @@ class AppointmentController {
                 }
                 $services = $this->packageModel->getPackageServices($apt['package_id']);
                 $apt['total_services'] = is_array($services) ? count($services) : 0;
+                // Lấy danh sách các ngày khám khác nhau
+                $apt['appointment_dates'] = $this->appointmentModel->getAppointmentDatesByPackageAppointmentId($apt['package_appointment_id']);
             }
             return $apt;
         }, array_values($regularAppointments));
@@ -369,6 +371,33 @@ class AppointmentController {
             exit;
         }
 
+        // Nếu xác nhận lịch gói khám, kiểm tra đã phân công hết dịch vụ chưa
+        if ($status === 'confirmed') {
+            $appointment = $this->appointmentModel->findById($id);
+            
+            if ($appointment && !empty($appointment['package_id']) && !empty($appointment['package_appointment_id'])) {
+                $reason = $appointment['reason'] ?? '';
+                
+                // Kiểm tra xem đây có phải là lịch tổng hợp gói không (có chứa dấu ":")
+                if (strpos($reason, ':') !== false) {
+                    // Lấy tổng số dịch vụ trong gói
+                    require_once APP_PATH . '/Models/HealthPackage.php';
+                    $packageModel = new HealthPackage();
+                    $services = $packageModel->getPackageServices($appointment['package_id']);
+                    $totalServices = is_array($services) ? count($services) : 0;
+                    
+                    // Đếm số dịch vụ đã phân công
+                    $assignedCount = $this->appointmentModel->countAssignedByPackageAppointmentId($appointment['package_appointment_id']);
+                    
+                    if ($assignedCount < $totalServices) {
+                        $_SESSION['error'] = "Vui lòng phân công hết dịch vụ trong gói trước khi xác nhận. Hiện tại: {$assignedCount}/{$totalServices} dịch vụ đã phân công.";
+                        header('Location: ' . APP_URL . '/appointments');
+                        exit;
+                    }
+                }
+            }
+        }
+
         // Nếu hủy lịch, kiểm tra thời gian để áp dụng chính sách phí
         if ($status === 'cancelled') {
             $appointment = $this->appointmentModel->findById($id);
@@ -479,8 +508,39 @@ class AppointmentController {
             exit;
         }
 
+        // Lấy thông tin lịch hẹn
+        $appointment = $this->appointmentModel->findById($id);
+        if (!$appointment) {
+            $_SESSION['error'] = 'Không tìm thấy lịch hẹn';
+            header('Location: ' . APP_URL . '/appointments');
+            exit;
+        }
+
+        // Kiểm tra nếu là lịch gói khám: phải phân công hết dịch vụ mới được xác nhận
+        if (!empty($appointment['package_id']) && !empty($appointment['package_appointment_id'])) {
+            $reason = $appointment['reason'] ?? '';
+            
+            // Kiểm tra xem đây có phải là lịch tổng hợp gói không (có chứa dấu ":")
+            if (strpos($reason, ':') !== false) {
+                // Lấy tổng số dịch vụ trong gói
+                require_once APP_PATH . '/Models/HealthPackage.php';
+                $packageModel = new HealthPackage();
+                $services = $packageModel->getPackageServices($appointment['package_id']);
+                $totalServices = is_array($services) ? count($services) : 0;
+                
+                // Đếm số dịch vụ đã phân công
+                $assignedCount = $this->appointmentModel->countAssignedByPackageAppointmentId($appointment['package_appointment_id']);
+                
+                if ($assignedCount < $totalServices) {
+                    $_SESSION['error'] = "Vui lòng phân công hết dịch vụ trong gói trước khi xác nhận. Hiện tại: {$assignedCount}/{$totalServices} dịch vụ đã phân công.";
+                    header('Location: ' . APP_URL . '/appointments/' . $id);
+                    exit;
+                }
+            }
+        }
+
         if ($this->appointmentModel->updateStatus($id, 'confirmed')) {
-            $_SESSION['success'] = 'Xác nhận lịch hẹn thành công';
+            $_SESSION['success'] = 'Đã xác nhận lịch hẹn thành công';
         } else {
             $_SESSION['error'] = 'Xác nhận lịch hẹn thất bại';
         }

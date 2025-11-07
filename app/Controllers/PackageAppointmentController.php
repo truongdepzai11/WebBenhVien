@@ -37,6 +37,16 @@ class PackageAppointmentController {
             $packageAppointments = $this->packageAppointmentModel->getAll();
         }
 
+        // Bổ sung thông tin số lượng dịch vụ đã phân công cho mỗi gói
+        $packageAppointments = array_map(function($pa) {
+            // Đếm số dịch vụ đã phân công
+            $pa['assigned_count'] = $this->appointmentModel->countAssignedByPackageAppointmentId($pa['id']);
+            // Lấy tổng số dịch vụ trong gói
+            $services = $this->packageModel->getPackageServices($pa['package_id']);
+            $pa['total_services'] = is_array($services) ? count($services) : 0;
+            return $pa;
+        }, $packageAppointments);
+
         require_once APP_PATH . '/Views/package_appointments/index.php';
     }
 
@@ -145,9 +155,25 @@ class PackageAppointmentController {
                 $this->appointmentModel->doctor_id = $doctor['id'];
                 $this->appointmentModel->package_id = $packageAppointment['package_id'];
                 $this->appointmentModel->package_appointment_id = $packageAppointmentId;
-                $this->appointmentModel->appointment_date = $startDate->format('Y-m-d');
-                $this->appointmentModel->appointment_time = $currentTime->format('H:i:s');
-                $this->appointmentModel->appointment_type = 'package_detail';
+                // Đảm bảo không trùng giờ với dịch vụ khác trong gói
+                $dateYmd = $startDate->format('Y-m-d');
+                $slot = $currentTime->format('H:i:s');
+                $usedSlots = $this->getUsedTimeSlots($packageAppointmentId, $dateYmd);
+                while (in_array($slot, $usedSlots, true)) {
+                    $currentTime->modify('+30 minutes');
+                    // Qua 17h thì chuyển ngày và reset giờ 08:00
+                    if ((int)$currentTime->format('H') >= 17) {
+                        $startDate->modify('+1 day');
+                        $dateYmd = $startDate->format('Y-m-d');
+                        $currentTime = new DateTime('08:00:00');
+                    }
+                    $slot = $currentTime->format('H:i:s');
+                    $usedSlots = $this->getUsedTimeSlots($packageAppointmentId, $dateYmd);
+                }
+                $this->appointmentModel->appointment_date = $dateYmd;
+                $this->appointmentModel->appointment_time = $slot;
+                // DB enum chỉ hỗ trợ 'regular' | 'package'
+        $this->appointmentModel->appointment_type = 'package';
                 $this->appointmentModel->reason = $service['service_name'];
                 $this->appointmentModel->total_price = $service['service_price'] ?? null;
                 $this->appointmentModel->status = 'pending';
@@ -328,6 +354,20 @@ class PackageAppointmentController {
         return [$clinical, $laboratory, $imaging];
     }
 
+    // Lấy các khung giờ đã dùng trong cùng gói ở một ngày (để không trùng giờ giữa các dịch vụ)
+    private function getUsedTimeSlots($packageAppointmentId, $dateYmd) {
+        $used = [];
+        $appointments = $this->appointmentModel->getByPackageAppointmentId($packageAppointmentId);
+        foreach ($appointments as $a) {
+            if (!empty($a['doctor_id']) && !empty($a['appointment_date']) && $a['appointment_date'] === $dateYmd && !empty($a['appointment_time'])) {
+                // Chuẩn hóa dạng H:i:s
+                $t = date('H:i:s', strtotime($a['appointment_time']));
+                $used[] = $t;
+            }
+        }
+        return array_values(array_unique($used));
+    }
+
     // Phân công bác sĩ thủ công
     public function assignDoctor() {
         Auth::requireLogin();
@@ -345,6 +385,22 @@ class PackageAppointmentController {
 
         $packageAppointment = $this->packageAppointmentModel->findById($packageAppointmentId);
 
+        // Lấy giá dịch vụ từ cấu hình gói
+        $servicePrice = null;
+        $services = $this->packageModel->getPackageServices($packageAppointment['package_id']);
+        foreach ($services as $svc) {
+            if ((string)$svc['id'] === (string)$serviceId) { $servicePrice = $svc['service_price']; break; }
+        }
+
+        // RÀNG BUỘC: Không trùng giờ giữa các dịch vụ trong cùng gói
+        $normalizedTime = date('H:i:s', strtotime($appointmentTime));
+        $used = $this->getUsedTimeSlots($packageAppointmentId, $appointmentDate);
+        if (in_array($normalizedTime, $used, true)) {
+            $_SESSION['error'] = 'Giờ khám này đã được dùng cho dịch vụ khác trong gói. Vui lòng chọn khung giờ cách nhau 30 phút (ví dụ: 08:30, 09:00, ...)';
+            header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId);
+            exit;
+        }
+
         // Tạo appointment CHI TIẾT cho dịch vụ (để có thể có nhiều bác sĩ cho 1 gói)
         $this->appointmentModel->appointment_code = 'APT' . date('YmdHis') . rand(100, 999);
         $this->appointmentModel->patient_id = $packageAppointment['patient_id'];
@@ -352,9 +408,11 @@ class PackageAppointmentController {
         $this->appointmentModel->package_id = $packageAppointment['package_id'];
         $this->appointmentModel->package_appointment_id = $packageAppointmentId;
         $this->appointmentModel->appointment_date = $appointmentDate;
-        $this->appointmentModel->appointment_time = $appointmentTime;
-        $this->appointmentModel->appointment_type = 'package_detail';
+        $this->appointmentModel->appointment_time = $normalizedTime;
+        // DB enum chỉ có 'regular' | 'package'
+        $this->appointmentModel->appointment_type = 'package';
         $this->appointmentModel->reason = $_POST['service_name'];
+        $this->appointmentModel->total_price = $servicePrice;
         $this->appointmentModel->status = 'pending';
         $this->appointmentModel->notes = 'Phân công thủ công - Gói khám: ' . $packageAppointment['package_name'];
 

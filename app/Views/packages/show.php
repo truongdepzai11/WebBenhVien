@@ -173,10 +173,13 @@ $categoryIcons = [
                     </div>
                 </div>
 
+                <?php $role = $_SESSION['role'] ?? null; $isPatient = ($role === 'patient'); ?>
+                <?php if ($isPatient): ?>
                 <a href="<?= APP_URL ?>/appointments/create?package_id=<?= $package['id'] ?>" 
                    class="block w-full text-center gradient-bg text-white py-3 px-6 rounded-lg hover:opacity-90 transition mb-3">
                     <i class="fas fa-calendar-plus mr-2"></i>Đặt lịch ngay
                 </a>
+                <?php endif; ?>
 
                 <a href="<?= APP_URL ?>/packages" 
                    class="block w-full text-center border border-gray-300 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-50 transition">

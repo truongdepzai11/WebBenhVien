@@ -28,35 +28,51 @@ class DashboardController {
         // Thống kê theo vai trò
         if ($role === 'admin' || $role === 'receptionist') {
             $allAppointments = $this->appointmentModel->getAll();
+            // Chỉ giữ lịch khám thường hoặc lịch tổng hợp gói (reason bắt đầu bằng 'Khám theo gói')
+            $displayAppointments = array_values(array_filter($allAppointments, function($apt){
+                if (empty($apt['package_appointment_id'])) return true;
+                $reason = $apt['reason'] ?? '';
+                return stripos($reason, 'Khám theo gói') === 0;
+            }));
             $stats = [
                 'total_patients' => count($this->patientModel->getAll()),
                 'total_doctors' => count($this->doctorModel->getAll()),
-                'total_appointments' => count($allAppointments),
-                'pending_appointments' => count(array_filter($allAppointments, fn($a) => $a['status'] === 'pending')),
-                'completed_appointments' => count(array_filter($allAppointments, fn($a) => $a['status'] === 'completed')),
+                'total_appointments' => count($displayAppointments),
+                'pending_appointments' => count(array_filter($displayAppointments, fn($a) => $a['status'] === 'pending')),
+                'completed_appointments' => count(array_filter($displayAppointments, fn($a) => $a['status'] === 'completed')),
                 'total_records' => count($this->medicalRecordModel->getAll())
             ];
-            $recent_appointments = array_slice($allAppointments, 0, 5);
+            $recent_appointments = array_slice($displayAppointments, 0, 5);
         } elseif ($role === 'doctor') {
             $doctor = $this->doctorModel->findByUserId(Auth::id());
             $appointments = $this->appointmentModel->getByDoctorId($doctor['id']);
+            $displayAppointments = array_values(array_filter($appointments, function($apt){
+                if (empty($apt['package_appointment_id'])) return true;
+                $reason = $apt['reason'] ?? '';
+                return stripos($reason, 'Khám theo gói') === 0;
+            }));
             $stats = [
-                'total_appointments' => count($appointments),
-                'pending_appointments' => count(array_filter($appointments, fn($a) => $a['status'] === 'pending')),
-                'completed_appointments' => count(array_filter($appointments, fn($a) => $a['status'] === 'completed')),
+                'total_appointments' => count($displayAppointments),
+                'pending_appointments' => count(array_filter($displayAppointments, fn($a) => $a['status'] === 'pending')),
+                'completed_appointments' => count(array_filter($displayAppointments, fn($a) => $a['status'] === 'completed')),
                 'total_patients' => count($this->medicalRecordModel->getByDoctorId($doctor['id']))
             ];
-            $recent_appointments = array_slice($appointments, 0, 5);
+            $recent_appointments = array_slice($displayAppointments, 0, 5);
         } else { // patient
             $patient = $this->patientModel->findByUserId(Auth::id());
             $appointments = $this->appointmentModel->getByPatientId($patient['id']);
+            $displayAppointments = array_values(array_filter($appointments, function($apt){
+                if (empty($apt['package_appointment_id'])) return true;
+                $reason = $apt['reason'] ?? '';
+                return stripos($reason, 'Khám theo gói') === 0;
+            }));
             $stats = [
-                'total_appointments' => count($appointments),
-                'pending_appointments' => count(array_filter($appointments, fn($a) => $a['status'] === 'pending')),
-                'completed_appointments' => count(array_filter($appointments, fn($a) => $a['status'] === 'completed')),
+                'total_appointments' => count($displayAppointments),
+                'pending_appointments' => count(array_filter($displayAppointments, fn($a) => $a['status'] === 'pending')),
+                'completed_appointments' => count(array_filter($displayAppointments, fn($a) => $a['status'] === 'completed')),
                 'total_records' => count($this->medicalRecordModel->getByPatientId($patient['id']))
             ];
-            $recent_appointments = array_slice($appointments, 0, 5);
+            $recent_appointments = array_slice($displayAppointments, 0, 5);
         }
 
         require_once APP_PATH . '/Views/dashboard/index.php';

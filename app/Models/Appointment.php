@@ -324,4 +324,20 @@ class Appointment {
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row['count'] == 0; // True nếu không có lịch trùng
     }
+
+    // Lấy danh sách các ngày khám khác nhau trong gói
+    public function getAppointmentDatesByPackageAppointmentId($packageAppointmentId) {
+        $query = "SELECT DISTINCT appointment_date 
+                  FROM " . $this->table . " 
+                  WHERE package_appointment_id = :package_appointment_id 
+                  AND doctor_id IS NOT NULL
+                  ORDER BY appointment_date";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':package_appointment_id', $packageAppointmentId);
+        $stmt->execute();
+
+        $dates = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        return $dates ?: [];
+    }
 }

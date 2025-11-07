@@ -119,17 +119,8 @@ ob_start();
                     </div>
                 </td>
                 <td class="px-6 py-4 text-sm">
-                    <?php
-                    // Tính tổng giá từ dịch vụ
-                    $totalPrice = 0;
-                    if (isset($package['services'])) {
-                        foreach ($package['services'] as $service) {
-                            $totalPrice += $service['service_price'] ?? 0;
-                        }
-                    }
-                    ?>
                     <div class="text-purple-600 font-bold">
-                        <?= number_format($totalPrice) ?>đ
+                        <?= number_format($package['total_price'] ?? 0) ?> VND
                     </div>
                     <div class="text-xs text-gray-500"><?= $package['service_count'] ?? 0 ?> dịch vụ</div>
                 </td>

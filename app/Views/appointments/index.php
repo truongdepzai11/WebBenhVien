@@ -164,29 +164,20 @@ ob_start();
                         <?php if (!Auth::isDoctor()): ?>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <?php if ($isPackageAppointment && !empty($apt['assigned_doctors'])): ?>
-                                <div class="flex flex-col gap-1">
-                                    <?php foreach ($apt['assigned_doctors'] as $doc): ?>
-                                        <div class="text-sm text-gray-900 flex items-center gap-2">
-                                            <i class="fas fa-user-md text-purple-600"></i>
-                                            <span><?= htmlspecialchars($doc['doctor_name']) ?></span>
-                                        </div>
-                                        <div class="text-xs text-gray-500 ml-6"><?= htmlspecialchars($doc['specialization']) ?></div>
-                                    <?php endforeach; ?>
-                                    <?php 
-                                    $as = (int)($apt['assigned_count'] ?? 0);
-                                    $ts = (int)($apt['total_services'] ?? 0);
-                                    if ($ts > 0) {
-                                        if ($as === 0) {
-                                            $assignLabel = '<span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800">Chưa phân công</span>';
-                                        } elseif ($as < $ts) {
-                                            $assignLabel = '<span class="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-800">Đã phân công (còn thiếu) '. $as .'/'. $ts .'</span>';
-                                        } else {
-                                            $assignLabel = '<span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800">Đã phân công đầy đủ '. $as .'/'. $ts .'</span>';
-                                        }
-                                        echo '<div class="mt-1">'. $assignLabel .'</div>';
+                                <?php 
+                                $as = (int)($apt['assigned_count'] ?? 0);
+                                $ts = (int)($apt['total_services'] ?? 0);
+                                if ($ts > 0) {
+                                    if ($as === 0) {
+                                        $assignLabel = '<span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800">Chưa phân công</span>';
+                                    } elseif ($as < $ts) {
+                                        $assignLabel = '<span class="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-800">Đã phân công (còn thiếu) '. $as .'/'. $ts .' dịch vụ</span>';
+                                    } else {
+                                        $assignLabel = '<span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800">Đã phân công đầy đủ '. $as .'/'. $ts .' dịch vụ</span>';
                                     }
-                                    ?>
-                                </div>
+                                    echo $assignLabel;
+                                }
+                                ?>
                             <?php else: ?>
                                 <?php if (!empty($apt['doctor_name'])): ?>
                                     <div class="text-sm text-gray-900"><?= htmlspecialchars($apt['doctor_name']) ?></div>
@@ -215,11 +206,22 @@ ob_start();
                             <?php endif; ?>
                         </td>
                         <?php endif; ?>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                            <?= date('d/m/Y', strtotime($apt['appointment_date'])) ?>
+                        <td class="px-6 py-4 text-sm text-gray-700">
+                            <?php if ($isPackageAppointment && !empty($apt['appointment_dates'])): ?>
+                                <?php 
+                                $formattedDates = array_map(function($date) {
+                                    return date('d/m/Y', strtotime($date));
+                                }, $apt['appointment_dates']);
+                                echo implode(', ', $formattedDates);
+                                ?>
+                            <?php else: ?>
+                                <?= date('d/m/Y', strtotime($apt['appointment_date'])) ?>
+                            <?php endif; ?>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                            <?php if (!empty($apt['appointment_time'])): ?>
+                            <?php if ($isPackageAppointment): ?>
+                                <span class="text-gray-500 italic">Nhiều giờ</span>
+                            <?php elseif (!empty($apt['appointment_time'])): ?>
                                 <?= date('H:i', strtotime($apt['appointment_time'])) ?>
                             <?php else: ?>
                                 <span class="text-gray-400 italic">Chưa xác định</span>

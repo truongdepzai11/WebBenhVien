@@ -157,20 +157,24 @@ ob_start();
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <?php
-                        $statusColors = [
-                            'scheduled' => 'bg-yellow-100 text-yellow-800',
-                            'in_progress' => 'bg-purple-100 text-purple-800',
-                            'completed' => 'bg-green-100 text-green-800',
-                            'cancelled' => 'bg-red-100 text-red-800'
-                        ];
-                        $statusLabels = [
-                            'scheduled' => 'Chờ phân công',
-                            'in_progress' => 'Đang thực hiện',
-                            'completed' => 'Hoàn thành',
-                            'cancelled' => 'Đã hủy'
-                        ];
-                        $colorClass = $statusColors[$pa['status']] ?? 'bg-gray-100 text-gray-800';
-                        $label = $statusLabels[$pa['status']] ?? $pa['status'];
+                        $as = (int)($pa['assigned_count'] ?? 0);
+                        $ts = (int)($pa['total_services'] ?? 0);
+                        
+                        if ($ts > 0) {
+                            if ($as === 0) {
+                                $colorClass = 'bg-yellow-100 text-yellow-800';
+                                $label = 'Chưa phân công';
+                            } elseif ($as < $ts) {
+                                $colorClass = 'bg-orange-100 text-orange-800';
+                                $label = "Đã phân công {$as}/{$ts} dịch vụ";
+                            } else {
+                                $colorClass = 'bg-green-100 text-green-800';
+                                $label = "Đã phân công đầy đủ {$as}/{$ts} dịch vụ";
+                            }
+                        } else {
+                            $colorClass = 'bg-gray-100 text-gray-800';
+                            $label = 'Không có dịch vụ';
+                        }
                         ?>
                         <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full <?= $colorClass ?>">
                             <?= $label ?>
