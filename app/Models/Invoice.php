@@ -27,6 +27,15 @@ class Invoice {
         $this->conn = $database->getConnection();
     }
 
+    // Tìm hóa đơn theo appointment_id (nếu tạo từ lịch khám)
+    public function findByAppointmentId($appointment_id) {
+        $query = "SELECT * FROM " . $this->table . " WHERE appointment_id = :appointment_id LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':appointment_id', $appointment_id);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     // Tạo mã hóa đơn tự động
     private function generateInvoiceCode() {
         $query = "SELECT COUNT(*) as total FROM " . $this->table;

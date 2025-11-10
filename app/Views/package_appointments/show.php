@@ -18,24 +18,42 @@ ob_start();
         </div>
         
         <?php
-        $statusColors = [
-            'scheduled' => 'bg-yellow-100 text-yellow-800',
-            'in_progress' => 'bg-purple-100 text-purple-800',
-            'completed' => 'bg-green-100 text-green-800',
-            'cancelled' => 'bg-red-100 text-red-800'
-        ];
-        $statusLabels = [
-            'scheduled' => 'Chờ phân công',
-            'in_progress' => 'Đang thực hiện',
-            'completed' => 'Hoàn thành',
-            'cancelled' => 'Đã hủy'
-        ];
-        $colorClass = $statusColors[$packageAppointment['status']] ?? 'bg-gray-100 text-gray-800';
-        $label = $statusLabels[$packageAppointment['status']] ?? $packageAppointment['status'];
+        // Hiển thị trạng thái theo tiến độ phân công dịch vụ trong gói
+        $as = isset($assignedCount) ? (int)$assignedCount : 0;
+        $ts = isset($packageServices) ? (int)count($packageServices) : 0;
+
+        if ($ts > 0) {
+            if ($as === 0) {
+                $colorClass = 'bg-yellow-100 text-yellow-800';
+                $label = 'Chưa phân công';
+            } elseif ($as < $ts) {
+                $colorClass = 'bg-orange-100 text-orange-800';
+                $label = "Đã phân công (còn thiếu) {$as}/{$ts} dịch vụ";
+            } else {
+                $colorClass = 'bg-green-100 text-green-800';
+                $label = "Đã phân công đầy đủ {$as}/{$ts} dịch vụ";
+            }
+        } else {
+            $colorClass = 'bg-gray-100 text-gray-800';
+            $label = 'Không có dịch vụ';
+        }
         ?>
         <span class="px-4 py-2 inline-flex text-sm leading-5 font-semibold rounded-full <?= $colorClass ?>">
             <?= $label ?>
         </span>
+        <?php if ((Auth::isAdmin() || Auth::isReceptionist()) && isset($summaryAppointment) && $summaryAppointment && ($summaryAppointment['status'] ?? '') === 'completed'): ?>
+            <?php if (isset($summaryInvoice) && $summaryInvoice): ?>
+                <a href="<?= APP_URL ?>/invoices/<?= $summaryInvoice['id'] ?>" 
+                   class="ml-3 px-4 py-2 inline-flex items-center text-sm font-semibold rounded-lg gradient-bg text-white hover:opacity-90">
+                    <i class="fas fa-file-invoice mr-2"></i>Xem hóa đơn
+                </a>
+            <?php else: ?>
+                <a href="<?= APP_URL ?>/invoices/create-from-appointment/<?= $summaryAppointment['id'] ?>" 
+                   class="ml-3 px-4 py-2 inline-flex items-center text-sm font-semibold rounded-lg gradient-bg text-white hover:opacity-90">
+                    <i class="fas fa-file-invoice-dollar mr-2"></i>Tạo hóa đơn
+                </a>
+            <?php endif; ?>
+        <?php endif; ?>
     </div>
 </div>
 

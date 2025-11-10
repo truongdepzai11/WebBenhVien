@@ -26,6 +26,29 @@ class Appointment {
         $this->conn = $database->getConnection();
     }
 
+    // Lấy lịch tổng hợp của gói (reason có chứa ":")
+    public function getSummaryByPackageAppointmentId($packageAppointmentId) {
+        $query = "SELECT a.*, 
+                         u.full_name as doctor_name, 
+                         s.name as specialization,
+                         p.id as patient_id,
+                         pu.full_name as patient_name
+                  FROM " . $this->table . " a
+                  LEFT JOIN doctors d ON a.doctor_id = d.id
+                  LEFT JOIN users u ON d.user_id = u.id
+                  LEFT JOIN specializations s ON d.specialization_id = s.id
+                  LEFT JOIN patients p ON a.patient_id = p.id
+                  LEFT JOIN users pu ON p.user_id = pu.id
+                  WHERE a.package_appointment_id = :pid
+                    AND a.reason LIKE '%:%'
+                  ORDER BY a.created_at DESC
+                  LIMIT 1";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':pid', $packageAppointmentId);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
     // Đếm số lịch dịch vụ đã được phân công (có doctor_id) cho gói
     public function countAssignedByPackageAppointmentId($packageAppointmentId) {
         $query = "SELECT COUNT(*) AS c FROM " . $this->table . "
@@ -104,7 +127,7 @@ class Appointment {
                          p.patient_code, pu.full_name as patient_name, pu.phone as patient_phone,
                          d.doctor_code, du.full_name as doctor_name, d.consultation_fee,
                          s.name as specialization,
-                         hp.name as package_name
+                         hp.name as package_name, hp.package_code
                   FROM " . $this->table . " a
                   LEFT JOIN patients p ON a.patient_id = p.id
                   LEFT JOIN users pu ON p.user_id = pu.id

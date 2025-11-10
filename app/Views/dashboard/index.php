@@ -146,10 +146,47 @@ ob_start();
                         <td class="px-4 py-3 text-sm text-gray-700"><?= htmlspecialchars($apt['patient_name']) ?></td>
                         <?php endif; ?>
                         <?php if (!Auth::isDoctor()): ?>
-                        <td class="px-4 py-3 text-sm text-gray-700"><?= !empty($apt['doctor_name']) ? htmlspecialchars($apt['doctor_name']) : '<span class="text-gray-400 italic">Chưa phân công</span>' ?></td>
+                        <td class="px-4 py-3 text-sm text-gray-700">
+                            <?php if (isset($apt['assigned_count'], $apt['total_services'])): ?>
+                                <?php 
+                                $as = (int)$apt['assigned_count'];
+                                $ts = (int)$apt['total_services'];
+                                if ($ts > 0) {
+                                    if ($as === 0) {
+                                        echo '<span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800">Chưa phân công</span>';
+                                    } elseif ($as < $ts) {
+                                        echo '<span class="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-800">Đã phân công (còn thiếu) '. $as .'/'. $ts .' dịch vụ</span>';
+                                    } else {
+                                        echo '<span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800">Đã phân công đầy đủ '. $as .'/'. $ts .' dịch vụ</span>';
+                                    }
+                                } else {
+                                    echo '<span class="text-gray-400 italic">Chưa phân công</span>';
+                                }
+                                ?>
+                            <?php else: ?>
+                                <?= !empty($apt['doctor_name']) ? htmlspecialchars($apt['doctor_name']) : '<span class="text-gray-400 italic">Chưa phân công</span>' ?>
+                            <?php endif; ?>
+                        </td>
                         <?php endif; ?>
-                        <td class="px-4 py-3 text-sm text-gray-700"><?= date('d/m/Y', strtotime($apt['appointment_date'])) ?></td>
-                        <td class="px-4 py-3 text-sm text-gray-700"><?php if (!empty($apt['appointment_time'])): ?><?= date('H:i', strtotime($apt['appointment_time'])) ?><?php else: ?><span class="text-gray-400 italic">Chưa xác định</span><?php endif; ?></td>
+                        <td class="px-4 py-3 text-sm text-gray-700">
+                            <?php if (!empty($apt['appointment_dates'])): ?>
+                                <?php 
+                                $formattedDates = array_map(function($d){ return date('d/m/Y', strtotime($d)); }, $apt['appointment_dates']);
+                                echo implode(', ', $formattedDates);
+                                ?>
+                            <?php else: ?>
+                                <?= date('d/m/Y', strtotime($apt['appointment_date'])) ?>
+                            <?php endif; ?>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-700">
+                            <?php if (!empty($apt['appointment_dates'])): ?>
+                                <span class="text-gray-500 italic">Nhiều giờ</span>
+                            <?php elseif (!empty($apt['appointment_time'])): ?>
+                                <?= date('H:i', strtotime($apt['appointment_time'])) ?>
+                            <?php else: ?>
+                                <span class="text-gray-400 italic">Chưa xác định</span>
+                            <?php endif; ?>
+                        </td>
                         <td class="px-4 py-3 text-sm">
                             <?php if (($apt['appointment_type'] ?? 'regular') === 'package'): ?>
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">

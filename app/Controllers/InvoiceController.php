@@ -84,10 +84,45 @@ class InvoiceController {
         
         // Lấy thông tin bác sĩ từ appointment (nếu có)
         $doctor_name = null;
+        $packageServiceDetails = [];
+        $packageTotal = 0;
         if ($invoice['appointment_id']) {
             $appointment = $this->appointmentModel->findById($invoice['appointment_id']);
             if ($appointment) {
                 $doctor_name = $appointment['doctor_name'];
+
+                // Nếu là lịch tổng hợp gói: gom đầy đủ dịch vụ trong gói (BS, ngày, giờ, giá)
+                if (!empty($appointment['package_id']) && !empty($appointment['package_appointment_id'])) {
+                    $reason = $appointment['reason'] ?? '';
+                    if (strpos($reason, ':') !== false) {
+                        require_once __DIR__ . '/../Models/HealthPackage.php';
+                        $hpModel = new HealthPackage();
+                        // Map giá dịch vụ theo tên
+                        $services = $hpModel->getPackageServices($appointment['package_id']);
+                        $priceMap = [];
+                        if (is_array($services)) {
+                            foreach ($services as $sv) {
+                                $priceMap[$sv['service_name']] = (float)($sv['service_price'] ?? 0);
+                                $packageTotal += (float)($sv['service_price'] ?? 0);
+                            }
+                        }
+
+                        // Lấy tất cả lịch con theo gói
+                        $childAppointments = $this->appointmentModel->getByPackageAppointmentId($appointment['package_appointment_id']);
+                        foreach ($childAppointments as $apt) {
+                            // Bỏ qua chính lịch tổng hợp (trùng id), còn lại coi là dịch vụ đơn lẻ
+                            if (!empty($appointment['id']) && (int)$apt['id'] === (int)$appointment['id']) { continue; }
+                            $serviceName = $apt['reason'] ?? '';
+                            $packageServiceDetails[] = [
+                                'service_name' => $serviceName,
+                                'doctor_name' => $apt['doctor_name'] ?? null,
+                                'appointment_date' => $apt['appointment_date'] ?? null,
+                                'appointment_time' => $apt['appointment_time'] ?? null,
+                                'price' => $priceMap[$serviceName] ?? 0,
+                            ];
+                        }
+                    }
+                }
             }
         }
 
@@ -170,6 +205,45 @@ class InvoiceController {
             $_SESSION['error'] = 'Lịch hẹn này đã có hóa đơn';
             header('Location: ' . APP_URL . '/invoices/' . $existingInvoice['id']);
             exit;
+        }
+
+        // Nếu là lịch tổng hợp gói: tự động điền tổng giá gói làm mặc định
+        if (!empty($appointment['package_id']) && !empty($appointment['package_appointment_id'])) {
+            $reason = $appointment['reason'] ?? '';
+            if (strpos($reason, ':') !== false) {
+                require_once __DIR__ . '/../Models/HealthPackage.php';
+                $hpModel = new HealthPackage();
+                $services = $hpModel->getPackageServices($appointment['package_id']);
+                $totalPackage = 0;
+                $priceMap = [];
+                if (is_array($services)) {
+                    foreach ($services as $sv) {
+                        $price = (float)($sv['service_price'] ?? 0);
+                        $priceMap[$sv['service_name']] = $price;
+                        $totalPackage += $price;
+                    }
+                }
+                // Lấy tất cả lịch con theo gói để prefill từng dịch vụ
+                $packageServiceDetails = [];
+                $childAppointments = $this->appointmentModel->getByPackageAppointmentId($appointment['package_appointment_id']);
+                foreach ($childAppointments as $apt) {
+                    // Bỏ qua dòng tổng hợp
+                    if (strpos($apt['reason'] ?? '', ':') !== false) { continue; }
+                    $serviceName = $apt['reason'] ?? '';
+                    $packageServiceDetails[] = [
+                        'service_name' => $serviceName,
+                        'doctor_name' => $apt['doctor_name'] ?? null,
+                        'appointment_date' => $apt['appointment_date'] ?? null,
+                        'appointment_time' => $apt['appointment_time'] ?? null,
+                        'price' => $priceMap[$serviceName] ?? 0,
+                    ];
+                }
+
+                // Dùng các field sẵn có trong view
+                $appointment['consultation_fee'] = $totalPackage; // tổng gói (fallback)
+                $pkgName = $appointment['package_name'] ?? 'Gói khám';
+                $appointment['specialization'] = 'Gói khám: ' . $pkgName;
+            }
         }
 
         // Lấy danh sách bệnh nhân (để hiển thị trong form)

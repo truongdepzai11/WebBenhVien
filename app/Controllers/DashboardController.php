@@ -11,6 +11,7 @@ class DashboardController {
     private $doctorModel;
     private $appointmentModel;
     private $medicalRecordModel;
+    private $packageModel; // avoid dynamic property creation
 
     public function __construct() {
         $this->patientModel = new Patient();
@@ -28,12 +29,30 @@ class DashboardController {
         // Thống kê theo vai trò
         if ($role === 'admin' || $role === 'receptionist') {
             $allAppointments = $this->appointmentModel->getAll();
-            // Chỉ giữ lịch khám thường hoặc lịch tổng hợp gói (reason bắt đầu bằng 'Khám theo gói')
+            // Chỉ giữ lịch thường hoặc lịch tổng hợp gói (nhận diện có dấu ":")
             $displayAppointments = array_values(array_filter($allAppointments, function($apt){
                 if (empty($apt['package_appointment_id'])) return true;
                 $reason = $apt['reason'] ?? '';
-                return stripos($reason, 'Khám theo gói') === 0;
+                return strpos($reason, ':') !== false;
             }));
+            // Bổ sung tiến độ phân công và danh sách ngày cho lịch tổng hợp gói
+            $displayAppointments = array_map(function($apt){
+                if (!empty($apt['package_appointment_id'])) {
+                    $apt['assigned_count'] = $this->appointmentModel->countAssignedByPackageAppointmentId($apt['package_appointment_id']);
+                    if (!isset($this->packageModel)) {
+                        require_once __DIR__ . '/../Models/HealthPackage.php';
+                        $this->packageModel = new HealthPackage();
+                    }
+                    $services = $this->packageModel->getPackageServices($apt['package_id']);
+                    $apt['total_services'] = is_array($services) ? count($services) : 0;
+                    if (method_exists($this->appointmentModel, 'getAppointmentDatesByPackageAppointmentId')) {
+                        $apt['appointment_dates'] = $this->appointmentModel->getAppointmentDatesByPackageAppointmentId($apt['package_appointment_id']);
+                    } else {
+                        $apt['appointment_dates'] = [];
+                    }
+                }
+                return $apt;
+            }, $displayAppointments);
             $stats = [
                 'total_patients' => count($this->patientModel->getAll()),
                 'total_doctors' => count($this->doctorModel->getAll()),
@@ -49,8 +68,21 @@ class DashboardController {
             $displayAppointments = array_values(array_filter($appointments, function($apt){
                 if (empty($apt['package_appointment_id'])) return true;
                 $reason = $apt['reason'] ?? '';
-                return stripos($reason, 'Khám theo gói') === 0;
+                return strpos($reason, ':') !== false;
             }));
+            $displayAppointments = array_map(function($apt){
+                if (!empty($apt['package_appointment_id'])) {
+                    $apt['assigned_count'] = $this->appointmentModel->countAssignedByPackageAppointmentId($apt['package_appointment_id']);
+                    if (!isset($this->packageModel)) {
+                        require_once __DIR__ . '/../Models/HealthPackage.php';
+                        $this->packageModel = new HealthPackage();
+                    }
+                    $services = $this->packageModel->getPackageServices($apt['package_id']);
+                    $apt['total_services'] = is_array($services) ? count($services) : 0;
+                    $apt['appointment_dates'] = $this->appointmentModel->getAppointmentDatesByPackageAppointmentId($apt['package_appointment_id']);
+                }
+                return $apt;
+            }, $displayAppointments);
             $stats = [
                 'total_appointments' => count($displayAppointments),
                 'pending_appointments' => count(array_filter($displayAppointments, fn($a) => $a['status'] === 'pending')),
@@ -64,8 +96,21 @@ class DashboardController {
             $displayAppointments = array_values(array_filter($appointments, function($apt){
                 if (empty($apt['package_appointment_id'])) return true;
                 $reason = $apt['reason'] ?? '';
-                return stripos($reason, 'Khám theo gói') === 0;
+                return strpos($reason, ':') !== false;
             }));
+            $displayAppointments = array_map(function($apt){
+                if (!empty($apt['package_appointment_id'])) {
+                    $apt['assigned_count'] = $this->appointmentModel->countAssignedByPackageAppointmentId($apt['package_appointment_id']);
+                    if (!isset($this->packageModel)) {
+                        require_once __DIR__ . '/../Models/HealthPackage.php';
+                        $this->packageModel = new HealthPackage();
+                    }
+                    $services = $this->packageModel->getPackageServices($apt['package_id']);
+                    $apt['total_services'] = is_array($services) ? count($services) : 0;
+                    $apt['appointment_dates'] = $this->appointmentModel->getAppointmentDatesByPackageAppointmentId($apt['package_appointment_id']);
+                }
+                return $apt;
+            }, $displayAppointments);
             $stats = [
                 'total_appointments' => count($displayAppointments),
                 'pending_appointments' => count(array_filter($displayAppointments, fn($a) => $a['status'] === 'pending')),

@@ -19,19 +19,25 @@ ob_start();
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <p class="text-sm text-gray-600">Bệnh nhân</p>
-                <p class="font-bold text-gray-900"><?= htmlspecialchars($appointment['patient_name']) ?></p>
+                <p class="font-bold text-gray-900"><?= htmlspecialchars($appointment['patient_name'] ?? '') ?></p>
             </div>
             <div>
                 <p class="text-sm text-gray-600">Ngày khám</p>
                 <p class="font-bold text-gray-900"><?= date('d/m/Y', strtotime($appointment['appointment_date'])) ?></p>
             </div>
             <div>
-                <p class="text-sm text-gray-600">Bác sĩ</p>
-                <p class="font-bold text-gray-900"><?= htmlspecialchars($appointment['doctor_name']) ?></p>
+                <p class="text-sm text-gray-600">Mã bệnh nhân</p>
+                <p class="font-bold text-gray-900 mb-1"><?= htmlspecialchars($appointment['patient_code'] ?? '') ?></p>
+                <p class="text-sm text-gray-600">SĐT BN</p>
+                <p class="font-bold text-gray-900"><?= htmlspecialchars($appointment['patient_phone'] ?? '') ?></p>
             </div>
             <div>
-                <p class="text-sm text-gray-600">Chuyên khoa</p>
-                <p class="font-bold text-gray-900"><?= htmlspecialchars($appointment['specialization']) ?></p>
+                <p class="text-sm text-gray-600">Loại khám</p>
+                <p class="font-bold text-gray-900"><?= htmlspecialchars($appointment['specialization'] ?? '') ?></p>
+                <?php if (!empty($appointment['package_code'])): ?>
+                    <p class="text-sm text-gray-600 mt-2">Mã gói</p>
+                    <p class="font-bold text-gray-900"><?= htmlspecialchars($appointment['package_code']) ?></p>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -51,38 +57,87 @@ ob_start();
             </div>
 
             <div id="itemsContainer" class="space-y-4">
-                <!-- Item mặc định: Phí khám -->
-                <div class="item-row bg-gray-50 p-4 rounded-lg" id="item-0">
-                    <div class="grid grid-cols-12 gap-4">
-                        <div class="col-span-3">
-                            <select name="items[0][type]" required class="w-full px-3 py-2 border rounded-lg">
-                                <option value="consultation" selected>Khám bệnh</option>
-                                <option value="medicine">Thuốc</option>
-                                <option value="test">Xét nghiệm</option>
-                                <option value="procedure">Thủ thuật</option>
-                                <option value="other">Khác</option>
-                            </select>
+                <?php 
+                $prefill = isset($packageServiceDetails) && is_array($packageServiceDetails) && count($packageServiceDetails) > 0;
+                if ($prefill):
+                    $idx = 0;
+                    foreach ($packageServiceDetails as $sv): ?>
+                        <div class="item-row bg-gray-50 p-4 rounded-lg" id="item-<?= $idx ?>">
+                            <div class="grid grid-cols-12 gap-4">
+                                <div class="col-span-3">
+                                    <select name="items[<?= $idx ?>][type]" required class="w-full px-3 py-2 border rounded-lg">
+                                        <option value="test" selected>Xét nghiệm/DV</option>
+                                        <option value="consultation">Khám bệnh</option>
+                                        <option value="procedure">Thủ thuật</option>
+                                        <option value="other">Khác</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-4">
+                                    <input type="text" name="items[<?= $idx ?>][description]" 
+                                           value="<?= htmlspecialchars($sv['service_name'] ?? '') ?>" required
+                                           class="w-full px-3 py-2 border rounded-lg">
+                                </div>
+                                <div class="col-span-1">
+                                    <input type="number" name="items[<?= $idx ?>][quantity]" value="1" min="1" required
+                                           onchange="calculateItemTotal(<?= $idx ?>)"
+                                           class="w-full px-3 py-2 border rounded-lg">
+                                </div>
+                                <div class="col-span-2">
+                                    <input type="number" name="items[<?= $idx ?>][unit_price]" value="<?= (float)($sv['price'] ?? 0) ?>" min="0" step="1000" required
+                                           onchange="calculateItemTotal(<?= $idx ?>)"
+                                           class="w-full px-3 py-2 border rounded-lg">
+                                </div>
+                                <div class="col-span-2">
+                                    <input type="number" name="items[<?= $idx ?>][total_price]" value="<?= (float)($sv['price'] ?? 0) ?>" readonly
+                                           class="w-full px-3 py-2 border rounded-lg bg-gray-100">
+                                </div>
+                            </div>
+                            <div class="mt-2 text-xs text-gray-500 ml-1">
+                                <?php if (!empty($sv['doctor_name'])): ?>
+                                    <span class="mr-3"><i class="fas fa-user-md mr-1"></i><?= htmlspecialchars($sv['doctor_name']) ?></span>
+                                <?php endif; ?>
+                                <?php if (!empty($sv['appointment_date'])): ?>
+                                    <span class="mr-3"><i class="fas fa-calendar mr-1"></i><?= date('d/m/Y', strtotime($sv['appointment_date'])) ?></span>
+                                <?php endif; ?>
+                                <?php if (!empty($sv['appointment_time'])): ?>
+                                    <span><i class="fas fa-clock mr-1"></i><?= date('H:i', strtotime($sv['appointment_time'])) ?></span>
+                                <?php endif; ?>
+                            </div>
                         </div>
-                        <div class="col-span-4">
-                            <input type="text" name="items[0][description]" value="Phí khám <?= htmlspecialchars($appointment['specialization']) ?>" required
-                                   class="w-full px-3 py-2 border rounded-lg">
+                <?php $idx++; endforeach; else: ?>
+                        <!-- Fallback: 1 dòng phí khám -->
+                        <div class="item-row bg-gray-50 p-4 rounded-lg" id="item-0">
+                            <div class="grid grid-cols-12 gap-4">
+                                <div class="col-span-3">
+                                    <select name="items[0][type]" required class="w-full px-3 py-2 border rounded-lg">
+                                        <option value="consultation" selected>Khám bệnh</option>
+                                        <option value="medicine">Thuốc</option>
+                                        <option value="test">Xét nghiệm</option>
+                                        <option value="procedure">Thủ thuật</option>
+                                        <option value="other">Khác</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-4">
+                                    <input type="text" name="items[0][description]" value="Phí khám <?= htmlspecialchars($appointment['specialization'] ?? '') ?>" required
+                                           class="w-full px-3 py-2 border rounded-lg">
+                                </div>
+                                <div class="col-span-1">
+                                    <input type="number" name="items[0][quantity]" value="1" min="1" required
+                                           onchange="calculateItemTotal(0)"
+                                           class="w-full px-3 py-2 border rounded-lg">
+                                </div>
+                                <div class="col-span-2">
+                                    <input type="number" name="items[0][unit_price]" value="<?= (float)($appointment['consultation_fee'] ?? 0) ?>" min="0" step="1000" required
+                                           onchange="calculateItemTotal(0)"
+                                           class="w-full px-3 py-2 border rounded-lg">
+                                </div>
+                                <div class="col-span-2">
+                                    <input type="number" name="items[0][total_price]" value="<?= (float)($appointment['consultation_fee'] ?? 0) ?>" readonly
+                                           class="w-full px-3 py-2 border rounded-lg bg-gray-100">
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-span-1">
-                            <input type="number" name="items[0][quantity]" value="1" min="1" required
-                                   onchange="calculateItemTotal(0)"
-                                   class="w-full px-3 py-2 border rounded-lg">
-                        </div>
-                        <div class="col-span-2">
-                            <input type="number" name="items[0][unit_price]" value="<?= $appointment['consultation_fee'] ?>" min="0" step="1000" required
-                                   onchange="calculateItemTotal(0)"
-                                   class="w-full px-3 py-2 border rounded-lg">
-                        </div>
-                        <div class="col-span-2">
-                            <input type="number" name="items[0][total_price]" value="<?= $appointment['consultation_fee'] ?>" readonly
-                                   class="w-full px-3 py-2 border rounded-lg bg-gray-100">
-                        </div>
-                    </div>
-                </div>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -113,7 +168,7 @@ ob_start();
                     <div class="space-y-3">
                         <div class="flex justify-between text-gray-700">
                             <span>Tổng tiền:</span>
-                            <span class="font-semibold" id="totalDisplay"><?= number_format($appointment['consultation_fee']) ?> VNĐ</span>
+                            <span class="font-semibold" id="totalDisplay">0 VNĐ</span>
                         </div>
                         <div class="flex justify-between text-gray-700">
                             <span>Giảm giá:</span>
@@ -125,15 +180,15 @@ ob_start();
                         </div>
                         <div class="flex justify-between text-2xl font-bold text-gray-900 pt-3 border-t">
                             <span>Tổng thanh toán:</span>
-                            <span class="text-purple-600" id="finalDisplay"><?= number_format($appointment['consultation_fee']) ?> VNĐ</span>
+                            <span class="text-purple-600" id="finalDisplay">0 VNĐ</span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <input type="hidden" name="total_amount" id="total_amount" value="<?= $appointment['consultation_fee'] ?>">
-        <input type="hidden" name="final_amount" id="final_amount" value="<?= $appointment['consultation_fee'] ?>">
+        <input type="hidden" name="total_amount" id="total_amount" value="0">
+        <input type="hidden" name="final_amount" id="final_amount" value="0">
 
         <!-- Actions -->
         <div class="mt-8 flex justify-end space-x-4">
@@ -150,7 +205,7 @@ ob_start();
 </div>
 
 <script>
-let itemCount = 1; // Bắt đầu từ 1 vì đã có item 0
+let itemCount = <?php echo isset($idx) ? (int)$idx : (isset($prefill) && $prefill ? 0 : 1); ?>;
 
 function addItem() {
     const container = document.getElementById('itemsContainer');
@@ -229,9 +284,7 @@ function calculateTotal() {
 }
 
 // Tính tổng ban đầu
-window.onload = function() {
-    calculateTotal();
-};
+window.onload = function() { calculateTotal(); };
 </script>
 
 <?php 

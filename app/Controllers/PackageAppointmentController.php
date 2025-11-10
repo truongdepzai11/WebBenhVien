@@ -94,6 +94,15 @@ class PackageAppointmentController {
         // Lấy danh sách bác sĩ (cho phân công)
         $doctors = $this->doctorModel->getAll();
 
+        // Chuẩn bị dữ liệu hóa đơn: tìm lịch tổng hợp gói và hóa đơn (nếu có)
+        $summaryAppointment = $this->appointmentModel->getSummaryByPackageAppointmentId($id);
+        $summaryInvoice = null;
+        if ($summaryAppointment) {
+            require_once APP_PATH . '/Models/Invoice.php';
+            $invoiceModel = new Invoice();
+            $summaryInvoice = $invoiceModel->findByAppointmentId($summaryAppointment['id']);
+        }
+
         require_once APP_PATH . '/Views/package_appointments/show.php';
     }
 

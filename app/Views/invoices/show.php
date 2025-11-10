@@ -64,6 +64,43 @@ ob_start();
         <?php endif; ?>
     </div>
 
+    <?php if (!empty($packageServiceDetails)): ?>
+    <!-- Package Services Breakdown -->
+    <div class="mb-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Danh sách dịch vụ trong gói</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Dịch vụ</th>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Bác sĩ</th>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Ngày khám</th>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Giờ khám</th>
+                        <th class="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    <?php foreach ($packageServiceDetails as $sv): ?>
+                    <tr>
+                        <td class="px-4 py-3 text-gray-900 font-medium"><?= htmlspecialchars($sv['service_name'] ?? '') ?></td>
+                        <td class="px-4 py-3 text-gray-700"><?= htmlspecialchars($sv['doctor_name'] ?? '—') ?></td>
+                        <td class="px-4 py-3 text-gray-700"><?= !empty($sv['appointment_date']) ? date('d/m/Y', strtotime($sv['appointment_date'])) : '—' ?></td>
+                        <td class="px-4 py-3 text-gray-700"><?= !empty($sv['appointment_time']) ? date('H:i', strtotime($sv['appointment_time'])) : '—' ?></td>
+                        <td class="px-4 py-3 text-right text-gray-900 font-semibold"><?= number_format((float)($sv['price'] ?? 0)) ?> VNĐ</td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+                <tfoot class="bg-gray-50">
+                    <tr>
+                        <td colspan="4" class="px-4 py-3 text-right font-semibold text-gray-800">Tổng giá gói</td>
+                        <td class="px-4 py-3 text-right text-purple-600 font-bold text-lg"><?= number_format((float)($packageTotal ?? 0)) ?> VNĐ</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Invoice Items -->
     <div class="mb-6">
         <h3 class="text-lg font-bold text-gray-800 mb-4">Chi tiết dịch vụ</h3>
