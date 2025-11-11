@@ -82,18 +82,14 @@ class HealthPackage {
         }
 
         $query = "INSERT INTO " . $this->table . " 
-                  (package_code, name, description, price_male, price_female, 
-                   gender_requirement, min_age, max_age, is_active) 
-                  VALUES (:package_code, :name, :description, :price_male, :price_female, 
-                          :gender_requirement, :min_age, :max_age, :is_active)";
+                  (package_code, name, description, gender_requirement, min_age, max_age, is_active) 
+                  VALUES (:package_code, :name, :description, :gender_requirement, :min_age, :max_age, :is_active)";
 
         $stmt = $this->conn->prepare($query);
         
         $stmt->bindParam(':package_code', $this->package_code);
         $stmt->bindParam(':name', $this->name);
         $stmt->bindParam(':description', $this->description);
-        $stmt->bindParam(':price_male', $this->price_male);
-        $stmt->bindParam(':price_female', $this->price_female);
         $stmt->bindParam(':gender_requirement', $this->gender_requirement);
         $stmt->bindParam(':min_age', $this->min_age);
         $stmt->bindParam(':max_age', $this->max_age);
@@ -122,8 +118,6 @@ class HealthPackage {
         $query = "UPDATE " . $this->table . " 
                   SET name = :name,
                       description = :description,
-                      price_male = :price_male,
-                      price_female = :price_female,
                       gender_requirement = :gender_requirement,
                       min_age = :min_age,
                       max_age = :max_age,
@@ -134,8 +128,6 @@ class HealthPackage {
         
         $stmt->bindParam(':name', $this->name);
         $stmt->bindParam(':description', $this->description);
-        $stmt->bindParam(':price_male', $this->price_male);
-        $stmt->bindParam(':price_female', $this->price_female);
         $stmt->bindParam(':gender_requirement', $this->gender_requirement);
         $stmt->bindParam(':min_age', $this->min_age);
         $stmt->bindParam(':max_age', $this->max_age);

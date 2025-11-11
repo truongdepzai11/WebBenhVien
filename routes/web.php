@@ -478,6 +478,11 @@ $router->post('/admin/packages/{package_id}/services/{service_id}/update-price',
     $controller->updateServicePrice($package_id, $service_id);
 });
 
+$router->post('/admin/packages/{package_id}/services/{service_id}/toggle-required', function($package_id, $service_id) {
+    $controller = new PackageController();
+    $controller->toggleServiceRequired($package_id, $service_id);
+});
+
 // API - Get package services
 $router->get('/api/package-services/{package_id}', function($package_id) {
     $controller = new PackageController();

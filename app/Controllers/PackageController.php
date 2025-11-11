@@ -269,6 +269,29 @@ class PackageController {
         exit;
     }
 
+    // Toggle dịch vụ bắt buộc trong gói
+    public function toggleServiceRequired($package_id, $service_id) {
+        Auth::requireAdmin();
+
+        $database = new Database();
+        $conn = $database->getConnection();
+
+        // Đảo trạng thái is_required
+        $query = "UPDATE package_services SET is_required = NOT is_required WHERE id = :id AND package_id = :package_id";
+        $stmt = $conn->prepare($query);
+        $stmt->bindParam(':id', $service_id);
+        $stmt->bindParam(':package_id', $package_id);
+
+        if ($stmt->execute()) {
+            $_SESSION['success'] = 'Cập nhật bắt buộc thành công!';
+        } else {
+            $_SESSION['error'] = 'Cập nhật bắt buộc thất bại!';
+        }
+
+        header('Location: ' . APP_URL . '/admin/packages/' . $package_id . '/services');
+        exit;
+    }
+
     // Xóa dịch vụ khỏi gói
     public function deleteService($package_id, $service_id) {
         Auth::requireAdmin();
