@@ -41,7 +41,7 @@ ob_start();
 <!-- Stats Section -->
 <section class="py-12 bg-white shadow-md">
     <div class="container mx-auto px-6">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-8 text-center">
             <div>
                 <div class="text-4xl font-bold text-purple-600 mb-2">
                     <i class="fas fa-user-md"></i>
@@ -55,6 +55,13 @@ ob_start();
                 </div>
                 <p class="text-3xl font-bold text-gray-800"><?= count($specializations) ?>+</p>
                 <p class="text-gray-600">Chuyên khoa</p>
+            </div>
+            <div>
+                <div class="text-4xl font-bold text-purple-600 mb-2">
+                    <i class="fas fa-briefcase-medical"></i>
+                </div>
+                <p class="text-3xl font-bold text-gray-800"><?= isset($package_count) ? $package_count : 0 ?>+</p>
+                <p class="text-gray-600">Gói khám</p>
             </div>
             <div>
                 <div class="text-4xl font-bold text-purple-600 mb-2">

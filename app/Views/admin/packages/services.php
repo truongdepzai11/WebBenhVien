@@ -84,6 +84,16 @@ $categoryNames = [
                 </div>
 
                 <div>
+                    <label for="duration_minutes" class="block text-sm font-medium text-gray-700 mb-2">
+                        Thời lượng khám (phút) *
+                    </label>
+                    <input type="number" id="duration_minutes" name="duration_minutes" required min="5" step="5" value="30"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm"
+                           placeholder="30">
+                    <p class="text-xs text-gray-500 mt-1">Thời gian dự kiến thực hiện dịch vụ</p>
+                </div>
+
+                <div>
                     <label for="display_order" class="block text-sm font-medium text-gray-700 mb-2">
                         Thứ tự hiển thị
                     </label>
@@ -152,6 +162,26 @@ $categoryNames = [
     <div class="lg:col-span-2">
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
             <?php if (!empty($services)): ?>
+                <?php 
+                    // Tổng thời lượng toàn gói
+                    $totalDuration = 0; 
+                    foreach ($services as $svc) { 
+                        $totalDuration += (int)($svc['duration_minutes'] ?? 30); 
+                    }
+                    // Hàm format giờ:phút
+                    $formatDuration = function($mins) {
+                        $mins = (int)$mins;
+                        if ($mins < 60) return $mins . ' phút';
+                        $h = intdiv($mins, 60);
+                        $m = $mins % 60;
+                        return $h . ' giờ' . ($m > 0 ? (' ' . $m . ' phút') : '');
+                    };
+                ?>
+                <div class="px-6 pt-4">
+                    <span class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-semibold">
+                        ⏱ Tổng thời lượng gói: <?= $formatDuration($totalDuration) ?>
+                    </span>
+                </div>
                 <?php
                 // Nhóm dịch vụ theo category
                 $servicesByCategory = [];
@@ -167,12 +197,21 @@ $categoryNames = [
                 <div class="divide-y divide-gray-200">
                     <?php foreach ($servicesByCategory as $category => $categoryServices): ?>
                     <div class="p-6">
-                        <div class="flex items-center mb-4">
+                        <?php 
+                            $categoryTotalDuration = 0; 
+                            foreach ($categoryServices as $svc) { 
+                                $categoryTotalDuration += (int)($svc['duration_minutes'] ?? 30); 
+                            }
+                        ?>
+                        <div class="flex items-center flex-wrap gap-2 mb-4">
                             <h4 class="text-lg font-bold text-gray-800">
                                 <?= $categoryNames[$category] ?? 'Khác' ?>
                             </h4>
-                            <span class="ml-3 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">
+                            <span class="ml-1 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">
                                 <?= count($categoryServices) ?> dịch vụ
+                            </span>
+                            <span class="ml-1 px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-semibold">
+                                ⏱ Tổng thời lượng: <?= $formatDuration($categoryTotalDuration) ?>
                             </span>
                         </div>
 
@@ -194,7 +233,7 @@ $categoryNames = [
                                         <?php endif; ?>
                                     </div>
                                     
-                                    <!-- Giá dịch vụ & Bắt buộc - Có thể sửa inline -->
+                                    <!-- Giá dịch vụ, Thời lượng & Bắt buộc - Có thể sửa inline -->
                                     <div class="flex items-center gap-4 mt-2">
                                         <!-- Sửa giá -->
                                         <form action="<?= APP_URL ?>/admin/packages/<?= $package['id'] ?>/services/<?= $service['id'] ?>/update-price" 
@@ -206,6 +245,18 @@ $categoryNames = [
                                                    class="w-32 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-purple-500"
                                                    onchange="this.form.submit()">
                                             <span class="text-sm text-gray-600">đ</span>
+                                        </form>
+
+                                        <!-- Sửa thời lượng -->
+                                        <form action="<?= APP_URL ?>/admin/packages/<?= $package['id'] ?>/services/<?= $service['id'] ?>/update-duration" 
+                                              method="POST" class="flex items-center gap-2">
+                                            <label class="text-sm text-gray-600">Thời lượng:</label>
+                                            <input type="number" name="duration_minutes" 
+                                                   value="<?= (int)($service['duration_minutes'] ?? 30) ?>" 
+                                                   min="5" step="5"
+                                                   class="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-purple-500"
+                                                   onchange="this.form.submit()">
+                                            <span class="text-sm text-gray-600">phút</span>
                                         </form>
                                         
                                         <!-- Toggle bắt buộc -->

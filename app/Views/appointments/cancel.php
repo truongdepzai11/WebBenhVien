@@ -19,11 +19,23 @@ ob_start();
         <div class="bg-gray-50 p-6 rounded-lg mb-6">
             <h3 class="font-bold text-gray-800 mb-4">Thông tin lịch hẹn</h3>
             <div class="space-y-2 text-gray-700">
-                <p><strong>Mã lịch:</strong> <?= htmlspecialchars($appointment['appointment_code']) ?></p>
-                <p><strong>Bác sĩ:</strong> <?= htmlspecialchars($appointment['doctor_name']) ?></p>
-                <p><strong>Chuyên khoa:</strong> <?= htmlspecialchars($appointment['specialization']) ?></p>
-                <p><strong>Ngày khám:</strong> <?= date('d/m/Y', strtotime($appointment['appointment_date'])) ?></p>
-                <p><strong>Giờ khám:</strong> <?= date('H:i', strtotime($appointment['appointment_time'])) ?></p>
+                <p><strong>Mã lịch:</strong> <?= htmlspecialchars($appointment['appointment_code'] ?? '') ?></p>
+                <p><strong>Bác sĩ:</strong> <?= htmlspecialchars($appointment['doctor_name'] ?? '—') ?></p>
+                <p><strong>Chuyên khoa:</strong> <?= htmlspecialchars($appointment['specialization'] ?? '—') ?></p>
+                <p><strong>Ngày khám:</strong> 
+                    <?php if (!empty($appointment['appointment_date'])): ?>
+                        <?= date('d/m/Y', strtotime($appointment['appointment_date'])) ?>
+                    <?php else: ?>
+                        —
+                    <?php endif; ?>
+                </p>
+                <p><strong>Giờ khám:</strong> 
+                    <?php if (!empty($appointment['appointment_time'])): ?>
+                        <?= date('H:i', strtotime($appointment['appointment_time'])) ?>
+                    <?php else: ?>
+                        —
+                    <?php endif; ?>
+                </p>
             </div>
         </div>
 
@@ -40,7 +52,7 @@ ob_start();
                     </p>
                     <div class="bg-white p-4 rounded border border-red-200">
                         <p class="text-sm text-gray-600 mb-1">Phí khám gốc:</p>
-                        <p class="text-lg font-semibold text-gray-900 mb-2"><?= number_format($appointment['consultation_fee']) ?> VNĐ</p>
+                        <p class="text-lg font-semibold text-gray-900 mb-2"><?= number_format((float)($appointment['consultation_fee'] ?? 0)) ?> VNĐ</p>
                         <p class="text-sm text-gray-600 mb-1">Phí hủy (30%):</p>
                         <p class="text-2xl font-bold text-red-600"><?= number_format($cancellationFee) ?> VNĐ</p>
                     </div>

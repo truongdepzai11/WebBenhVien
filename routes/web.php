@@ -103,6 +103,62 @@ $router->get('/dashboard', function() {
     $controller->index();
 });
 
+// Notifications
+$router->get('/notifications', function() {
+    require_once APP_PATH . '/Controllers/NotificationController.php';
+    $controller = new NotificationController();
+    $controller->index();
+});
+
+$router->post('/notifications/{id}/read', function($id) {
+    require_once APP_PATH . '/Controllers/NotificationController.php';
+    $controller = new NotificationController();
+    $controller->markRead($id);
+});
+
+$router->get('/api/notifications/unread-count', function() {
+    require_once APP_PATH . '/Controllers/NotificationController.php';
+    $controller = new NotificationController();
+    $controller->unreadCount();
+});
+
+// Consultations (Patient)
+$router->get('/consultations', function(){
+    require_once APP_PATH . '/Controllers/ConsultationController.php';
+    $c = new ConsultationController();
+    $c->index();
+});
+
+$router->get('/consultations/create', function(){
+    require_once APP_PATH . '/Controllers/ConsultationController.php';
+    $c = new ConsultationController();
+    $c->create();
+});
+
+$router->post('/consultations', function(){
+    require_once APP_PATH . '/Controllers/ConsultationController.php';
+    $c = new ConsultationController();
+    $c->store();
+});
+
+$router->get('/consultations/{id}', function($id){
+    require_once APP_PATH . '/Controllers/ConsultationController.php';
+    $c = new ConsultationController();
+    $c->show($id);
+});
+
+$router->post('/consultations/{id}/reply', function($id){
+    require_once APP_PATH . '/Controllers/ConsultationController.php';
+    $c = new ConsultationController();
+    $c->reply($id);
+});
+
+// Consultations (Doctor)
+$router->get('/doctor/consultations', function(){
+    require_once APP_PATH . '/Controllers/ConsultationController.php';
+    $c = new ConsultationController();
+    $c->doctorIndex();
+});
 // Patient Routes
 $router->get('/patients', function() {
     $controller = new PatientController();
@@ -353,7 +409,25 @@ $router->get('/invoices/{id}/pay', function($id) {
 
 $router->post('/invoices/{id}/pay', function($id) {
     $controller = new InvoiceController();
-    $controller->pay($id);
+    $controller->processPayment($id);
+});
+
+// MoMo payment routes
+$router->get('/invoices/{id}/momo', function($id){
+    $controller = new InvoiceController();
+    $controller->momo($id);
+});
+
+$router->get('/payments/momo/return', function(){
+    require_once APP_PATH . '/Controllers/PaymentController.php';
+    $pc = new PaymentController();
+    $pc->momoReturn();
+});
+
+$router->post('/payments/momo/ipn', function(){
+    require_once APP_PATH . '/Controllers/PaymentController.php';
+    $pc = new PaymentController();
+    $pc->momoIpn();
 });
 
 // ==================== MEDICAL RECORDS ROUTES ====================
@@ -406,6 +480,12 @@ $router->get('/api/validate/email', function() {
 $router->get('/api/validate/phone', function() {
     $controller = new ValidationController();
     $controller->checkPhone();
+});
+
+// API - Doctor: get patient's appointments with current doctor (confirmed/completed)
+$router->get('/api/doctor/patient-appointments/{patient_id}', function($patient_id) {
+    $controller = new MedicalRecordController();
+    $controller->getPatientAppointmentsForDoctor($patient_id);
 });
 
 // ==================== HEALTH PACKAGES ====================
@@ -476,6 +556,11 @@ $router->post('/admin/packages/{package_id}/services/{service_id}/delete', funct
 $router->post('/admin/packages/{package_id}/services/{service_id}/update-price', function($package_id, $service_id) {
     $controller = new PackageController();
     $controller->updateServicePrice($package_id, $service_id);
+});
+
+$router->post('/admin/packages/{package_id}/services/{service_id}/update-duration', function($package_id, $service_id) {
+    $controller = new PackageController();
+    $controller->updateServiceDuration($package_id, $service_id);
 });
 
 $router->post('/admin/packages/{package_id}/services/{service_id}/toggle-required', function($package_id, $service_id) {

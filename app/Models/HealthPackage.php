@@ -34,6 +34,21 @@ class HealthPackage {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Lấy các dịch vụ đã chọn theo appointment tổng hợp (từ bảng appointment_package_services)
+    public function getSelectedServicesByAppointmentId($appointmentId) {
+        $query = "SELECT ps.*
+                  FROM appointment_package_services aps
+                  INNER JOIN package_services ps ON aps.service_id = ps.id
+                  WHERE aps.appointment_id = :appointment_id
+                  ORDER BY ps.display_order, ps.service_category, ps.service_name";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':appointment_id', $appointmentId);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     // Lấy gói khám theo ID
     public function findById($id) {
         $query = "SELECT * FROM " . $this->table . " WHERE id = :id LIMIT 1";

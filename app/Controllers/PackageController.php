@@ -10,6 +10,32 @@ class PackageController {
         $this->packageModel = new HealthPackage();
     }
 
+    // Cập nhật thời lượng dịch vụ (phút)
+    public function updateServiceDuration($package_id, $service_id) {
+        Auth::requireAdmin();
+
+        $database = new Database();
+        $conn = $database->getConnection();
+
+        $duration = (int)($_POST['duration_minutes'] ?? 30);
+        if ($duration <= 0) { $duration = 30; }
+
+        $query = "UPDATE package_services SET duration_minutes = :duration WHERE id = :id AND package_id = :package_id";
+        $stmt = $conn->prepare($query);
+        $stmt->bindParam(':duration', $duration, PDO::PARAM_INT);
+        $stmt->bindParam(':id', $service_id);
+        $stmt->bindParam(':package_id', $package_id);
+
+        if ($stmt->execute()) {
+            $_SESSION['success'] = 'Cập nhật thời lượng dịch vụ thành công!';
+        } else {
+            $_SESSION['error'] = 'Cập nhật thời lượng dịch vụ thất bại!';
+        }
+
+        header('Location: ' . APP_URL . '/admin/packages/' . $package_id . '/services');
+        exit;
+    }
+
     // ==================== PUBLIC VIEWS ====================
     
     // Danh sách gói khám (Public)
@@ -245,14 +271,17 @@ class PackageController {
         $conn = $database->getConnection();
         
         $query = "INSERT INTO package_services 
-                  (package_id, service_name, service_category, service_price, is_required, gender_specific, notes, display_order) 
-                  VALUES (:package_id, :service_name, :service_category, :service_price, :is_required, :gender_specific, :notes, :display_order)";
+                  (package_id, service_name, service_category, service_price, duration_minutes, is_required, gender_specific, notes, display_order) 
+                  VALUES (:package_id, :service_name, :service_category, :service_price, :duration_minutes, :is_required, :gender_specific, :notes, :display_order)";
         
         $stmt = $conn->prepare($query);
         $stmt->bindParam(':package_id', $package_id);
         $stmt->bindParam(':service_name', $_POST['service_name']);
         $stmt->bindParam(':service_category', $_POST['service_category']);
         $stmt->bindParam(':service_price', $_POST['service_price']);
+        $duration = (int)($_POST['duration_minutes'] ?? 30);
+        if ($duration <= 0) { $duration = 30; }
+        $stmt->bindParam(':duration_minutes', $duration, PDO::PARAM_INT);
         $is_required = isset($_POST['is_required']) ? 1 : 0;
         $stmt->bindParam(':is_required', $is_required);
         $stmt->bindParam(':gender_specific', $_POST['gender_specific']);

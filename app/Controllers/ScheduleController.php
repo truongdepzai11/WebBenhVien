@@ -297,6 +297,29 @@ class ScheduleController {
         $packageAppointmentModel->created_by = Auth::id();
 
         if ($packageAppointmentModel->create()) {
+            // Tạo appointment tổng hợp để xuất hiện trong danh sách Lịch hẹn
+            require_once APP_PATH . '/Models/HealthPackage.php';
+            $pkgModel = new HealthPackage();
+            $pkg = $pkgModel->findById($_POST['package_id']);
+            $services = $pkgModel->getPackageServices($_POST['package_id']);
+            $totalPrice = 0;
+            foreach ($services as $svc) { $totalPrice += (float)($svc['service_price'] ?? 0); }
+
+            $this->appointmentModel->patient_id = $patientId;
+            $this->appointmentModel->doctor_id = null;
+            $this->appointmentModel->package_id = $_POST['package_id'];
+            $this->appointmentModel->package_appointment_id = $packageAppointmentModel->id;
+            $this->appointmentModel->appointment_date = $_POST['appointment_date'];
+            $this->appointmentModel->appointment_time = null;
+            $this->appointmentModel->reason = 'Khám theo gói: ' . ($pkg['name'] ?? '');
+            $this->appointmentModel->status = 'pending';
+            $this->appointmentModel->notes = $_POST['reason'] ?? '';
+            $this->appointmentModel->appointment_type = 'package';
+            $this->appointmentModel->coordinator_doctor_id = null;
+            $this->appointmentModel->total_price = $totalPrice;
+
+            $this->appointmentModel->create();
+
             $_SESSION['success'] = 'Đăng ký gói khám Walk-in thành công';
             header('Location: ' . APP_URL . '/schedule');
             exit;

@@ -74,7 +74,7 @@ ob_start();
             </div>
         </div>
     </a>
-
+    
     <a href="<?= APP_URL ?>/admin/specializations" class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition">
         <div class="flex items-center space-x-4">
             <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">

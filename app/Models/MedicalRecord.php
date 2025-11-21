@@ -83,6 +83,28 @@ class MedicalRecord {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Tìm hồ sơ bệnh án theo appointment_id (nếu được tạo từ lịch hẹn)
+    public function findByAppointmentId($appointment_id) {
+        $query = "SELECT mr.*, 
+                         p.patient_code, pu.full_name as patient_name,
+                         d.doctor_code, du.full_name as doctor_name, s.name as specialization
+                  FROM " . $this->table . " mr
+                  LEFT JOIN patients p ON mr.patient_id = p.id
+                  LEFT JOIN users pu ON p.user_id = pu.id
+                  LEFT JOIN doctors d ON mr.doctor_id = d.id
+                  LEFT JOIN users du ON d.user_id = du.id
+                  LEFT JOIN specializations s ON d.specialization_id = s.id
+                  WHERE mr.appointment_id = :appointment_id
+                  ORDER BY mr.visit_date DESC
+                  LIMIT 1";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':appointment_id', $appointment_id);
+        $stmt->execute();
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     // Tìm hồ sơ bệnh án theo ID
     public function findById($id) {
         $query = "SELECT mr.*, 

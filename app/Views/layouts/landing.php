@@ -61,6 +61,7 @@
                 <!-- Menu -->
                 <div class="hidden md:flex items-center space-x-8">
                     <a href="<?= APP_URL ?>/" class="text-gray-700 hover:text-purple-600 font-medium transition">Trang chủ</a>
+                    <a href="<?= APP_URL ?>/packages" class="text-gray-700 hover:text-purple-600 font-medium transition">Gói khám</a>
                     
                     <!-- Dropdown Chuyên khoa -->
                     <div class="relative group">

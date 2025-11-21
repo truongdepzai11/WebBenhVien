@@ -458,10 +458,106 @@ class InvoiceController {
             exit;
         }
 
-        // TODO: Tích hợp MoMo API
-        // Cần: Partner Code, Access Key, Secret Key từ MoMo
-        
-        require_once APP_PATH . '/Views/invoices/momo.php';
+        // Tính số tiền còn phải thanh toán
+        $payments = $this->paymentModel->getByInvoiceId($id);
+        $paid = 0;
+        foreach ($payments as $p) {
+            if (($p['payment_status'] ?? '') === 'success') {
+                $paid += (int)$p['amount'];
+            }
+        }
+        $final = (int)$invoice['final_amount'];
+        $amount = max(0, $final - $paid);
+        if ($amount <= 0) {
+            $_SESSION['warning'] = 'Hóa đơn đã được thanh toán đủ.';
+            header('Location: ' . APP_URL . '/invoices/' . $id);
+            exit;
+        }
+
+        // Tạo bản ghi payment pending (momo)
+        $this->paymentModel->invoice_id = $id;
+        $this->paymentModel->amount = $amount;
+        $this->paymentModel->payment_method = 'momo';
+        $this->paymentModel->payment_status = 'pending';
+        $this->paymentModel->transaction_id = null;
+        $this->paymentModel->gateway_response = null;
+        $this->paymentModel->payment_date = null;
+        $this->paymentModel->create();
+
+        // Dùng payment_code làm orderId để đối soát idempotent
+        $orderId = $this->paymentModel->payment_code;
+
+        // Đọc config MoMo
+        $cfg = require APP_PATH . '/../config/momo.php';
+        $endpoint = $cfg['endpoint'];
+        $partnerCode = $cfg['partnerCode'];
+        $accessKey = $cfg['accessKey'];
+        $secretKey = $cfg['secretKey'];
+        $orderInfo = $cfg['orderInfo'] . ' #' . ($invoice['invoice_code'] ?? $id);
+        $returnUrl = $cfg['returnUrl'];
+        $ipnUrl = $cfg['ipnUrl'];
+        $requestId = $orderId; // dùng cùng giá trị
+        $extraData = base64_encode(json_encode(['invoice_id'=>$id, 'payment_code'=>$orderId]));
+        $requestType = $cfg['requestType'];
+        $lang = $cfg['lang'] ?? 'vi';
+
+        // Validate config
+        if (!$partnerCode || strpos($partnerCode, 'YOUR_') === 0 || !$accessKey || strpos($accessKey, 'YOUR_') === 0 || !$secretKey || strpos($secretKey, 'YOUR_') === 0) {
+            $_SESSION['error'] = 'Chưa cấu hình MoMo Sandbox (partnerCode/accessKey/secretKey). Vui lòng điền trong config/momo.php.';
+            header('Location: ' . APP_URL . '/invoices/' . $id);
+            exit;
+        }
+
+        $raw = "accessKey={$accessKey}&amount={$amount}&extraData={$extraData}&ipnUrl={$ipnUrl}&orderId={$orderId}&orderInfo={$orderInfo}&partnerCode={$partnerCode}&redirectUrl={$returnUrl}&requestId={$requestId}&requestType={$requestType}";
+        $signature = hash_hmac('sha256', $raw, $secretKey);
+
+        $payload = [
+            'partnerCode' => $partnerCode,
+            'accessKey' => $accessKey,
+            'requestId' => $requestId,
+            'amount' => (string)$amount,
+            'orderId' => $orderId,
+            'orderInfo' => $orderInfo,
+            'redirectUrl' => $returnUrl,
+            'ipnUrl' => $ipnUrl,
+            'lang' => $lang,
+            'extraData' => $extraData,
+            'requestType' => $requestType,
+            'signature' => $signature,
+        ];
+
+        if (!function_exists('curl_init')) {
+            $_SESSION['error'] = 'Máy chủ chưa bật cURL PHP nên không thể gọi MoMo. Vui lòng bật php_curl.';
+            header('Location: ' . APP_URL . '/invoices/' . $id);
+            exit;
+        }
+
+        $jsonPayload = json_encode($payload);
+        $ch = curl_init($endpoint);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [ 'Content-Type: application/json' ]);
+        $result = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr = curl_error($ch);
+        curl_close($ch);
+
+        $res = @json_decode($result, true);
+        if ($httpCode === 200 && isset($res['payUrl'])) {
+            header('Location: ' . $res['payUrl']);
+            exit;
+        }
+
+        // Ghi log để debug
+        @mkdir(BASE_PATH . '/storage/logs', 0777, true);
+        @file_put_contents(BASE_PATH . '/storage/logs/momo.log', date('c') . "\nREQ: " . $jsonPayload . "\nRES({$httpCode}): " . $result . "\nERR: " . $curlErr . "\n\n", FILE_APPEND);
+
+        $errMsg = 'Không khởi tạo được thanh toán MoMo.';
+        if (is_array($res) && isset($res['message'])) { $errMsg .= ' ' . $res['message']; }
+        $_SESSION['error'] = $errMsg;
+        header('Location: ' . APP_URL . '/invoices/' . $id);
+        exit;
     }
 
     // Thanh toán VNPay

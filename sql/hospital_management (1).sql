@@ -1,4 +1,4 @@
--- phpMyAdmin SQL Dump
+ -- phpMyAdmin SQL Dump
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
@@ -333,6 +333,7 @@ CREATE TABLE `package_services` (
   `package_id` int(11) NOT NULL,
   `service_name` varchar(255) NOT NULL,
   `service_price` decimal(10,2) DEFAULT 0.00,
+  `duration_minutes` int(11) DEFAULT 30,
   `service_category` enum('general','blood_test','urine_test','imaging','specialist','other') DEFAULT 'general',
   `is_required` tinyint(1) DEFAULT 1,
   `gender_specific` enum('both','male','female') DEFAULT 'both',

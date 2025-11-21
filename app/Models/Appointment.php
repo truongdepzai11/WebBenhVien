@@ -50,9 +50,14 @@ class Appointment {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
     // Đếm số lịch dịch vụ đã được phân công (có doctor_id) cho gói
+    // Loại trừ lịch tổng hợp gói (reason có ":") và đếm theo DISTINCT reason để không bị trùng
     public function countAssignedByPackageAppointmentId($packageAppointmentId) {
-        $query = "SELECT COUNT(*) AS c FROM " . $this->table . "
-                  WHERE package_appointment_id = :pkg_id AND doctor_id IS NOT NULL";
+        $query = "SELECT COUNT(DISTINCT LOWER(TRIM(reason))) AS c FROM " . $this->table . "
+                  WHERE package_appointment_id = :pkg_id
+                    AND doctor_id IS NOT NULL
+                    AND reason IS NOT NULL
+                    AND reason NOT LIKE '%:%'
+                    AND status IN ('pending','confirmed','completed')";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':pkg_id', $packageAppointmentId);
         $stmt->execute();
@@ -118,6 +123,21 @@ class Appointment {
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
 
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Lấy các lịch hẹn giữa bác sĩ và bệnh nhân (đã xác nhận/hoàn thành)
+    public function getByDoctorAndPatient($doctor_id, $patient_id) {
+        $query = "SELECT id, appointment_date, appointment_time, status
+                  FROM " . $this->table . "
+                  WHERE doctor_id = :doctor_id
+                    AND patient_id = :patient_id
+                    AND status IN ('confirmed','completed')
+                  ORDER BY appointment_date DESC, appointment_time DESC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':doctor_id', $doctor_id);
+        $stmt->bindParam(':patient_id', $patient_id);
+        $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 

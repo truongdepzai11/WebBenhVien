@@ -89,7 +89,62 @@ ob_start();
         <?php endif; ?>
 
         <!-- Đơn thuốc -->
-        <?php if (!empty($record['prescription'])): ?>
+        <?php if (!empty($prescriptions)): ?>
+        <div class="mb-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-3">
+                <i class="fas fa-prescription mr-2"></i>Đơn thuốc
+            </h3>
+            <div class="overflow-x-auto bg-yellow-50 p-4 rounded-lg">
+                <table class="min-w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-gray-700">
+                            <th class="py-2 pr-4">Thuốc</th>
+                            <th class="py-2 pr-4">Liều dùng</th>
+                            <th class="py-2 pr-4">Tần suất</th>
+                            <th class="py-2 pr-4">Số ngày</th>
+                            <th class="py-2 pr-4">Số lượng</th>
+                            <th class="py-2 pr-4">Đơn vị</th>
+                            <th class="py-2 pr-4">Giá</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($prescriptions as $item): ?>
+                        <tr class="border-t border-yellow-200">
+                            <td class="py-2 pr-4 font-semibold text-gray-900">
+                                <?= htmlspecialchars($item['medicine_name'] ?? 'N/A') ?>
+                            </td>
+                            <td class="py-2 pr-4 text-gray-700">
+                                <?= htmlspecialchars($item['dosage'] ?? ($item['dose'] ?? '')) ?>
+                            </td>
+                            <td class="py-2 pr-4 text-gray-700">
+                                <?= htmlspecialchars($item['frequency'] ?? '') ?>
+                            </td>
+                            <td class="py-2 pr-4 text-gray-700">
+                                <?= htmlspecialchars($item['duration'] ?? '') ?>
+                            </td>
+                            <td class="py-2 pr-4 text-gray-700">
+                                <?= htmlspecialchars($item['quantity'] ?? '') ?>
+                            </td>
+                            <td class="py-2 pr-4 text-gray-700">
+                                <?= htmlspecialchars($item['unit'] ?? '') ?>
+                            </td>
+                            <td class="py-2 pr-4 text-gray-700">
+                                <?php if (isset($item['price'])): ?>
+                                    <?= number_format($item['price']) ?> VNĐ
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php if (!empty($item['note'])): ?>
+                        <tr class="border-b border-yellow-200">
+                            <td colspan="7" class="pb-3 pr-4 text-gray-600 italic">Ghi chú: <?= htmlspecialchars($item['note']) ?></td>
+                        </tr>
+                        <?php endif; ?>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <?php elseif (!empty($record['prescription'])): ?>
         <div class="mb-6">
             <h3 class="text-lg font-bold text-gray-800 mb-3">
                 <i class="fas fa-prescription mr-2"></i>Đơn thuốc
@@ -107,7 +162,19 @@ ob_start();
                 <i class="fas fa-vial mr-2"></i>Kết quả xét nghiệm
             </h3>
             <div class="bg-purple-50 p-4 rounded-lg">
-                <p class="text-gray-700"><?= nl2br(htmlspecialchars($record['test_results'])) ?></p>
+                <?php 
+                $lines = preg_split("/(\r\n|\r|\n)/", (string)$record['test_results']);
+                $lines = array_filter(array_map('trim', $lines));
+                ?>
+                <?php if (!empty($lines)): ?>
+                    <ul class="list-disc pl-6 text-gray-700 space-y-1">
+                        <?php foreach ($lines as $line): ?>
+                            <li><?= htmlspecialchars($line) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php else: ?>
+                    <p class="text-gray-700"><?= nl2br(htmlspecialchars($record['test_results'])) ?></p>
+                <?php endif; ?>
             </div>
         </div>
         <?php endif; ?>

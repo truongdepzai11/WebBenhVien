@@ -151,4 +151,18 @@ class Patient {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function getByDoctorId($doctor_id) {
+        $query = "SELECT DISTINCT p.id, p.patient_code, u.full_name, u.date_of_birth, u.gender
+                  FROM appointments a
+                  INNER JOIN patients p ON a.patient_id = p.id
+                  INNER JOIN users u ON p.user_id = u.id
+                  WHERE a.doctor_id = :doctor_id
+                    AND a.status IN ('confirmed','completed')
+                  ORDER BY u.full_name ASC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':doctor_id', $doctor_id);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

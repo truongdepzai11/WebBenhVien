@@ -90,4 +90,13 @@ class Payment {
 
         return $stmt->execute();
     }
+
+    // Tìm payment theo mã payment_code (dùng làm orderId với MoMo)
+    public function findByCode($payment_code) {
+        $query = "SELECT * FROM " . $this->table . " WHERE payment_code = :code LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':code', $payment_code);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 }

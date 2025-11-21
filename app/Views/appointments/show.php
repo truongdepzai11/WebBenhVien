@@ -127,6 +127,12 @@ ob_start();
 
         <!-- Nút tạo hóa đơn - CHỈ HIỆN KHI ĐÃ HOÀN THÀNH -->
         <?php if ($appointment['status'] === 'completed' && (Auth::isDoctor() || Auth::isAdmin())): ?>
+            <!-- Tạo hồ sơ bệnh án từ lịch hẹn -->
+            <a href="<?= APP_URL ?>/medical-records/create?appointment_id=<?= $appointment['id'] ?>" 
+               class="px-6 py-2 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition">
+                <i class="fas fa-file-medical mr-2"></i>Tạo hồ sơ bệnh án
+            </a>
+
             <?php if (isset($invoice) && $invoice): ?>
                 <!-- Đã có hóa đơn - Xem hóa đơn -->
                 <a href="<?= APP_URL ?>/invoices/<?= $invoice['id'] ?>" 

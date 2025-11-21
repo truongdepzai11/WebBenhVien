@@ -258,6 +258,20 @@ class AppointmentController {
                 exit;
             }
             
+            // Tính danh sách dịch vụ được chọn: dịch vụ bắt buộc + tùy chọn đã tick
+            $allServices = $this->packageModel->getPackageServices($_POST['package_id']);
+            $requiredIds = array_map(function($s){ return (int)$s['id']; }, array_filter($allServices, function($s){ return !empty($s['is_required']); }));
+            $optionalSelected = array_map('intval', $_POST['selected_services'] ?? []);
+            $selectedServiceIds = array_values(array_unique(array_merge($requiredIds, $optionalSelected)));
+
+            // Tính tổng giá theo dịch vụ được chọn
+            $selectedPriceMap = [];
+            foreach ($allServices as $svc) {
+                $selectedPriceMap[(int)$svc['id']] = (float)($svc['service_price'] ?? 0);
+            }
+            $totalSelected = 0;
+            foreach ($selectedServiceIds as $sid) { $totalSelected += ($selectedPriceMap[$sid] ?? 0); }
+
             // 1. Tạo package_appointment
             require_once APP_PATH . '/Models/PackageAppointment.php';
             $packageAppointmentModel = new PackageAppointment();
@@ -267,7 +281,7 @@ class AppointmentController {
             $packageAppointmentModel->appointment_date = $_POST['appointment_date'];
             $packageAppointmentModel->status = 'scheduled';
             $packageAppointmentModel->notes = $_POST['notes'] ?? null;
-            $packageAppointmentModel->total_price = $package['price'];
+            $packageAppointmentModel->total_price = $totalSelected;
             $packageAppointmentModel->created_by = Auth::id();
             
             if (!$packageAppointmentModel->create()) {
@@ -289,10 +303,43 @@ class AppointmentController {
             $this->appointmentModel->notes = $_POST['notes'] ?? null;
             $this->appointmentModel->appointment_type = 'package';
             $this->appointmentModel->coordinator_doctor_id = null;
-            $this->appointmentModel->total_price = $package['price'];
+            $this->appointmentModel->total_price = $totalSelected;
             
             if ($this->appointmentModel->create()) {
+                // Lưu mapping các dịch vụ đã chọn để dùng về sau (hiển thị, tính tiền)
+                if (!empty($selectedServiceIds)) {
+                    $this->saveAppointmentServices($this->appointmentModel->id, $selectedServiceIds);
+                }
                 $_SESSION['success'] = 'Đăng ký gói khám thành công! Vui lòng chờ admin phân công bác sĩ.';
+
+                // Tạo thông báo cho bệnh nhân khi đặt gói khám
+                try {
+                    require_once APP_PATH . '/Models/Notification.php';
+                    require_once APP_PATH . '/Helpers/Mailer.php';
+                    $notif = new Notification();
+                    $apt = $this->appointmentModel->findById($this->appointmentModel->id);
+                    if ($apt) {
+                        $patient = $this->patientModel->findById($apt['patient_id']);
+                        if ($patient) {
+                            $userId = (int)$patient['user_id'];
+                            $dateStr = !empty($apt['appointment_date']) ? date('d/m/Y', strtotime($apt['appointment_date'])) : 'N/A';
+                            $title = 'Đăng ký gói khám thành công';
+                            $message = 'Bạn đã đăng ký gói khám ' . ($apt['package_name'] ?? '') . ' vào ngày ' . $dateStr . '. Vui lòng chờ phân công bác sĩ.';
+                            $link = '/package-appointments/' . $packageAppointmentModel->id;
+                            $notif->create($userId, $title, $message, $link, 'system');
+
+                            $mailer = new Mailer();
+                            $email = $patient['email'] ?? null;
+                            $fullName = $patient['full_name'] ?? '';
+                            if (!empty($email)) {
+                                $html = '<p>Chào ' . htmlspecialchars($fullName) . ',</p>'
+                                      . '<p>Bạn đã đăng ký gói khám <strong>' . htmlspecialchars($apt['package_name'] ?? '') . '</strong> ngày <strong>' . $dateStr . '</strong>.</p>'
+                                      . '<p>Xem chi tiết: <a href="' . APP_URL . $link . '">' . APP_URL . $link . '</a></p>';
+                                $mailer->send($email, $title, $html);
+                            }
+                        }
+                    }
+                } catch (\Throwable $e) { /* silent */ }
                 header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentModel->id);
             } else {
                 $_SESSION['error'] = 'Đăng ký gói khám thất bại';
@@ -318,6 +365,59 @@ class AppointmentController {
 
         if ($this->appointmentModel->create()) {
             $_SESSION['success'] = 'Đặt lịch hẹn thành công!';
+
+            // Tạo thông báo cho bệnh nhân khi đặt lịch khám thường
+            try {
+                require_once APP_PATH . '/Models/Notification.php';
+                require_once APP_PATH . '/Helpers/Mailer.php';
+                $notif = new Notification();
+                // Lấy lại appointment kèm join để có tên bác sĩ
+                $apt = $this->appointmentModel->findById($this->appointmentModel->id);
+                if ($apt) {
+                    $patient = $this->patientModel->findById($apt['patient_id']);
+                    if ($patient) {
+                        $userId = (int)$patient['user_id'];
+                        $dateStr = !empty($apt['appointment_date']) ? date('d/m/Y', strtotime($apt['appointment_date'])) : 'N/A';
+                        $timeStr = !empty($apt['appointment_time']) ? date('H:i', strtotime($apt['appointment_time'])) : 'không rõ giờ';
+                        $doctorName = $apt['doctor_name'] ?? '';
+                        $title = 'Đặt lịch khám thành công';
+                        $message = 'Bạn đã đặt lịch khám ngày ' . $dateStr . ' lúc ' . $timeStr . ' với bác sĩ ' . $doctorName . '. Vui lòng chờ xác nhận.';
+                        $link = '/appointments/' . $this->appointmentModel->id;
+                        $notif->create($userId, $title, $message, $link, 'system');
+
+                        $mailer = new Mailer();
+                        $email = $patient['email'] ?? null;
+                        $fullName = $patient['full_name'] ?? '';
+                        if (!empty($email)) {
+                            $html = '<p>Chào ' . htmlspecialchars($fullName) . ',</p>'
+                                  . '<p>Bạn đã đặt lịch khám với <strong>' . htmlspecialchars($doctorName) . '</strong> vào <strong>' . $dateStr . ' ' . $timeStr . '</strong>. Vui lòng chờ xác nhận.</p>'
+                                  . '<p>Xem chi tiết: <a href="' . APP_URL . $link . '">' . APP_URL . $link . '</a></p>';
+                            $mailer->send($email, $title, $html);
+                        }
+
+                        // Thông báo cho bác sĩ có lịch hẹn mới (chờ xác nhận)
+                        if (!empty($apt['doctor_id'])) {
+                            $doctor = $this->doctorModel->findById($apt['doctor_id']);
+                            if ($doctor) {
+                                $docUserId = (int)$doctor['user_id'];
+                                $docTitle = 'Bạn có lịch hẹn mới cần xác nhận';
+                                $docMsg = 'Bệnh nhân ' . ($apt['patient_name'] ?? '') . ' đặt lịch ngày ' . $dateStr . ' lúc ' . $timeStr . '. Vui lòng kiểm tra và xác nhận.';
+                                $notif->create($docUserId, $docTitle, $docMsg, $link, 'system');
+
+                                $docEmail = $doctor['email'] ?? null;
+                                $docName = $doctor['full_name'] ?? '';
+                                if (!empty($docEmail)) {
+                                    $docHtml = '<p>Chào ' . htmlspecialchars($docName) . ',</p>'
+                                             . '<p>Bạn có lịch hẹn mới với bệnh nhân <strong>' . htmlspecialchars($apt['patient_name'] ?? '') . '</strong> vào <strong>' . $dateStr . ' ' . $timeStr . '</strong>. Vui lòng đăng nhập để xác nhận.</p>'
+                                             . '<p>Xem chi tiết: <a href="' . APP_URL . $link . '">' . APP_URL . $link . '</a></p>';
+                                    $mailer->send($docEmail, $docTitle, $docHtml);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) { /* silent */ }
+
             header('Location: ' . APP_URL . '/appointments');
             exit;
         } else {
@@ -426,6 +526,107 @@ class AppointmentController {
         if ($this->appointmentModel->updateStatus($id, $status)) {
             if (!isset($_SESSION['success']) && !isset($_SESSION['warning'])) {
                 $_SESSION['success'] = 'Cập nhật trạng thái thành công';
+            }
+
+            // Nếu cập nhật sang 'confirmed' từ form chung -> tạo thông báo + gửi email cho bệnh nhân
+            if ($status === 'confirmed') {
+                try {
+                    require_once APP_PATH . '/Models/Notification.php';
+                    require_once APP_PATH . '/Helpers/Mailer.php';
+                    $notificationModel = new Notification();
+                    $apt = $this->appointmentModel->findById($id);
+                    if ($apt) {
+                        $patient = $this->patientModel->findById($apt['patient_id']);
+                        if ($patient) {
+                            $userId = (int)$patient['user_id'];
+                            // define email/name early for both confirmation and reminder blocks
+                            $email = $patient['email'] ?? null;
+                            $fullName = $patient['full_name'] ?? '';
+                            $aptDate = !empty($apt['appointment_date']) ? date('d/m/Y', strtotime($apt['appointment_date'])) : 'N/A';
+                            $aptTime = !empty($apt['appointment_time']) ? date('H:i', strtotime($apt['appointment_time'])) : null;
+                            $doctorName = $apt['doctor_name'] ?? '';
+                            $title = 'Lịch hẹn đã được xác nhận';
+                            $link = '/appointments/' . $id;
+
+                            // Nếu là lịch theo gói khám -> chỉ hiển thị ngày, bỏ giờ/BS
+                            $isPackage = !empty($apt['package_id']) && !empty($apt['package_appointment_id']);
+                            if ($isPackage) {
+                                $message = 'Lịch hẹn theo gói khám của bạn vào ' . $aptDate . ' đã được xác nhận.';
+                            } else {
+                                $timeText = $aptTime ? (' lúc ' . $aptTime) : '';
+                                $doctorText = $doctorName ? (' với bác sĩ ' . $doctorName) : '';
+                                $message = 'Lịch hẹn của bạn vào ' . $aptDate . $timeText . $doctorText . ' đã được xác nhận.';
+                            }
+                            $notificationModel->create($userId, $title, $message, $link, 'system');
+
+                            // Tạo nhắc lịch ngay nếu lịch là hôm nay hoặc ngày mai
+                            try {
+                                require_once APP_PATH . '/Models/PackageAppointment.php';
+                                $pkgAptModel = new PackageAppointment();
+                                $aptDateStr = $apt['appointment_date'];
+                                if ((empty($aptDateStr) || $aptDateStr==='0000-00-00') && !empty($apt['package_appointment_id'])) {
+                                    $pkgA = $pkgAptModel->findById($apt['package_appointment_id']);
+                                    if ($pkgA && !empty($pkgA['appointment_date'])) {
+                                        $aptDateStr = $pkgA['appointment_date'];
+                                    }
+                                }
+                                if (!empty($aptDateStr)) {
+                                    $now = time();
+                                    $ts  = strtotime($aptDateStr . ' ' . ($apt['appointment_time'] ?? '00:00:00'));
+                                    if ($ts) {
+                                        $sameDay = date('Y-m-d',$ts)===date('Y-m-d',$now);
+                                        $tomorrow = date('Y-m-d',$ts)===date('Y-m-d', strtotime('+1 day',$now));
+                                        if ($sameDay || $tomorrow) {
+                                            $aptDateDisp = date('d/m/Y',$ts);
+                                            $aptTimeDisp = !empty($apt['appointment_time']) ? date('H:i', strtotime($apt['appointment_time'])) : null;
+                                            if ($isPackage) {
+                                                $remMsg = 'Bạn có lịch hẹn theo gói vào ' . $aptDateDisp . ($aptTimeDisp ? (' lúc ' . $aptTimeDisp) : '') . '. Vui lòng đến đúng giờ.';
+                                            } else {
+                                                $remMsg = 'Bạn có lịch hẹn vào ' . $aptDateDisp . ($aptTimeDisp ? (' lúc ' . $aptTimeDisp) : '') . ($doctorName ? (' với bác sĩ ' . $doctorName) : '') . '. Vui lòng đến đúng giờ.';
+                                            }
+                                            $exists = $notificationModel->existsByUserLinkType($userId, $link, 'reminder');
+                                            if (!$exists) {
+                                                $notificationModel->create($userId, 'Nhắc lịch khám sắp tới', $remMsg, $link, 'reminder');
+                                                // Gửi email nhắc nhở
+                                                if (!empty($email)) {
+                                                    $mailer2 = new Mailer();
+                                                    $html2 = '<p>Chào ' . htmlspecialchars($fullName) . ',</p>'
+                                                          . '<p>' . htmlspecialchars($remMsg) . '</p>'
+                                                          . '<p>Xem chi tiết: <a href="' . APP_URL . $link . '">' . APP_URL . $link . '</a></p>';
+                                                    $mailer2->send($email, 'Nhắc lịch khám sắp tới', $html2);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (\Throwable $e) { /* ignore */ }
+
+                            $mailer = new Mailer();
+                            if (!empty($email)) {
+                                if ($isPackage) {
+                                    $html = '<p>Chào ' . htmlspecialchars($fullName) . ',</p>'
+                                          . '<p>Lịch hẹn theo gói khám của bạn đã được xác nhận.</p>'
+                                          . '<ul>'
+                                          . '<li>Ngày: <strong>' . $aptDate . '</strong></li>'
+                                          . '</ul>'
+                                          . '<p>Xem chi tiết: <a href="' . APP_URL . $link . '">' . APP_URL . $link . '</a></p>';
+                                } else {
+                                    $html = '<p>Chào ' . htmlspecialchars($fullName) . ',</p>'
+                                          . '<p>Lịch hẹn của bạn đã được xác nhận:</p>'
+                                          . '<ul>'
+                                          . '<li>Ngày: <strong>' . $aptDate . '</strong></li>'
+                                          . ($aptTime ? ('<li>Giờ: <strong>' . $aptTime . '</strong></li>') : '')
+                                          . ($doctorName ? ('<li>Bác sĩ: <strong>' . htmlspecialchars($doctorName) . '</strong></li>') : '')
+                                          . '</ul>'
+                                          . '<p>Xem chi tiết: <a href="' . APP_URL . $link . '">' . APP_URL . $link . '</a></p>';
+                                }
+                                $mailer->send($email, $title, $html);
+                            }
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // bỏ qua lỗi gửi thông báo/email để không chặn luồng
+                }
             }
         } else {
             $_SESSION['error'] = 'Cập nhật trạng thái thất bại';
@@ -541,6 +742,49 @@ class AppointmentController {
 
         if ($this->appointmentModel->updateStatus($id, 'confirmed')) {
             $_SESSION['success'] = 'Đã xác nhận lịch hẹn thành công';
+
+            // Tạo thông báo cho bệnh nhân + gửi email (nếu cấu hình)
+            try {
+                require_once APP_PATH . '/Models/Notification.php';
+                require_once APP_PATH . '/Helpers/Mailer.php';
+                $notificationModel = new Notification();
+
+                // Lấy lại thông tin lịch hẹn để build nội dung
+                $apt = $this->appointmentModel->findById($id);
+                if ($apt) {
+                    // user_id của bệnh nhân lấy từ bảng patients
+                    $patient = $this->patientModel->findById($apt['patient_id']);
+                    if ($patient) {
+                        // Lấy email + tên từ users qua findById đã join
+                        $userId = (int)$patient['user_id'];
+                        $aptDate = !empty($apt['appointment_date']) ? date('d/m/Y', strtotime($apt['appointment_date'])) : 'N/A';
+                        $aptTime = !empty($apt['appointment_time']) ? date('H:i', strtotime($apt['appointment_time'])) : 'không rõ giờ';
+                        $doctorName = $apt['doctor_name'] ?? '';
+                        $title = 'Lịch hẹn đã được xác nhận';
+                        $message = 'Lịch hẹn của bạn vào ' . $aptDate . ' lúc ' . $aptTime . ' với bác sĩ ' . $doctorName . ' đã được xác nhận.';
+                        $link = '/appointments/' . $id;
+                        $notificationModel->create($userId, $title, $message, $link, 'reminder');
+
+                        // Gửi email nếu có
+                        $mailer = new Mailer();
+                        $email = $patient['email'] ?? null; // do findById join users
+                        $fullName = $patient['full_name'] ?? '';
+                        if (!empty($email)) {
+                            $html = '<p>Chào ' . htmlspecialchars($fullName) . ',</p>'
+                                  . '<p>Lịch hẹn của bạn đã được xác nhận:</p>'
+                                  . '<ul>'
+                                  . '<li>Ngày: <strong>' . $aptDate . '</strong></li>'
+                                  . '<li>Giờ: <strong>' . $aptTime . '</strong></li>'
+                                  . '<li>Bác sĩ: <strong>' . htmlspecialchars($doctorName) . '</strong></li>'
+                                  . '</ul>'
+                                  . '<p>Xem chi tiết: <a href="' . APP_URL . $link . '">' . APP_URL . $link . '</a></p>';
+                            $mailer->send($email, $title, $html);
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // silent fail to avoid blocking confirmation
+            }
         } else {
             $_SESSION['error'] = 'Xác nhận lịch hẹn thất bại';
         }
@@ -650,18 +894,19 @@ class AppointmentController {
             }
         }
 
-        // Tính phí hủy
-        $appointmentDateTime = strtotime($appointment['appointment_date'] . ' ' . $appointment['appointment_time']);
-        $now = time();
-        $hoursUntilAppointment = ($appointmentDateTime - $now) / 3600;
-        
+        // Tính phí hủy (an toàn với lịch thiếu ngày/giờ)
         $cancellationFee = 0;
         $cancellationStatus = 'cancelled';
-        
-        if ($hoursUntilAppointment < 1) {
-            // Hủy trong vòng 1h → Phạt 30%
-            $cancellationFee = $appointment['consultation_fee'] * 0.3;
-            $cancellationStatus = 'late_cancelled';
+        if (!empty($appointment['appointment_date']) && !empty($appointment['appointment_time'])) {
+            $appointmentDateTime = strtotime($appointment['appointment_date'] . ' ' . $appointment['appointment_time']);
+            $now = time();
+            $hoursUntilAppointment = ($appointmentDateTime - $now) / 3600;
+            if ($hoursUntilAppointment < 1) {
+                // Hủy trong vòng 1h → Phạt 30%
+                $base = (float)($appointment['consultation_fee'] ?? 0);
+                $cancellationFee = $base * 0.3;
+                $cancellationStatus = 'late_cancelled';
+            }
         }
 
         require_once APP_PATH . '/Views/appointments/cancel.php';
@@ -694,18 +939,19 @@ class AppointmentController {
             }
         }
 
-        // Tính phí hủy
-        $appointmentDateTime = strtotime($appointment['appointment_date'] . ' ' . $appointment['appointment_time']);
-        $now = time();
-        $hoursUntilAppointment = ($appointmentDateTime - $now) / 3600;
-        
+        // Tính phí hủy (an toàn với lịch thiếu ngày/giờ)
         $cancellationFee = 0;
         $cancellationStatus = 'cancelled';
-        
-        if ($hoursUntilAppointment < 1) {
-            // Hủy trong vòng 1h → Phạt 30%
-            $cancellationFee = $appointment['consultation_fee'] * 0.3;
-            $cancellationStatus = 'late_cancelled';
+        if (!empty($appointment['appointment_date']) && !empty($appointment['appointment_time'])) {
+            $appointmentDateTime = strtotime($appointment['appointment_date'] . ' ' . $appointment['appointment_time']);
+            $now = time();
+            $hoursUntilAppointment = ($appointmentDateTime - $now) / 3600;
+            if ($hoursUntilAppointment < 1) {
+                // Hủy trong vòng 1h → Phạt 30%
+                $base = (float)($appointment['consultation_fee'] ?? 0);
+                $cancellationFee = $base * 0.3;
+                $cancellationStatus = 'late_cancelled';
+            }
         }
 
         $cancellationReason = $_POST['cancellation_reason'] ?? 'Không có lý do';

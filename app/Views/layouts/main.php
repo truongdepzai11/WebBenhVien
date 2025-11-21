@@ -147,6 +147,20 @@
                             <span>Quản lý Gói khám</span>
                         </a>
 
+                        <?php if (Auth::isPatient()): ?>
+                        <a href="<?= APP_URL ?>/consultations" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg <?= (strpos($_SERVER['REQUEST_URI'], '/consultations') !== false && strpos($_SERVER['REQUEST_URI'], '/doctor/consultations') === false) ? 'active' : '' ?>">
+                            <i class="fas fa-comments w-5"></i>
+                            <span>Tư vấn sức khỏe</span>
+                        </a>
+                        <?php endif; ?>
+
+                        <?php if (Auth::isDoctor()): ?>
+                        <a href="<?= APP_URL ?>/doctor/consultations" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg <?= (strpos($_SERVER['REQUEST_URI'], '/doctor/consultations') !== false) ? 'active' : '' ?>">
+                            <i class="fas fa-inbox w-5"></i>
+                            <span>Hộp thư tư vấn</span>
+                        </a>
+                        <?php endif; ?>
+
                         <?php if (Auth::isReceptionist()): ?>
                         <!-- Menu nổi bật cho Lễ tân - Đăng ký Walk-in -->
                         <a href="<?= APP_URL ?>/schedule" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-lg">
@@ -190,6 +204,29 @@
                     <div class="px-6 py-4 flex items-center justify-between">
                         <h2 class="text-2xl font-bold text-gray-800"><?= $page_title ?? 'Dashboard' ?></h2>
                         <div class="flex items-center space-x-4">
+                            <?php if (Auth::isPatient() || Auth::isDoctor()): ?>
+                            <a href="<?= APP_URL ?>/notifications" class="relative inline-flex items-center text-gray-600 hover:text-purple-700">
+                                <i class="fas fa-bell text-xl"></i>
+                                <span id="notifBadge" class="hidden absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] rounded-full bg-red-600 text-white">0</span>
+                            </a>
+                            <script>
+                                (function(){
+                                  const badge = document.addEventListener ? document.getElementById('notifBadge') : null;
+                                  async function fetchCount(){
+                                    try{
+                                      const res = await fetch('<?= APP_URL ?>/api/notifications/unread-count', {cache:'no-store'});
+                                      const data = await res.json();
+                                      if(!badge) return;
+                                      const c = data.count||0;
+                                      if(c>0){ badge.textContent = c>99? '99+': c; badge.classList.remove('hidden'); }
+                                      else { badge.classList.add('hidden'); }
+                                    }catch(e){ /* silent */ }
+                                  }
+                                  fetchCount();
+                                  setInterval(fetchCount, 60000);
+                                })();
+                            </script>
+                            <?php endif; ?>
                             <span class="text-sm text-gray-600"><?= date('d/m/Y H:i') ?></span>
                         </div>
                     </div>
@@ -233,6 +270,18 @@
                 </main>
             </div>
         </div>
+        <?php if (Auth::isPatient()): ?>
+        <a href="<?= APP_URL ?>/consultations/create" class="fixed bottom-6 right-6 inline-flex items-center gap-2 px-4 py-3 rounded-full shadow-lg bg-green-600 hover:bg-green-700 text-white z-40">
+            <i class="fas fa-comments"></i>
+            <span class="hidden sm:inline">Tư vấn sức khỏe</span>
+        </a>
+        <?php elseif (Auth::isDoctor()): ?>
+        <a href="<?= APP_URL ?>/doctor/consultations" class="fixed bottom-6 right-6 inline-flex items-center gap-2 px-4 py-3 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 text-white z-40">
+            <i class="fas fa-comments-medical"></i>
+            <span class="hidden sm:inline">Hộp thư tư vấn</span>
+        </a>
+        <?php endif; ?>
+
     <?php else: ?>
         <!-- Layout cho trang đăng nhập/đăng ký -->
         <?php echo $content ?? ''; ?>

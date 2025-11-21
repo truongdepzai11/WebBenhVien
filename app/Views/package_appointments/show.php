@@ -139,7 +139,11 @@ ob_start();
 </div>
 
 <!-- Nút phân công tự động -->
-<?php if ((Auth::isAdmin() || Auth::isReceptionist()) && $packageAppointment['status'] == 'scheduled' && empty($appointments)): ?>
+<?php 
+  $as = isset($assignedCount) ? (int)$assignedCount : 0; 
+  $ts = isset($packageServices) ? (int)count($packageServices) : 0; 
+?>
+<?php if ((Auth::isAdmin() || Auth::isReceptionist()) && $ts > 0 && $as < $ts): ?>
 <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg shadow-lg p-6 mb-6">
     <div class="flex items-center justify-between">
         <div class="text-white">
@@ -147,12 +151,12 @@ ob_start();
                 <i class="fas fa-magic mr-2"></i>Phân công bác sĩ tự động
             </h4>
             <p class="text-purple-100">
-                Hệ thống sẽ tự động phân công <?= count($packageServices) ?> bác sĩ phù hợp cho các dịch vụ trong gói khám
+                Hệ thống sẽ tự động phân công <?= count($packageServices) ?> dịch vụ (còn thiếu: <?= max(0, $ts - $as) ?>)
             </p>
         </div>
         <form action="<?= APP_URL ?>/package-appointments/<?= $packageAppointment['id'] ?>/auto-assign" 
               method="POST"
-              onsubmit="return confirm('Bạn có chắc muốn phân công tự động?\n\nHệ thống sẽ tạo <?= count($packageServices) ?> lịch khám với các bác sĩ rảnh.')">
+              onsubmit="return confirm('Bạn có chắc muốn phân công tự động?\n\nHệ thống sẽ tạo lịch khám còn thiếu cho gói này.')">
             <button type="submit" 
                     class="px-8 py-3 bg-white text-purple-600 font-semibold rounded-lg hover:bg-purple-50 transition shadow-lg">
                 <i class="fas fa-robot mr-2"></i>Phân công ngay
@@ -171,6 +175,34 @@ ob_start();
             <span class="ml-2 text-sm font-normal text-gray-600">
                 (<?= isset($assignedCount) ? (int)$assignedCount : 0 ?>/<?= count($packageServices) ?> đã phân công)
             </span>
+            <?php 
+                // Tổng thời lượng toàn gói
+                $__totalDuration = 0; 
+                foreach ($packageServices as $__svc) { $__totalDuration += (int)($__svc['duration_minutes'] ?? 30); }
+                $___fmt = function($mins){ $mins=(int)$mins; if($mins<60) return $mins.' phút'; $h=intdiv($mins,60); $m=$mins%60; return $h.' giờ'.($m>0?(' '.$m.' phút'):''); };
+            ?>
+            <span class="ml-3 px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-semibold">
+                ⏱ Tổng thời lượng gói: <?= $___fmt($__totalDuration) ?>
+            </span>
+            <div class="ml-auto flex items-center gap-2">
+                <?php if ((Auth::isAdmin() || Auth::isReceptionist()) && $ts > 0 && $as < $ts): ?>
+                <form action="<?= APP_URL ?>/package-appointments/<?= $packageAppointment['id'] ?>/auto-assign" method="POST">
+                    <button type="submit" class="px-3 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700">
+                        <i class="fas fa-robot mr-1"></i>Tự động phân công
+                    </button>
+                </form>
+                <?php endif; ?>
+
+                <?php if (isset($summaryAppointment) && $summaryAppointment && ($summaryAppointment['status'] ?? 'pending') === 'pending' && (Auth::isDoctor() || Auth::isAdmin())): ?>
+                <form action="<?= APP_URL ?>/appointments/<?= $summaryAppointment['id'] ?>/update-status" method="POST"
+                      onsubmit="return confirm('Xác nhận lịch tổng của gói này?');">
+                    <input type="hidden" name="status" value="confirmed">
+                    <button type="submit" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
+                        <i class="fas fa-check-circle mr-1"></i>Xác nhận lịch
+                    </button>
+                </form>
+                <?php endif; ?>
+            </div>
         </h4>
     </div>
     
@@ -185,17 +217,85 @@ ob_start();
             <?php 
             // Tạo map appointments theo service (match linh hoạt)
             $appointmentMap = [];
-            $sourceAppointments = isset($serviceAppointments) ? $serviceAppointments : $appointments;
+            $sourceAppointments = array_values(array_filter($appointments, function($a){
+                // Bỏ qua lịch tổng hợp gói (reason có ":") và chỉ tính lịch có bác sĩ
+                if (empty($a['doctor_id'])) return false;
+                $rs = strtolower(trim($a['reason'] ?? ''));
+                return ($rs === '' || strpos($rs, ':') === false);
+            }));
+            $uniqueReasons = [];
             foreach ($sourceAppointments as $apt) {
                 // Lưu theo reason chính xác
                 $appointmentMap[$apt['reason']] = $apt;
                 
                 // Cũng lưu theo reason đã trim và lowercase để match dễ hơn
-                $cleanReason = strtolower(trim($apt['reason']));
-                $appointmentMap[$cleanReason] = $apt;
+                $key = strtolower(trim($apt['reason'] ?? ''));
+                if ($key !== '' && !in_array($key, $uniqueReasons, true)) {
+                    $uniqueReasons[] = $key;
+                }
             }
+            $assignedCount = count($uniqueReasons);
+            // Tính tổng thời lượng theo danh mục và chuẩn bị formatter
+            $categoryTotals = [];
+            foreach ($packageServices as $svc) {
+                $cat = $svc['service_category'] ?? 'other';
+                if (!isset($categoryTotals[$cat])) { $categoryTotals[$cat] = 0; }
+                $categoryTotals[$cat] += (int)($svc['duration_minutes'] ?? 30);
+            }
+            $formatDuration = function($mins) {
+                $mins = (int)$mins; if ($mins < 60) return $mins . ' phút';
+                $h = intdiv($mins, 60); $m = $mins % 60;
+                return $h . ' giờ' . ($m > 0 ? (' ' . $m . ' phút') : '');
+            };
+            $categoryNames = [
+                'general' => 'Khám tổng quát',
+                'blood_test' => 'Xét nghiệm máu',
+                'urine_test' => 'Xét nghiệm nước tiểu',
+                'imaging' => 'Chẩn đoán hình ảnh',
+                'specialist' => 'Khám chuyên khoa',
+                'other' => 'Khác'
+            ];
+            // Bản đồ thời lượng theo tên dịch vụ (để suy ra thời lượng của các lịch đã phân công)
+            $durationByService = [];
+            foreach ($packageServices as $svc) {
+                $durationByService[strtolower(trim($svc['service_name']))] = (int)($svc['duration_minutes'] ?? 30);
+            }
+            // Tập khoảng thời gian đã chiếm theo ngày trong gói
+            $usedIntervalsByDate = [];
+            foreach ($serviceAppointments as $apt) {
+                $date = $apt['appointment_date'];
+                $reasonKey = strtolower(trim($apt['reason'] ?? ''));
+                $dur = $durationByService[$reasonKey] ?? 30;
+                $startTs = strtotime($apt['appointment_date'] . ' ' . $apt['appointment_time']);
+                $endTs = $startTs + $dur * 60;
+                if (!isset($usedIntervalsByDate[$date])) $usedIntervalsByDate[$date] = [];
+                $usedIntervalsByDate[$date][] = [$startTs, $endTs];
+            }
+            // Hàm kiểm tra trống theo khoảng
+            $isFreeSlot = function($date, $startTs, $endTs) use ($usedIntervalsByDate) {
+                if (!isset($usedIntervalsByDate[$date])) return true;
+                foreach ($usedIntervalsByDate[$date] as [$s,$e]) {
+                    if ($startTs < $e && $endTs > $s) return false; // overlap
+                }
+                return true;
+            };
+            $lastCategory = null;
             
             foreach ($packageServices as $index => $service): 
+                // Hiển thị tiêu đề danh mục và tổng thời lượng khi chuyển nhóm
+                $currentCat = $service['service_category'] ?? 'other';
+                if ($currentCat !== $lastCategory):
+            ?>
+            <div class="flex items-center gap-2 mt-2 mb-1">
+                <h5 class="text-base font-bold text-gray-800">
+                    <i class="fas fa-tag mr-2 text-gray-400"></i><?= htmlspecialchars($categoryNames[$currentCat] ?? $currentCat) ?>
+                </h5>
+                <span class="px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full text-xs font-semibold">
+                    ⏱ Tổng thời lượng: <?= $formatDuration($categoryTotals[$currentCat] ?? 0) ?>
+                </span>
+            </div>
+            <?php $lastCategory = $currentCat; endif; ?>
+            <?php 
                 // Thử match chính xác trước
                 $hasAppointment = isset($appointmentMap[$service['service_name']]);
                 $appointment = $hasAppointment ? $appointmentMap[$service['service_name']] : null;
@@ -227,8 +327,17 @@ ob_start();
                                 <?= $index + 1 ?>
                             </span>
                             <div>
-                                <h5 class="text-base font-semibold text-gray-900">
+                                <h5 class="text-base font-semibold text-gray-900 flex items-center gap-2">
                                     <?= htmlspecialchars($service['service_name']) ?>
+                                    <?php 
+                                        $__dur = (int)($service['duration_minutes'] ?? 30);
+                                        if (!isset($formatDuration)) {
+                                            $formatDuration = function($mins){ $mins=(int)$mins; if($mins<60) return $mins.' phút'; $h=intdiv($mins,60); $m=$mins%60; return $h.' giờ'.($m>0?(' '.$m.' phút'):'' ); };
+                                        }
+                                    ?>
+                                    <span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium">
+                                        ⏱ <?= $formatDuration($__dur) ?>
+                                    </span>
                                 </h5>
                                 <?php if ($service['service_category']): ?>
                                 <p class="text-sm text-gray-500">
@@ -267,11 +376,22 @@ ob_start();
                                         </div>
                                     </div>
                                 </div>
-                                <a href="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>" 
-                                   class="ml-4 text-green-600 hover:text-green-800"
-                                   title="Xem chi tiết">
-                                    <i class="fas fa-external-link-alt"></i>
-                                </a>
+                                <div class="ml-4 flex items-center space-x-3">
+                                    <?php if (($appointment['status'] ?? 'pending') === 'pending' && (Auth::isDoctor() || Auth::isAdmin())): ?>
+                                    <form action="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/update-status" method="POST" class="inline"
+                                          onsubmit="return confirm('Xác nhận lịch hẹn này?');">
+                                        <input type="hidden" name="status" value="confirmed">
+                                        <button type="submit" class="text-blue-600 hover:text-blue-800" title="Xác nhận">
+                                            <i class="fas fa-check-circle"></i>
+                                        </button>
+                                    </form>
+                                    <?php endif; ?>
+                                    <a href="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>" 
+                                       class="text-green-600 hover:text-green-800"
+                                       title="Xem chi tiết">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         <?php else: ?>
@@ -315,16 +435,24 @@ ob_start();
                                     <!-- Chọn giờ -->
                                     <div>
                                         <label class="block text-xs font-medium text-gray-700 mb-1">Giờ khám</label>
+                                        <?php $durMinutes = (int)($service['duration_minutes'] ?? 30); ?>
                                         <select name="appointment_time" required
-                                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                                class="pkg-time-select w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                                data-duration="<?= $durMinutes ?>">
                                             <option value="">-- Chọn giờ --</option>
-                                            <?php 
-                                            for ($h = 8; $h < 17; $h++) {
-                                                for ($m = 0; $m < 60; $m += 30) {
-                                                    $time = sprintf('%02d:%02d', $h, $m);
-                                                    echo "<option value='$time'>$time</option>";
+                                            <?php
+                                                $selectedDate = $packageAppointment['appointment_date'];
+                                                $durMinutes = (int)($service['duration_minutes'] ?? 30);
+                                                $step = 5; // phút
+                                                $dayStart = strtotime($selectedDate . ' 08:00:00');
+                                                $dayEnd   = strtotime($selectedDate . ' 17:00:00');
+                                                for ($start = $dayStart; $start + $durMinutes * 60 <= $dayEnd; $start += $step * 60) {
+                                                    $end = $start + $durMinutes * 60;
+                                                    if ($isFreeSlot($selectedDate, $start, $end)) {
+                                                        $label = date('H:i', $start);
+                                                        echo "<option value='{$label}' data-ts='{$start}'>{$label}</option>";
+                                                    }
                                                 }
-                                            }
                                             ?>
                                         </select>
                                     </div>
@@ -373,3 +501,61 @@ ob_start();
 $content = ob_get_clean();
 require_once APP_PATH . '/Views/layouts/main.php';
 ?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  function getFormDate(selectEl){
+    const form = selectEl.closest('form');
+    if(!form) return null;
+    const dateInput = form.querySelector('input[name="appointment_date"]');
+    return dateInput ? dateInput.value : null;
+  }
+  function collectChosenIntervals(){
+    const map = {}; // date => [ [s,e], ... ]
+    document.querySelectorAll('.pkg-time-select').forEach(sel => {
+      const timeOpt = sel.options[sel.selectedIndex];
+      if(!timeOpt || !timeOpt.dataset.ts) return;
+      const date = getFormDate(sel);
+      if(!date) return;
+      const start = parseInt(timeOpt.dataset.ts,10);
+      const dur = parseInt(sel.dataset.duration||'30',10)*60; // seconds
+      const end = start + dur;
+      if(!map[date]) map[date] = [];
+      map[date].push([start,end]);
+    });
+    return map;
+  }
+  function overlaps(aStart,aEnd,bStart,bEnd){ return aStart < bEnd && aEnd > bStart; }
+  function refreshOptions(){
+    const chosen = collectChosenIntervals();
+    document.querySelectorAll('.pkg-time-select').forEach(sel => {
+      const date = getFormDate(sel);
+      const myDur = parseInt(sel.dataset.duration||'30',10)*60;
+      const currentValue = sel.value;
+      const currentTs = sel.selectedIndex>0 && sel.options[sel.selectedIndex].dataset.ts ? parseInt(sel.options[sel.selectedIndex].dataset.ts,10) : null;
+      Array.from(sel.options).forEach(opt => {
+        if(!opt.dataset.ts){ opt.disabled = false; return; }
+        const ts = parseInt(opt.dataset.ts,10);
+        const end = ts + myDur;
+        let ok = true;
+        const intervals = chosen[date] || [];
+        for(const [s,e] of intervals){
+          // allow my currently selected interval
+          if(currentTs !== null && ts === currentTs) { ok = true; continue; }
+          if(overlaps(ts,end,s,e)) { ok = false; break; }
+        }
+        opt.disabled = !ok;
+      });
+    });
+  }
+  document.querySelectorAll('.pkg-time-select').forEach(sel => {
+    sel.addEventListener('change', refreshOptions);
+  });
+  document.querySelectorAll('input[name="appointment_date"]').forEach(inp => {
+    inp.addEventListener('change', function(){
+      // Simple approach: no regeneration; just re-run disabling (server pre-filtered for default date)
+      refreshOptions();
+    });
+  });
+  refreshOptions();
+});
+</script>
