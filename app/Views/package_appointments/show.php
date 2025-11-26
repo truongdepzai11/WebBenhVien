@@ -41,6 +41,27 @@ ob_start();
         <span class="px-4 py-2 inline-flex text-sm leading-5 font-semibold rounded-full <?= $colorClass ?>">
             <?= $label ?>
         </span>
+        <?php if (!empty($packageAppointment['final_status'])): ?>
+            <?php 
+              $fs = $packageAppointment['final_status'];
+              $fsColor = $fs==='approved' ? 'bg-green-100 text-green-800' : ($fs==='awaiting_review' ? 'bg-blue-100 text-blue-800' : ($fs==='returned' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'));
+            ?>
+            <span class="ml-2 px-4 py-2 inline-flex text-sm leading-5 font-semibold rounded-full <?= $fsColor ?>">
+                Trạng thái kết quả: <?= htmlspecialchars($fs) ?>
+            </span>
+        <?php endif; ?>
+        <?php if (($packageAppointment['final_status'] ?? '') === 'approved'): ?>
+            <a href="<?= APP_URL ?>/package-appointments/<?= $packageAppointment['id'] ?>/export-pdf" 
+               class="ml-3 px-4 py-2 inline-flex items-center text-sm font-semibold rounded-lg border border-purple-600 text-purple-700 hover:bg-purple-50">
+                <i class="fas fa-file-pdf mr-2"></i>Xuất PDF
+            </a>
+            <?php if (!empty($packageAppointment['final_pdf_path'])): ?>
+            <a href="<?= str_replace(APP_PATH, APP_URL, $packageAppointment['final_pdf_path']) ?>" target="_blank" 
+               class="ml-2 px-4 py-2 inline-flex items-center text-sm font-semibold rounded-lg bg-purple-600 text-white hover:bg-purple-700">
+                <i class="fas fa-download mr-2"></i>Tải PDF
+            </a>
+            <?php endif; ?>
+        <?php endif; ?>
         <?php if ((Auth::isAdmin() || Auth::isReceptionist()) && isset($summaryAppointment) && $summaryAppointment && ($summaryAppointment['status'] ?? '') === 'completed'): ?>
             <?php if (isset($summaryInvoice) && $summaryInvoice): ?>
                 <a href="<?= APP_URL ?>/invoices/<?= $summaryInvoice['id'] ?>" 
@@ -394,6 +415,66 @@ ob_start();
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Khối Kết quả & Duyệt -->
+                        <?php 
+                           $svcId = (int)$service['id'];
+                           $aps = $apsByServiceId[$svcId] ?? null;
+                           $state = $aps['result_state'] ?? 'draft';
+                           $stateColor = $state==='approved' ? 'bg-green-100 text-green-800' : ($state==='submitted' ? 'bg-blue-100 text-blue-800' : ($state==='returned' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'));
+                           $metrics = $metricsByServiceId[$svcId] ?? [];
+                        ?>
+                        <div class="ml-11 mt-3 p-4 bg-white border border-gray-200 rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <h6 class="font-semibold text-gray-800">Kết quả bác sĩ</h6>
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full <?= $stateColor ?>">Trạng thái: <?= htmlspecialchars($state) ?></span>
+                            </div>
+                            <?php if (!empty($aps['review_note']) && $state==='returned'): ?>
+                                <div class="mb-3 p-2 rounded bg-orange-50 text-orange-800 text-sm">Lý do trả về: <?= nl2br(htmlspecialchars($aps['review_note'])) ?></div>
+                            <?php endif; ?>
+                            <?php if (empty($metrics)): ?>
+                                <p class="text-sm text-gray-500 italic">Chưa có chỉ số nào.</p>
+                            <?php else: ?>
+                            <div class="overflow-x-auto">
+                              <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                <thead class="bg-gray-50">
+                                  <tr>
+                                    <th class="px-3 py-2 text-left">Chỉ số</th>
+                                    <th class="px-3 py-2 text-left">Kết quả</th>
+                                    <th class="px-3 py-2 text-left">Khoảng tham chiếu</th>
+                                    <th class="px-3 py-2 text-left">Tình trạng</th>
+                                    <th class="px-3 py-2 text-left">Ghi chú</th>
+                                  </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-100">
+                                  <?php foreach ($metrics as $m): ?>
+                                  <tr>
+                                    <td class="px-3 py-2"><?= htmlspecialchars($m['metric_name']) ?></td>
+                                    <td class="px-3 py-2"><?= htmlspecialchars($m['result_value'] ?? '') ?></td>
+                                    <td class="px-3 py-2"><?= htmlspecialchars($m['reference_range'] ?? '') ?></td>
+                                    <td class="px-3 py-2"><?= htmlspecialchars($m['result_status'] ?? '') ?></td>
+                                    <td class="px-3 py-2"><?= htmlspecialchars($m['notes'] ?? '') ?></td>
+                                  </tr>
+                                  <?php endforeach; ?>
+                                </tbody>
+                              </table>
+                            </div>
+                            <?php endif; ?>
+
+                            <?php if ((Auth::isAdmin() || Auth::isDoctor()) && in_array($state, ['submitted','returned'])): ?>
+                            <form action="<?= APP_URL ?>/package-appointments/<?= $packageAppointment['id'] ?>/review-service" method="POST" class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                                <input type="hidden" name="service_id" value="<?= $svcId ?>">
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Ghi chú/ Lý do trả về</label>
+                                    <input type="text" name="review_note" value="" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md" placeholder="Nhập ghi chú cho bác sĩ...">
+                                </div>
+                                <div class="flex gap-2">
+                                    <button type="submit" name="action" value="return" class="px-3 py-2 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"><i class="fas fa-undo mr-1"></i>Trả về</button>
+                                    <button type="submit" name="action" value="approve" class="px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700"><i class="fas fa-check mr-1"></i>Duyệt</button>
+                                </div>
+                            </form>
+                            <?php endif; ?>
+                        </div>
                         <?php else: ?>
                         <!-- Chưa phân công - Form phân công thủ công -->
                         <div class="ml-11 mt-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -492,6 +573,20 @@ ob_start();
                     ?> VNĐ
                 </p>
             </div>
+            <?php if (($packageAppointment['final_status'] ?? '') === 'approved'): ?>
+            <div class="flex items-center justify-end mt-4">
+                <a href="<?= APP_URL ?>/package-appointments/<?= $packageAppointment['id'] ?>/export-pdf" 
+                   class="px-4 py-2 inline-flex items-center text-sm font-semibold rounded-lg border border-purple-600 text-purple-700 hover:bg-purple-50">
+                    <i class="fas fa-file-pdf mr-2"></i>Xuất PDF
+                </a>
+                <?php if (!empty($packageAppointment['final_pdf_path'])): ?>
+                <a href="<?= str_replace(APP_PATH, APP_URL, $packageAppointment['final_pdf_path']) ?>" target="_blank" 
+                   class="ml-2 px-4 py-2 inline-flex items-center text-sm font-semibold rounded-lg bg-purple-600 text-white hover:bg-purple-700">
+                    <i class="fas fa-download mr-2"></i>Tải PDF
+                </a>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
     </div>

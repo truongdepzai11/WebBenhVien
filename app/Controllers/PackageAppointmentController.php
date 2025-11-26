@@ -22,6 +22,24 @@ class PackageAppointmentController {
         $this->doctorModel = new Doctor();
     }
 
+    private function getPatientUserIdByPackageAppointmentId($packageAppointmentId) {
+        try {
+            $db = new Database(); $conn = $db->getConnection();
+            $st = $conn->prepare('SELECT u.id FROM package_appointments pa JOIN patients p ON p.id = pa.patient_id JOIN users u ON u.id = p.user_id WHERE pa.id = ?');
+            $st->execute([(int)$packageAppointmentId]);
+            $uid = $st->fetchColumn();
+            return $uid ? (int)$uid : null;
+        } catch (\Throwable $e) { return null; }
+    }
+
+    private function notify($userId, $title, $message, $link = null, $type = 'system') {
+        try {
+            $db = new Database(); $conn = $db->getConnection();
+            $st = $conn->prepare('INSERT INTO notifications (user_id, title, message, link, type, is_read, created_at) VALUES (?,?,?,?,?,0, NOW())');
+            $st->execute([(int)$userId, $title, $message, $link, $type]);
+        } catch (\Throwable $e) { /* ignore */ }
+    }
+
     // Danh sách đăng ký gói khám
     public function index() {
         Auth::requireLogin();
@@ -108,9 +126,231 @@ class PackageAppointmentController {
         // Lấy danh sách bác sĩ (cho phân công)
         $doctors = $this->doctorModel->getAll();
 
-        // (đã chuẩn bị $summaryAppointment, $summaryInvoice ở trên)
+        // Tải trạng thái kết quả theo từng dịch vụ (APS) + metrics để điều phối xem/xét duyệt
+        $apsByServiceId = [];
+        $metricsByServiceId = [];
+        if ($summaryAppointment) {
+            $db = new Database(); $conn = $db->getConnection();
+            // APS cho lịch tổng hợp
+            $st = $conn->prepare('SELECT aps.*, ps.service_name FROM appointment_package_services aps JOIN package_services ps ON aps.service_id = ps.id WHERE aps.appointment_id = ? ORDER BY ps.display_order, aps.id');
+            $st->execute([(int)$summaryAppointment['id']]);
+            $rows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            foreach ($rows as $r) { $apsByServiceId[(int)$r['service_id']] = $r; }
+
+            // Tất cả metrics của gói này theo service
+            $st2 = $conn->prepare('SELECT service_id, metric_name, result_value, result_status, reference_range, notes FROM package_test_results WHERE appointment_id = ? ORDER BY id');
+            $st2->execute([(int)$summaryAppointment['id']]);
+            foreach ($st2->fetchAll(PDO::FETCH_ASSOC) ?: [] as $m) {
+                $sid = (int)$m['service_id'];
+                if (!isset($metricsByServiceId[$sid])) $metricsByServiceId[$sid] = [];
+                $metricsByServiceId[$sid][] = $m;
+            }
+
+            // Cập nhật final_status hiển thị (không ghi DB ở đây)
+            $final = $this->calculateFinalStatus($rows);
+            $packageAppointment['final_status'] = $final;
+        }
+
+        // (đã chuẩn bị $summaryAppointment, $summaryInvoice, $apsByServiceId, $metricsByServiceId ở trên)
 
         require_once APP_PATH . '/Views/package_appointments/show.php';
+    }
+
+    private function calculateFinalStatus($apsRows) {
+        if (empty($apsRows)) return 'in_progress';
+        $hasReturned = false; $allApproved = true; $anySubmitted = false;
+        foreach ($apsRows as $r) {
+            $st = $r['result_state'] ?? 'draft';
+            if ($st === 'returned') $hasReturned = true;
+            if ($st !== 'approved') $allApproved = false;
+            if ($st === 'submitted') $anySubmitted = true;
+        }
+        if ($hasReturned) return 'returned';
+        if ($allApproved) return 'approved';
+        if ($anySubmitted) return 'awaiting_review';
+        return 'in_progress';
+    }
+
+    // POST: duyệt hoặc trả về kết quả của 1 dịch vụ
+    public function reviewService($packageAppointmentId) {
+        Auth::requireLogin();
+        if (!Auth::isAdmin() && !Auth::isDoctor()) {
+            $_SESSION['error'] = 'Không có quyền duyệt kết quả';
+            header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId); exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId); exit;
+        }
+
+        $action = $_POST['action'] ?? '';
+        $serviceId = (int)($_POST['service_id'] ?? 0);
+        $reviewNote = trim($_POST['review_note'] ?? '');
+
+        // Tìm summary appointment id
+        $summary = $this->appointmentModel->getSummaryByPackageAppointmentId($packageAppointmentId);
+        if (!$summary || !$serviceId) {
+            $_SESSION['error'] = 'Thiếu dữ liệu duyệt kết quả.';
+            header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId); exit;
+        }
+
+        $db = new Database(); $conn = $db->getConnection();
+        // Cập nhật APS
+        $state = $action === 'approve' ? 'approved' : ($action === 'return' ? 'returned' : null);
+        if (!$state) { $_SESSION['error'] = 'Hành động không hợp lệ.'; header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId); exit; }
+
+        $upd = $conn->prepare('UPDATE appointment_package_services SET result_state = :st, review_note = :note WHERE appointment_id = :aid AND service_id = :sid');
+        $upd->execute([':st'=>$state, ':note'=>$reviewNote, ':aid'=>(int)$summary['id'], ':sid'=>$serviceId]);
+
+        // Tính lại final_status và lưu vào package_appointments
+        $st = $conn->prepare('SELECT result_state FROM appointment_package_services WHERE appointment_id = ?');
+        $st->execute([(int)$summary['id']]);
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $final = $this->calculateFinalStatus($rows);
+
+        $paUpdSql = 'UPDATE package_appointments SET final_status = :fs';
+        $params = [':fs'=>$final, ':id'=>$packageAppointmentId];
+        if ($final === 'approved') {
+            $paUpdSql .= ', approved_by = :ab, approved_at = NOW()';
+            $params[':ab'] = Auth::id();
+        }
+        $paUpdSql .= ' WHERE id = :id';
+        $paUpd = $conn->prepare($paUpdSql);
+        $paUpd->execute($params);
+
+        // Gửi thông báo cho bệnh nhân
+        try {
+            $patientUserId = $this->getPatientUserIdByPackageAppointmentId($packageAppointmentId);
+            if ($patientUserId) {
+                if ($state === 'approved') {
+                    $this->notify($patientUserId, 'Kết quả dịch vụ đã được duyệt', 'Dịch vụ trong gói của bạn đã được duyệt.', '/my-results/package/' . $packageAppointmentId, 'system');
+                } elseif ($state === 'returned') {
+                    $this->notify($patientUserId, 'Kết quả bị trả về', 'Một dịch vụ trong gói của bạn cần bổ sung. Vui lòng chờ bác sĩ cập nhật.', '/my-results/package/' . $packageAppointmentId, 'system');
+                }
+                if ($final === 'approved') {
+                    $this->notify($patientUserId, 'Kết quả gói đã sẵn sàng', 'Tất cả dịch vụ đã duyệt. Bạn có thể xem và tải PDF.', '/my-results/package/' . $packageAppointmentId, 'system');
+                }
+            }
+        } catch (\Throwable $e) { /* ignore notify errors */ }
+
+        $_SESSION['success'] = $state === 'approved' ? 'Đã duyệt dịch vụ.' : 'Đã trả về dịch vụ.';
+        header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId); exit;
+    }
+
+    // Xuất PDF tổng hợp kết quả
+    public function exportPdf($packageAppointmentId) {
+        Auth::requireLogin();
+        if (!Auth::isAdmin() && !Auth::isDoctor()) {
+            $_SESSION['error'] = 'Không có quyền xuất PDF';
+            header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId); exit;
+        }
+
+        $pa = $this->packageAppointmentModel->findById($packageAppointmentId);
+        $summary = $this->appointmentModel->getSummaryByPackageAppointmentId($packageAppointmentId);
+        if (!$pa || !$summary) { $_SESSION['error']='Thiếu dữ liệu gói.'; header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId); exit; }
+
+        $db = new Database(); $conn = $db->getConnection();
+        // Kiểm tra đã approved hết chưa
+        $aps = $conn->prepare('SELECT aps.*, ps.service_name FROM appointment_package_services aps JOIN package_services ps ON aps.service_id=ps.id WHERE aps.appointment_id = ?');
+        $aps->execute([(int)$summary['id']]);
+        $apsRows = $aps->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $final = $this->calculateFinalStatus($apsRows);
+        if ($final !== 'approved') {
+            $_SESSION['error'] = 'Chỉ xuất PDF khi tất cả dịch vụ đã được duyệt.';
+            header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId); exit;
+        }
+
+        // Load metrics
+        $metricsStmt = $conn->prepare('SELECT service_id, metric_name, result_value, result_status, reference_range, notes FROM package_test_results WHERE appointment_id = ? ORDER BY service_id, id');
+        $metricsStmt->execute([(int)$summary['id']]);
+        $metrics = $metricsStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $byService = [];
+        foreach ($metrics as $m) { $byService[(int)$m['service_id']][] = $m; }
+
+        // Build HTML
+        $html = '<h2 style="text-align:center">Kết quả gói khám: '.htmlspecialchars($pa['package_name']).'</h2>';
+        $html .= '<p>Bệnh nhân: '.htmlspecialchars($pa['patient_name'] ?? '').' - Mã: '.htmlspecialchars($pa['patient_code'] ?? '').'</p>';
+        foreach ($apsRows as $row) {
+            $html .= '<h3>'.htmlspecialchars($row['service_name']).'</h3>';
+            $html .= '<table border="1" cellspacing="0" cellpadding="5" width="100%">'
+                   .' <tr><th>Chỉ số</th><th>Kết quả</th><th>Khoảng tham chiếu</th><th>Tình trạng</th><th>Ghi chú</th></tr>';
+            foreach ($byService[(int)$row['service_id']] ?? [] as $m) {
+                $html .= '<tr>'
+                      . '<td>'.htmlspecialchars($m['metric_name']).'</td>'
+                      . '<td>'.htmlspecialchars($m['result_value'] ?? '').'</td>'
+                      . '<td>'.htmlspecialchars($m['reference_range'] ?? '').'</td>'
+                      . '<td>'.htmlspecialchars($m['result_status'] ?? '').'</td>'
+                      . '<td>'.htmlspecialchars($m['notes'] ?? '').'</td>'
+                      . '</tr>';
+            }
+            $html .= '</table>';
+        }
+
+        // Try Dompdf if available
+        $pdfPath = null; $ok = false;
+        try {
+            if (class_exists('Dompdf\\Dompdf')) {
+                $dompdf = new \Dompdf\Dompdf();
+                $dompdf->loadHtml($html);
+                $dompdf->setPaper('A4', 'portrait');
+                $dompdf->render();
+                $output = $dompdf->output();
+                $dir = APP_PATH . '/storage/reports'; if (!is_dir($dir)) @mkdir($dir, 0777, true);
+                $pdfPath = $dir . '/package_report_' . $packageAppointmentId . '.pdf';
+                file_put_contents($pdfPath, $output);
+                $ok = true;
+            }
+        } catch (\Throwable $e) { $ok = false; }
+
+        if ($ok) {
+            // Save path
+            $stUp = $conn->prepare('UPDATE package_appointments SET final_pdf_path = :p WHERE id = :id');
+            $stUp->execute([':p'=>$pdfPath, ':id'=>$packageAppointmentId]);
+            // Notify patient PDF ready
+            try {
+                $patientUserId = $this->getPatientUserIdByPackageAppointmentId($packageAppointmentId);
+                if ($patientUserId) {
+                    $this->notify($patientUserId, 'Có file kết quả PDF', 'Kết quả gói đã có file PDF để tải.', '/my-results/package/' . $packageAppointmentId, 'system');
+                }
+            } catch (\Throwable $e) { /* ignore notify errors */ }
+            $_SESSION['success'] = 'Đã tạo PDF kết quả.';
+            header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId); exit;
+        } else {
+            // Fallback: render HTML inline
+            header('Content-Type: text/html; charset=utf-8');
+            echo $html; exit;
+        }
+    }
+
+    // Tải file PDF kết quả đã tạo
+    public function downloadPdf($packageAppointmentId) {
+        Auth::requireLogin();
+
+        // Cho phép: Admin/Doctor hoặc chính bệnh nhân sở hữu gói
+        $pa = $this->packageAppointmentModel->findById($packageAppointmentId);
+        if (!$pa) { http_response_code(404); echo 'Không tìm thấy gói khám'; return; }
+        if (!Auth::isAdmin() && !Auth::isDoctor()) {
+            $patient = $this->patientModel->findByUserId(Auth::id());
+            if (!$patient || (int)$patient['id'] !== (int)$pa['patient_id']) {
+                http_response_code(403); echo 'Bạn không có quyền tải tệp này'; return;
+            }
+        }
+
+        $path = $pa['final_pdf_path'] ?? null;
+        if (!$path || !is_file($path)) {
+            $_SESSION['error'] = 'Chưa có file PDF hoặc file không tồn tại.';
+            header('Location: ' . APP_URL . '/my-results/package/' . $packageAppointmentId);
+            exit;
+        }
+
+        // Stream file về trình duyệt
+        $filename = 'ket_qua_goi_' . $packageAppointmentId . '.pdf';
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: inline; filename="' . $filename . '"');
+        header('Content-Length: ' . filesize($path));
+        header('Cache-Control: private, max-age=3600');
+        readfile($path);
+        exit;
     }
 
     // Phân công bác sĩ tự động

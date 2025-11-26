@@ -143,7 +143,7 @@ ob_start();
                     ?>
                     <tr class="<?= $rowClass ?>">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <?php if ($isPackageAppointment): ?>
+                            <?php if ($isPackageAppointment && Auth::isPatient()): ?>
                                 <a href="<?= APP_URL ?>/package-appointments/<?= $apt['package_appointment_id'] ?>" 
                                    class="text-sm font-medium text-purple-600 hover:text-purple-900">
                                     <?= htmlspecialchars($apt['appointment_code']) ?>
@@ -219,12 +219,20 @@ ob_start();
                             <?php endif; ?>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                            <?php if ($isPackageAppointment): ?>
-                                <span class="text-gray-500 italic">Nhiều giờ</span>
-                            <?php elseif (!empty($apt['appointment_time'])): ?>
-                                <?= date('H:i', strtotime($apt['appointment_time'])) ?>
+                            <?php if (Auth::isDoctor()): ?>
+                                <?php if (!empty($apt['appointment_time'])): ?>
+                                    <?= date('H:i', strtotime($apt['appointment_time'])) ?>
+                                <?php else: ?>
+                                    <span class="text-gray-400 italic">Chưa xác định</span>
+                                <?php endif; ?>
                             <?php else: ?>
-                                <span class="text-gray-400 italic">Chưa xác định</span>
+                                <?php if ($isPackageAppointment): ?>
+                                    <span class="text-gray-500 italic">Nhiều giờ</span>
+                                <?php elseif (!empty($apt['appointment_time'])): ?>
+                                    <?= date('H:i', strtotime($apt['appointment_time'])) ?>
+                                <?php else: ?>
+                                    <span class="text-gray-400 italic">Chưa xác định</span>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">

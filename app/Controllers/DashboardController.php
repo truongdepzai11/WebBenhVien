@@ -64,25 +64,8 @@ class DashboardController {
             $recent_appointments = array_slice($displayAppointments, 0, 5);
         } elseif ($role === 'doctor') {
             $doctor = $this->doctorModel->findByUserId(Auth::id());
-            $appointments = $this->appointmentModel->getByDoctorId($doctor['id']);
-            $displayAppointments = array_values(array_filter($appointments, function($apt){
-                if (empty($apt['package_appointment_id'])) return true;
-                $reason = $apt['reason'] ?? '';
-                return strpos($reason, ':') !== false;
-            }));
-            $displayAppointments = array_map(function($apt){
-                if (!empty($apt['package_appointment_id'])) {
-                    $apt['assigned_count'] = $this->appointmentModel->countAssignedByPackageAppointmentId($apt['package_appointment_id']);
-                    if (!isset($this->packageModel)) {
-                        require_once __DIR__ . '/../Models/HealthPackage.php';
-                        $this->packageModel = new HealthPackage();
-                    }
-                    $services = $this->packageModel->getPackageServices($apt['package_id']);
-                    $apt['total_services'] = is_array($services) ? count($services) : 0;
-                    $apt['appointment_dates'] = $this->appointmentModel->getAppointmentDatesByPackageAppointmentId($apt['package_appointment_id']);
-                }
-                return $apt;
-            }, $displayAppointments);
+            // Lấy toàn bộ lịch mà bác sĩ được phân công (bao gồm cả lịch dịch vụ thuộc gói)
+            $displayAppointments = $this->appointmentModel->getByDoctorId($doctor['id']);
             $stats = [
                 'total_appointments' => count($displayAppointments),
                 'pending_appointments' => count(array_filter($displayAppointments, fn($a) => $a['status'] === 'pending')),

@@ -148,6 +148,13 @@
                         </a>
 
                         <?php if (Auth::isPatient()): ?>
+                        <a href="<?= APP_URL ?>/my-results" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg <?= (strpos($_SERVER['REQUEST_URI'], '/my-results') !== false) ? 'active' : '' ?>">
+                            <i class="fas fa-vial w-5"></i>
+                            <span>Kết quả của tôi</span>
+                        </a>
+                        <?php endif; ?>
+
+                        <?php if (Auth::isPatient()): ?>
                         <a href="<?= APP_URL ?>/consultations" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg <?= (strpos($_SERVER['REQUEST_URI'], '/consultations') !== false && strpos($_SERVER['REQUEST_URI'], '/doctor/consultations') === false) ? 'active' : '' ?>">
                             <i class="fas fa-comments w-5"></i>
                             <span>Tư vấn sức khỏe</span>

@@ -141,7 +141,17 @@ ob_start();
                 <tbody class="divide-y divide-gray-200">
                     <?php foreach ($recent_appointments as $apt): ?>
                     <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3 text-sm font-medium text-gray-900"><?= htmlspecialchars($apt['appointment_code']) ?></td>
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900">
+                            <?php if (!empty($apt['package_appointment_id']) && Auth::isPatient()): ?>
+                                <a href="<?= APP_URL ?>/package-appointments/<?= $apt['package_appointment_id'] ?>" class="text-purple-600 hover:text-purple-800">
+                                    <?= htmlspecialchars($apt['appointment_code']) ?>
+                                </a>
+                            <?php else: ?>
+                                <a href="<?= APP_URL ?>/appointments/<?= $apt['id'] ?>" class="text-purple-600 hover:text-purple-800">
+                                    <?= htmlspecialchars($apt['appointment_code']) ?>
+                                </a>
+                            <?php endif; ?>
+                        </td>
                         <?php if (!Auth::isPatient()): ?>
                         <td class="px-4 py-3 text-sm text-gray-700"><?= htmlspecialchars($apt['patient_name']) ?></td>
                         <?php endif; ?>

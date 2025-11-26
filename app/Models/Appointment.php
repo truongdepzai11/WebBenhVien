@@ -276,6 +276,32 @@ class Appointment {
         return $stmt->execute();
     }
 
+    // Cập nhật trạng thái các lịch con (dịch vụ) trong gói theo package_appointment_id
+    // Chỉ áp dụng cho các lịch KHÔNG phải tổng hợp (reason không chứa ':') và đã có doctor_id
+    public function updateChildrenStatusByPackageAppointmentId($packageAppointmentId, array $fromStatuses, $toStatus) {
+        if (empty($fromStatuses)) return false;
+        // Build named placeholders for IN list: :st0, :st1, ...
+        $inNames = [];
+        foreach (array_values($fromStatuses) as $idx => $st) {
+            $inNames[] = ":st{$idx}";
+        }
+        $in = implode(',', $inNames);
+
+        $query = "UPDATE " . $this->table . " SET status = :toStatus
+                  WHERE package_appointment_id = :pkg
+                    AND doctor_id IS NOT NULL
+                    AND reason NOT LIKE '%:%'
+                    AND status IN (" . $in . ")";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':toStatus', $toStatus);
+        $stmt->bindValue(':pkg', $packageAppointmentId);
+        foreach (array_values($fromStatuses) as $idx => $st) {
+            $stmt->bindValue(":st{$idx}", $st);
+        }
+        return $stmt->execute();
+    }
+
     // Cập nhật thông tin hủy lịch
     public function updateCancellation($id, $status, $reason, $fee) {
         $query = "UPDATE " . $this->table . " 

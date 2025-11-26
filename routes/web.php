@@ -65,6 +65,7 @@ require_once __DIR__ . '/../app/Controllers/MedicalRecordController.php';
 require_once __DIR__ . '/../app/Controllers/ValidationController.php';
 require_once __DIR__ . '/../app/Controllers/PackageController.php';
 require_once __DIR__ . '/../app/Controllers/PackageAppointmentController.php';
+require_once __DIR__ . '/../app/Controllers/ResultsController.php';
 
 // Home Route (Landing Page)
 $router->get('/', function() {
@@ -253,6 +254,17 @@ $router->post('/appointments/store', function() {
 $router->post('/appointments/{id}/update-status', function($id) {
     $controller = new AppointmentController();
     $controller->updateStatus($id);
+});
+
+// Doctor submit/save results for package service appointment
+$router->post('/appointments/{id}/results/save', function($id) {
+    $controller = new AppointmentController();
+    $controller->saveResults($id);
+});
+
+$router->post('/appointments/{id}/results/submit', function($id) {
+    $controller = new AppointmentController();
+    $controller->submitResults($id);
 });
 
 $router->post('/appointments/{id}/cancel', function($id) {
@@ -591,6 +603,35 @@ $router->get('/package-appointments/{id}/appointments', function($id) {
 $router->get('/package-appointments/{id}', function($id) {
     $controller = new PackageAppointmentController();
     $controller->show($id);
+});
+
+// Điều phối duyệt/trả về kết quả dịch vụ
+$router->post('/package-appointments/{id}/review-service', function($id) {
+    $controller = new PackageAppointmentController();
+    $controller->reviewService($id);
+});
+
+// Xuất PDF tổng hợp kết quả
+$router->get('/package-appointments/{id}/export-pdf', function($id) {
+    $controller = new PackageAppointmentController();
+    $controller->exportPdf($id);
+});
+
+// Tải PDF kết quả
+$router->get('/package-appointments/{id}/download-pdf', function($id) {
+    $controller = new PackageAppointmentController();
+    $controller->downloadPdf($id);
+});
+
+// ==================== PATIENT RESULTS ROUTES ====================
+$router->get('/my-results', function() {
+    $controller = new ResultsController();
+    $controller->index();
+});
+
+$router->get('/my-results/package/{id}', function($id) {
+    $controller = new ResultsController();
+    $controller->package($id);
 });
 
 // Phân công bác sĩ tự động
