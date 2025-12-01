@@ -93,6 +93,8 @@ ob_start();
     </div>
     <?php endif; ?>
 
+    
+
     <?php if (!empty($appointment['symptoms'])): ?>
     <div class="mt-4">
         <h3 class="text-lg font-bold text-gray-800 mb-2">Triệu chứng</h3>
@@ -152,7 +154,6 @@ ob_start();
                     <i class="fas fa-file-invoice-dollar mr-2"></i>Tạo hóa đơn
                 </a>
             <?php endif; ?>
-        <?php endif; ?>
 
         <!-- Bệnh nhân xem hóa đơn -->
         <?php if (Auth::isPatient() && isset($invoice) && $invoice): ?>
@@ -279,6 +280,311 @@ if (($appointment['status'] ?? '') === 'completed'):
     </script>
 </div>
 <?php endif; ?>
+
+    <!-- Diagnosis (Doctor) placed between Results and Prescription -->
+    <?php if (Auth::isDoctor() || Auth::isAdmin()): ?>
+    <?php
+        $dx = null; $dxStatus = null; $dxLocked = false;
+        try {
+            if (!class_exists('Database')) { require_once APP_PATH . '/../config/database.php'; }
+            $dbdx = new Database(); $cndx = $dbdx->getConnection();
+            $stmDx = $cndx->prepare('SELECT * FROM diagnoses WHERE appointment_id = ? ORDER BY id DESC LIMIT 1');
+            $stmDx->execute([(int)$appointment['id']]);
+            $dx = $stmDx->fetch(PDO::FETCH_ASSOC) ?: null;
+            $dxStatus = $dx['status'] ?? null;
+            $dxLocked = in_array($dxStatus, ['submitted','approved'], true);
+        } catch (\Throwable $e) { $dx = null; }
+    ?>
+    <div class="bg-white rounded-lg shadow-md p-8 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-800">Chẩn đoán</h3>
+            <?php if ($dxStatus): 
+                $cls = $dxStatus==='approved' ? 'bg-green-100 text-green-800' : ($dxStatus==='submitted' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800');
+            ?>
+            <span class="px-3 py-1 text-xs font-semibold rounded-full <?= $cls ?>">Trạng thái: <?= htmlspecialchars($dxStatus) ?></span>
+            <?php endif; ?>
+        </div>
+        <div class="mb-3 flex items-center gap-2">
+            <?php if (!empty($dx) && ($dx['status'] ?? '') === 'draft' && Auth::isDoctor()): ?>
+                <form method="post" action="<?= APP_URL ?>/diagnoses/<?= (int)$dx['id'] ?>/submit">
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"><i class="fas fa-paper-plane mr-1"></i>Nộp chẩn đoán</button>
+                </form>
+            <?php endif; ?>
+            <?php if (!empty($dx) && ($dx['status'] ?? '') === 'submitted' && (Auth::isAdmin() || Auth::isDoctor())): ?>
+                <form method="post" action="<?= APP_URL ?>/diagnoses/<?= (int)$dx['id'] ?>/approve">
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"><i class="fas fa-check mr-1"></i>Duyệt chẩn đoán</button>
+                </form>
+            <?php endif; ?>
+        </div>
+
+        <form method="post" action="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/diagnoses/save">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">Chẩn đoán chính</label>
+                    <input type="text" name="primary_section" value="<?= htmlspecialchars($dx['primary_section'] ?? '') ?>" class="w-full border rounded px-3 py-2" <?= $dxLocked ? 'readonly' : '' ?>>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm text-gray-600 mb-1">Dấu hiệu & lâm sàng</label>
+                    <textarea name="clinical_findings" rows="3" class="w-full border rounded px-3 py-2" <?= $dxLocked ? 'readonly' : '' ?>><?= htmlspecialchars($dx['clinical_findings'] ?? '') ?></textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm text-gray-600 mb-1">Kết luận chính thức</label>
+                    <textarea name="official_findings" rows="3" class="w-full border rounded px-3 py-2" <?= $dxLocked ? 'readonly' : '' ?>><?= htmlspecialchars($dx['official_findings'] ?? '') ?></textarea>
+                </div>
+            </div>
+            <?php if (!$dxLocked): ?>
+            <div class="flex items-center justify-end mt-4 space-x-3">
+                <label class="text-sm text-gray-600"><input type="checkbox" name="submit_after" value="1" class="mr-1">Lưu xong nộp luôn</label>
+                <button type="submit" class="px-6 py-2 bg-teal-600 text-white rounded hover:bg-teal-700">Lưu chẩn đoán</button>
+            </div>
+            <?php else: ?>
+            <div class="mt-2 text-sm text-gray-500">Chẩn đoán đã <?= $dxStatus==='approved' ? 'được duyệt' : 'được nộp, chờ duyệt' ?>.</div>
+            <?php endif; ?>
+        </form>
+
+        <?php if (!empty($dx)): ?>
+        <div class="mt-6">
+            <h4 class="text-md font-semibold text-gray-800 mb-2">Chẩn đoán mới nhất</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                <div><span class="font-semibold">Chẩn đoán chính:</span> <?= htmlspecialchars($dx['primary_section'] ?? '') ?></div>
+                <div><span class="font-semibold">Trạng thái:</span> <?= htmlspecialchars($dx['status'] ?? '') ?></div>
+                <div class="md:col-span-2"><span class="font-semibold">Dấu hiệu & lâm sàng:</span><br><?= nl2br(htmlspecialchars($dx['clinical_findings'] ?? '')) ?></div>
+                <div class="md:col-span-2"><span class="font-semibold">Kết luận chính thức:</span><br><?= nl2br(htmlspecialchars($dx['official_findings'] ?? '')) ?></div>
+            </div>
+        </div>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- Prescription (Doctor/Admin) -->
+    <?php if (Auth::isDoctor() || Auth::isAdmin()): ?>
+    <div class="bg-white rounded-lg shadow-md p-8 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-800">Đơn thuốc</h3>
+            <?php 
+            // Tải đơn thuốc gần nhất cho appointment để hiển thị trạng thái + nút nộp
+            try {
+                if (!class_exists('Database')) { require_once APP_PATH . '/../config/database.php'; }
+                $dbTmp = new Database(); $connTmp = $dbTmp->getConnection();
+                $stmRx = $connTmp->prepare('SELECT id, status, prescription_code FROM prescriptions WHERE appointment_id = ? ORDER BY id DESC LIMIT 1');
+                $stmRx->execute([(int)$appointment['id']]);
+                $currentRx = $stmRx->fetch(PDO::FETCH_ASSOC) ?: null;
+            } catch (\Throwable $e) { $currentRx = null; }
+            $rxStatus = $currentRx['status'] ?? null;
+            if ($rxStatus) {
+                $cls = $rxStatus==='approved' ? 'bg-green-100 text-green-800' : ($rxStatus==='submitted' ? 'bg-blue-100 text-blue-800' : ($rxStatus==='dispensed' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'));
+                echo '<span class="px-3 py-1 text-xs font-semibold rounded-full '.$cls.'">Trạng thái: '.htmlspecialchars($rxStatus).'</span>';
+            }
+            ?>
+        </div>
+        <?php if (!empty($currentRx) && in_array(($currentRx['status'] ?? ''), ['approved','dispensed'], true)): ?>
+        <div class="mb-3 flex items-center gap-2">
+            <a href="<?= APP_URL ?>/prescriptions/<?= (int)$currentRx['id'] ?>/export-pdf" class="px-4 py-2 border border-purple-600 text-purple-700 rounded hover:bg-purple-50">
+                <i class="fas fa-file-pdf mr-1"></i>Xuất PDF đơn thuốc
+            </a>
+            <?php if (!empty($currentRx['pdf_path']) && is_file($currentRx['pdf_path'])): ?>
+            <a href="<?= APP_URL ?>/prescriptions/<?= (int)$currentRx['id'] ?>/download-pdf" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
+                <i class="fas fa-download mr-1"></i>Tải PDF
+            </a>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+        <?php
+            $rxLocked = false; $rxStatusSafe = $currentRx['status'] ?? null;
+            if ($rxStatusSafe && $rxStatusSafe !== 'draft') { $rxLocked = true; }
+        ?>
+        <?php if (!empty($currentRx) && Auth::isDoctor() && ($currentRx['status'] ?? '') === 'draft'): ?>
+        <form method="post" action="<?= APP_URL ?>/prescriptions/<?= (int)$currentRx['id'] ?>/submit" class="mb-4">
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"><i class="fas fa-paper-plane mr-1"></i>Nộp đơn</button>
+        </form>
+        <?php endif; ?>
+
+        <?php if (!empty($currentRx) && ($currentRx['status'] ?? '') === 'submitted' && (Auth::isAdmin() || Auth::isDoctor())): ?>
+        <form method="post" action="<?= APP_URL ?>/prescriptions/<?= (int)$currentRx['id'] ?>/approve" class="mb-3">
+            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"><i class="fas fa-check mr-1"></i>Duyệt đơn</button>
+        </form>
+        <?php endif; ?>
+        <?php if (!empty($currentRx) && ($currentRx['status'] ?? '') === 'approved' && Auth::isAdmin()): ?>
+        <form method="post" action="<?= APP_URL ?>/prescriptions/<?= (int)$currentRx['id'] ?>/dispense" class="mb-3">
+            <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"><i class="fas fa-pills mr-1"></i>Phát thuốc</button>
+        </form>
+        <?php endif; ?>
+
+        <?php 
+        // Hiển thị danh sách mục thuốc đã lưu/nộp (read-only)
+        try {
+            if (!class_exists('Database')) { require_once APP_PATH . '/../config/database.php'; }
+            if (!empty($currentRx)) {
+                $dbv = new Database(); $cv = $dbv->getConnection();
+                $stmIt = $cv->prepare('SELECT pi.*, m.name AS med_name, m.dosage_form AS med_form, m.strength AS med_strength
+                                        FROM prescription_items pi
+                                        LEFT JOIN medicines m ON m.id = pi.medicine_id
+                                        WHERE pi.prescription_id = ?
+                                        ORDER BY pi.id ASC');
+                $stmIt->execute([(int)$currentRx['id']]);
+                $rxItems = $stmIt->fetchAll(PDO::FETCH_ASSOC);
+            }
+        } catch (\Throwable $e) { $rxItems = []; }
+        if (!empty($currentRx) && !empty($rxItems)):
+        ?>
+        <div class="mt-6">
+            <div class="flex items-center justify-between mb-2">
+                <h4 class="text-md font-semibold text-gray-800">Đơn thuốc đã <?= htmlspecialchars($currentRx['status']) ?></h4>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Thuốc</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Số lượng</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Liều dùng</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tần suất</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Thời gian</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Bắt đầu</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kết thúc</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Đường dùng</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Dặn dò</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <?php foreach ($rxItems as $it): 
+                            $label = ($it['med_name'] ?? 'Thuốc')
+                                . (!empty($it['med_strength']) ? (' ' . $it['med_strength']) : '')
+                                . (!empty($it['med_form']) ? (' (' . $it['med_form'] . ')') : '');
+                        ?>
+                        <tr>
+                            <td class="px-3 py-2 text-sm text-gray-700"><?= htmlspecialchars($label) ?></td>
+                            <td class="px-3 py-2 text-sm text-gray-700"><?= (int)$it['quantity'] ?></td>
+                            <td class="px-3 py-2 text-sm text-gray-700"><?= htmlspecialchars($it['dosage'] ?? '') ?></td>
+                            <td class="px-3 py-2 text-sm text-gray-700"><?= htmlspecialchars($it['frequency'] ?? '') ?></td>
+                            <td class="px-3 py-2 text-sm text-gray-700"><?= htmlspecialchars($it['duration'] ?? '') ?></td>
+                            <td class="px-3 py-2 text-sm text-gray-700"><?= !empty($it['start_date']) ? htmlspecialchars(date('d/m/Y', strtotime($it['start_date']))) : '' ?></td>
+                            <td class="px-3 py-2 text-sm text-gray-700"><?= !empty($it['end_date']) ? htmlspecialchars(date('d/m/Y', strtotime($it['end_date']))) : '' ?></td>
+                            <td class="px-3 py-2 text-sm text-gray-700"><?= htmlspecialchars($it['route'] ?? '') ?></td>
+                            <td class="px-3 py-2 text-sm text-gray-700"><?= htmlspecialchars($it['instructions'] ?? '') ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <?php endif; ?>
+        <?php endif; ?>
+
+        <?php if (!isset($rxLocked)) { $rxLocked = false; } ?>
+        <form method="post" action="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/prescriptions/save">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200" id="rx-table">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Thuốc</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Số lượng</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Liều dùng</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tần suất</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Thời gian</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Đường dùng</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Dặn dò</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Bắt đầu</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kết thúc</th>
+                            <th class="px-2"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td class="px-3 py-2">
+                                <input type="hidden" name="medicine_id[]" class="rx-med-id">
+                                <div class="relative">
+                                    <input type="text" class="w-56 border rounded px-2 py-1 rx-med-search" placeholder="Nhập tên thuốc...">
+                                    <div class="absolute z-10 bg-white border rounded mt-1 shadow max-h-52 overflow-auto hidden rx-med-list"></div>
+                                </div>
+                            </td>
+                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="number" name="quantity[]" class="w-20 border rounded px-2 py-1" min="1" value="1"></td>
+                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="text" name="dosage[]" class="w-32 border rounded px-2 py-1" placeholder="1 viên"></td>
+                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="text" name="frequency[]" class="w-28 border rounded px-2 py-1" placeholder="2 lần/ngày"></td>
+                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="text" name="duration[]" class="w-28 border rounded px-2 py-1" placeholder="5 ngày"></td>
+                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="text" name="route[]" class="w-24 border rounded px-2 py-1" placeholder="uống"></td>
+                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="text" name="instructions[]" class="w-40 border rounded px-2 py-1" placeholder="sau ăn"></td>
+                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="date" name="start_date[]" class="border rounded px-2 py-1"></td>
+                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="date" name="end_date[]" class="border rounded px-2 py-1"></td>
+                            <td class="px-2 text-center"><button type="button" class="text-red-600" onclick="removeRxRow(this)"><i class="fas fa-trash"></i></button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <?php if (!$rxLocked): ?>
+            <div class="flex items-center justify-between mt-4">
+                <button type="button" onclick="addRxRow()" class="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50"><i class="fas fa-plus mr-1"></i>Thêm dòng</button>
+                <div class="space-x-2">
+                    <label class="text-sm text-gray-600"><input type="checkbox" name="submit_after" value="1" class="mr-1">Lưu xong nộp luôn</label>
+                    <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Lưu</button>
+                </div>
+            </div>
+            <?php else: ?>
+            <div class="mt-3 text-sm text-gray-500">Đơn thuốc đã được nộp/duyệt. Form bị khóa.</div>
+            <?php endif; ?>
+        </form>
+
+        <script>
+        function addRxRow(){
+            const tbody = document.querySelector('#rx-table tbody');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="px-3 py-2">
+                    <input type="hidden" name="medicine_id[]" class="rx-med-id">
+                    <div class="relative"> 
+                        <input type="text" class="w-56 border rounded px-2 py-1 rx-med-search" placeholder="Nhập tên thuốc...">
+                        <div class="absolute z-10 bg-white border rounded mt-1 shadow max-h-52 overflow-auto hidden rx-med-list"></div>
+                    </div>
+                </td>
+                <td class="px-3 py-2"><input type="number" name="quantity[]" class="w-20 border rounded px-2 py-1" min="1" value="1"></td>
+                <td class="px-3 py-2"><input type="text" name="dosage[]" class="w-32 border rounded px-2 py-1"></td>
+                <td class="px-3 py-2"><input type="text" name="frequency[]" class="w-28 border rounded px-2 py-1"></td>
+                <td class="px-3 py-2"><input type="text" name="duration[]" class="w-28 border rounded px-2 py-1"></td>
+                <td class="px-3 py-2"><input type="text" name="route[]" class="w-24 border rounded px-2 py-1"></td>
+                <td class="px-3 py-2"><input type="text" name="instructions[]" class="w-40 border rounded px-2 py-1"></td>
+                <td class="px-3 py-2"><input type="date" name="start_date[]" class="border rounded px-2 py-1"></td>
+                <td class="px-3 py-2"><input type="date" name="end_date[]" class="border rounded px-2 py-1"></td>
+                <td class="px-2 text-center"><button type="button" class="text-red-600" onclick="removeRxRow(this)"><i class="fas fa-trash"></i></button></td>
+            `;
+            tbody.appendChild(tr);
+            bindMedicineSearch(tr.querySelector('.rx-med-search'));
+        }
+        function removeRxRow(btn){ const tr = btn.closest('tr'); tr.remove(); }
+
+        // Autocomplete medicines
+        function bindMedicineSearch(input){
+            const list = input.parentElement.querySelector('.rx-med-list');
+            const hidden = input.closest('td').querySelector('.rx-med-id');
+            let timer=null;
+            input.addEventListener('input', ()=>{
+                hidden.value='';
+                const q = input.value.trim();
+                clearTimeout(timer);
+                if(q.length<1){ list.classList.add('hidden'); list.innerHTML=''; return; }
+                timer=setTimeout(async()=>{
+                    try{
+                        const res = await fetch('<?= APP_URL ?>/api/medicines?q='+encodeURIComponent(q));
+                        const data = await res.json();
+                        const items = data.items||[];
+                        list.innerHTML = items.map(it=>`<div class="px-2 py-1 hover:bg-purple-50 cursor-pointer text-sm" data-id="${it.id}">${it.name}${it.strength?(' '+it.strength):''}${it.form?(' ('+it.form+')'):''}</div>`).join('');
+                        list.classList.remove('hidden');
+                        Array.from(list.children).forEach(el=>{
+                            el.addEventListener('click', ()=>{
+                                hidden.value = el.getAttribute('data-id');
+                                input.value = el.textContent;
+                                list.classList.add('hidden');
+                            });
+                        });
+                    }catch(e){ list.classList.add('hidden'); }
+                }, 250);
+            });
+            input.addEventListener('blur', ()=> setTimeout(()=> list.classList.add('hidden'), 200));
+        }
+        document.querySelectorAll('.rx-med-search').forEach(bindMedicineSearch);
+        </script>
+    </div>
+    <?php endif; ?>
 
 <?php endif; // end only show when completed ?>
 

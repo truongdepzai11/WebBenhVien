@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th10 25, 2025 lúc 10:17 AM
+-- Thời gian đã tạo: Th10 30, 2025 lúc 04:03 AM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.2.12
 
@@ -57,15 +57,15 @@ CREATE TABLE `appointments` (
 
 INSERT INTO `appointments` (`id`, `appointment_code`, `patient_id`, `doctor_id`, `coordinator_doctor_id`, `package_id`, `package_appointment_id`, `total_price`, `appointment_date`, `appointment_time`, `reason`, `status`, `appointment_type`, `notes`, `confirmed_at`, `completed_at`, `cancelled_at`, `cancellation_reason`, `cancellation_fee`, `created_at`, `updated_at`) VALUES
 (176, 'APT00001', 14, NULL, NULL, 5, 28, 1770000.00, '2025-11-25', NULL, 'Khám theo gói: Gói khám tầm soát ung thư cơ bản', 'confirmed', 'package', 'ko', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:25:37', '2025-11-24 08:26:45'),
-(177, 'APT00002', 14, 2, NULL, 5, 28, 500000.00, '2025-11-25', '08:00:00', 'Khám nội tổng quát', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-24 08:26:45'),
+(177, 'APT00002', 14, 2, NULL, 5, 28, 500000.00, '2025-11-25', '08:00:00', 'Khám nội tổng quát', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-25 09:40:12'),
 (178, 'APT00003', 14, 2, NULL, 5, 28, 300000.00, '2025-11-25', '08:50:00', 'Khám phát hiện khối u ngoại biên', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-24 08:40:30'),
-(179, 'APT00004', 14, 1, NULL, 5, 28, 50000.00, '2025-11-25', '09:20:00', 'AFP (gan)', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-24 08:26:45'),
-(180, 'APT00005', 14, 3, NULL, 5, 28, 70000.00, '2025-11-25', '09:50:00', 'CA 19-9 (tụy)', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-24 08:26:45'),
-(181, 'APT00006', 14, 4, NULL, 5, 28, 100000.00, '2025-11-25', '10:20:00', 'CEA (đại tràng)', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-24 08:26:45'),
-(182, 'APT00007', 14, 5, NULL, 5, 28, 200000.00, '2025-11-25', '10:50:00', 'Siêu âm toàn bộ ổ bụng', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-24 08:26:45'),
-(183, 'APT00008', 14, 6, NULL, 5, 28, 150000.00, '2025-11-25', '11:20:00', 'Siêu âm tuyến giáp', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-24 08:26:45'),
-(184, 'APT00009', 14, 7, NULL, 5, 28, 300000.00, '2025-11-25', '11:50:00', 'X-quang ngực', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-24 08:26:45'),
-(185, 'APT00010', 14, 9, NULL, 5, 28, 100000.00, '2025-11-25', '12:20:00', 'Tư vấn nguy cơ ung thư theo tuổi', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-24 08:26:45');
+(179, 'APT00004', 14, 1, NULL, 5, 28, 50000.00, '2025-11-25', '09:20:00', 'AFP (gan)', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-25 09:42:17'),
+(180, 'APT00005', 14, 3, NULL, 5, 28, 70000.00, '2025-11-25', '09:50:00', 'CA 19-9 (tụy)', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-25 09:43:20'),
+(181, 'APT00006', 14, 4, NULL, 5, 28, 100000.00, '2025-11-25', '10:20:00', 'CEA (đại tràng)', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-25 09:42:53'),
+(182, 'APT00007', 14, 5, NULL, 5, 28, 200000.00, '2025-11-25', '10:50:00', 'Siêu âm toàn bộ ổ bụng', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-25 09:45:06'),
+(183, 'APT00008', 14, 6, NULL, 5, 28, 150000.00, '2025-11-25', '11:20:00', 'Siêu âm tuyến giáp', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-25 09:40:56'),
+(184, 'APT00009', 14, 7, NULL, 5, 28, 300000.00, '2025-11-25', '11:50:00', 'X-quang ngực', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-25 09:44:11'),
+(185, 'APT00010', 14, 9, NULL, 5, 28, 100000.00, '2025-11-25', '12:20:00', 'Tư vấn nguy cơ ung thư theo tuổi', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-25 09:37:00');
 
 -- --------------------------------------------------------
 
@@ -96,15 +96,15 @@ CREATE TABLE `appointment_package_services` (
 --
 
 INSERT INTO `appointment_package_services` (`id`, `appointment_id`, `service_id`, `service_price`, `doctor_id`, `status`, `result_state`, `result_value`, `result_json`, `result_files`, `review_note`, `result_status`, `notes`, `tested_at`, `created_at`) VALUES
-(98, 176, 72, 500000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-11-24 08:25:37'),
+(98, 176, 72, 500000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, '', 'pending', NULL, '2025-11-25 16:40:26', '2025-11-24 08:25:37'),
 (99, 176, 73, 300000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, 'ok', 'pending', NULL, '2025-11-25 16:03:02', '2025-11-24 08:25:37'),
-(100, 176, 74, 50000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-11-24 08:25:37'),
-(101, 176, 75, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-11-24 08:25:37'),
-(102, 176, 76, 70000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-11-24 08:25:37'),
-(103, 176, 77, 200000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-11-24 08:25:37'),
-(104, 176, 78, 300000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-11-24 08:25:37'),
-(105, 176, 79, 150000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-11-24 08:25:37'),
-(106, 176, 80, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-11-24 08:25:37');
+(100, 176, 74, 50000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, '', 'pending', NULL, '2025-11-25 16:42:24', '2025-11-24 08:25:37'),
+(101, 176, 75, 100000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, '', 'pending', NULL, '2025-11-25 16:43:02', '2025-11-24 08:25:37'),
+(102, 176, 76, 70000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, '', 'pending', NULL, '2025-11-25 16:43:27', '2025-11-24 08:25:37'),
+(103, 176, 77, 200000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, '', 'pending', NULL, '2025-11-25 16:45:13', '2025-11-24 08:25:37'),
+(104, 176, 78, 300000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, '', 'pending', NULL, '2025-11-25 16:44:18', '2025-11-24 08:25:37'),
+(105, 176, 79, 150000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, '', 'pending', NULL, '2025-11-25 16:41:04', '2025-11-24 08:25:37'),
+(106, 176, 80, 100000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, '', 'pending', NULL, '2025-11-25 16:37:27', '2025-11-24 08:25:37');
 
 -- --------------------------------------------------------
 
@@ -166,6 +166,30 @@ CREATE TABLE `consultation_messages` (
 
 INSERT INTO `consultation_messages` (`id`, `consultation_id`, `sender_user_id`, `message_text`, `created_at`) VALUES
 (1, 1, 31, 'em muons hỏi bác sĩ khám bệnh', '2025-11-21 13:26:17');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `diagnoses`
+--
+
+CREATE TABLE `diagnoses` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `appointment_id` int(10) UNSIGNED DEFAULT NULL,
+  `package_appointment_id` int(10) UNSIGNED DEFAULT NULL,
+  `doctor_id` int(10) UNSIGNED NOT NULL,
+  `patient_id` int(10) UNSIGNED NOT NULL,
+  `primary_icd10` varchar(20) DEFAULT NULL,
+  `secondary_icd10` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`secondary_icd10`)),
+  `clinical_findings` text DEFAULT NULL,
+  `assessment` text DEFAULT NULL,
+  `plan` text DEFAULT NULL,
+  `status` enum('draft','submitted','approved','finalized') NOT NULL DEFAULT 'draft',
+  `signed_by` int(10) UNSIGNED DEFAULT NULL,
+  `signed_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -415,7 +439,7 @@ CREATE TABLE `package_appointments` (
 --
 
 INSERT INTO `package_appointments` (`id`, `patient_id`, `package_id`, `appointment_date`, `status`, `final_status`, `coordinator_doctor_id`, `approved_by`, `approved_at`, `final_pdf_path`, `notes`, `total_price`, `created_by`, `created_at`, `updated_at`) VALUES
-(28, 14, 5, '2025-11-25', 'scheduled', 'in_progress', NULL, NULL, NULL, NULL, 'ko', 1770000.00, 31, '2025-11-24 08:25:37', '2025-11-24 08:25:37');
+(28, 14, 5, '2025-11-25', 'scheduled', 'approved', NULL, 1, '2025-11-25 16:45:32', NULL, 'ko', 1770000.00, 31, '2025-11-24 08:25:37', '2025-11-25 09:45:32');
 
 -- --------------------------------------------------------
 
@@ -563,7 +587,15 @@ CREATE TABLE `package_test_results` (
 --
 
 INSERT INTO `package_test_results` (`id`, `appointment_id`, `service_id`, `metric_name`, `result_value`, `result_status`, `reference_range`, `notes`, `tested_at`, `created_at`, `updated_at`) VALUES
-(2, 176, 73, 'bình thường', 'thành công', 'pending', 'ko có', 'ko ', NULL, '2025-11-25 09:03:02', '2025-11-25 09:03:02');
+(2, 176, 73, 'bình thường', 'thành công', 'pending', 'ko có', 'ko ', NULL, '2025-11-25 09:03:02', '2025-11-25 09:03:02'),
+(3, 176, 80, '212', 'thành công', 'pending', '2121 -21121', 'ko ', NULL, '2025-11-25 09:37:27', '2025-11-25 09:37:27'),
+(4, 176, 72, 'bình thường', 'thành công', 'pending', 'ko có', 'ko ', NULL, '2025-11-25 09:40:26', '2025-11-25 09:40:26'),
+(5, 176, 79, '212', 'thành công', 'pending', 'ko có', 'ưqewq', NULL, '2025-11-25 09:41:04', '2025-11-25 09:41:04'),
+(6, 176, 74, '212', 'thành công', 'pending', 'ko có', 'ko ', NULL, '2025-11-25 09:42:24', '2025-11-25 09:42:24'),
+(7, 176, 75, 'bình thường', 'ko', 'pending', 'ko có', 'ewqewqe', NULL, '2025-11-25 09:43:02', '2025-11-25 09:43:02'),
+(8, 176, 76, 'ko', 'đá', 'pending', 'dá', 'sad', NULL, '2025-11-25 09:43:27', '2025-11-25 09:43:27'),
+(9, 176, 78, '212', 'dsad', 'pending', 'đass', 'đs', NULL, '2025-11-25 09:44:18', '2025-11-25 09:44:18'),
+(10, 176, 77, '212', '312321', 'pending', '12321', '123213', NULL, '2025-11-25 09:45:13', '2025-11-25 09:45:13');
 
 -- --------------------------------------------------------
 
@@ -637,7 +669,31 @@ CREATE TABLE `payments` (
 --
 
 CREATE TABLE `prescriptions` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `prescription_code` varchar(20) DEFAULT NULL,
+  `appointment_id` int(10) UNSIGNED DEFAULT NULL,
+  `package_appointment_id` int(10) UNSIGNED DEFAULT NULL,
+  `diagnosis_id` int(10) UNSIGNED DEFAULT NULL,
+  `doctor_id` int(10) UNSIGNED DEFAULT NULL,
+  `patient_id` int(10) UNSIGNED DEFAULT NULL,
+  `status` enum('draft','submitted','approved','dispensed','canceled') NOT NULL DEFAULT 'draft',
+  `notes_to_patient` text DEFAULT NULL,
+  `notes_internal` text DEFAULT NULL,
+  `total_items` int(10) UNSIGNED NOT NULL DEFAULT 0,
+  `pdf_path` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `prescription_items`
+--
+
+CREATE TABLE `prescription_items` (
   `id` int(11) NOT NULL,
+  `prescription_id` int(10) UNSIGNED DEFAULT NULL,
   `prescription_code` varchar(20) NOT NULL,
   `medical_record_id` int(11) NOT NULL,
   `medicine_id` int(11) NOT NULL,
@@ -645,7 +701,7 @@ CREATE TABLE `prescriptions` (
   `dosage` varchar(100) NOT NULL,
   `frequency` varchar(100) NOT NULL,
   `duration` varchar(50) NOT NULL,
-  `instructions` text DEFAULT NULL,
+  `instructions` mediumtext DEFAULT NULL,
   `route` varchar(50) DEFAULT NULL,
   `start_date` date DEFAULT NULL,
   `end_date` date DEFAULT NULL,
@@ -654,7 +710,7 @@ CREATE TABLE `prescriptions` (
   `status` enum('active','completed','cancelled') DEFAULT 'active',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -741,7 +797,7 @@ INSERT INTO `users` (`id`, `username`, `email`, `password`, `full_name`, `phone`
 (19, 'vanh', 'vanh@gmail.com', '$2y$10$84t1U8FNzfKdsHM0IG128e5Dr3rnTRgpT1krR3OcYJ1Ruy8KPgXiC', 'Lê Văn Việt Anh', '0967584675', '2003-09-09', 'male', 'Nhà 8', NULL, 'patient', 1, '2025-10-07 04:06:48', '2025-10-07 04:06:48'),
 (20, 'letan1', 'letan@hospital.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Hà Thị Tâm', '0909835121', '1975-05-15', 'male', '116/3A  St, TP.HCM', NULL, 'receptionist', 1, '2025-10-09 03:19:33', '2025-10-09 03:19:33'),
 (21, 'patient_1759980691', 'truong@gamil.com', '$2y$10$BowsSO5bqxuwxkC0g5fVsusDvpFMLlqQ4x5iu3nZYYNgLa8B/SY2q', 'Phạm Quang Trường', '0956474834', '2025-10-10', 'male', 'le loi', NULL, 'patient', 1, '2025-10-09 03:31:31', '2025-10-09 03:31:31'),
-(26, 'dr.truong', 'truongpham1203@gmail.com', '123456', 'BS.Phạm Quang Trường', '0975758586', NULL, NULL, NULL, NULL, 'doctor', 1, '2025-10-09 06:40:45', '2025-11-05 08:31:38'),
+(26, 'dr.truong', 'truongpham1203@gmail.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'BS.Phạm Quang Trường', '0975758586', NULL, NULL, NULL, NULL, 'doctor', 1, '2025-10-09 06:40:45', '2025-11-25 09:36:40'),
 (27, 'dr', 'vanh11@gmail.com', '$2y$10$kMtDY94idZYVSdFzOLl9PuoiNhxnjOTNEgtYVXAZdDxb/Z/9PEBqe', 'BS.Vanh Le', '0973436483', NULL, NULL, NULL, NULL, 'doctor', 1, '2025-10-09 07:01:41', '2025-10-10 07:19:04'),
 (28, 'truong1234', 'truongpham1203200311@gmail.com', '$2y$10$mIvZiScxryqbU0DRgAsMUenvfNJHp1qWpdfvz69CzDrjgUcvpA71a', 'Phạm Văn Duy', '0964753132', '2008-02-22', 'male', '116/3a\r\n67/32', NULL, 'patient', 1, '2025-10-22 09:08:04', '2025-10-22 09:08:04'),
 (29, 'patient_20251031145711', 'patient_20251031145711@temp.com', '$2y$10$PQBuSu4l55Ru10x99iMIHOq1z0Z9V5opRqdcAcmmdf/d1nAyuDoQW', 'huy le tran', '0964758463', NULL, NULL, NULL, NULL, 'patient', 1, '2025-10-31 07:57:11', '2025-10-31 07:57:11'),
@@ -814,6 +870,16 @@ ALTER TABLE `consultation_messages`
   ADD PRIMARY KEY (`id`),
   ADD KEY `consultation_id` (`consultation_id`),
   ADD KEY `sender_user_id` (`sender_user_id`);
+
+--
+-- Chỉ mục cho bảng `diagnoses`
+--
+ALTER TABLE `diagnoses`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_dx_apt` (`appointment_id`),
+  ADD KEY `idx_dx_pa` (`package_appointment_id`),
+  ADD KEY `idx_dx_patient` (`patient_id`),
+  ADD KEY `idx_dx_doctor` (`doctor_id`);
 
 --
 -- Chỉ mục cho bảng `doctors`
@@ -935,10 +1001,23 @@ ALTER TABLE `payments`
 --
 ALTER TABLE `prescriptions`
   ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_rx_code` (`prescription_code`),
+  ADD KEY `idx_rx_apt` (`appointment_id`),
+  ADD KEY `idx_rx_pa` (`package_appointment_id`),
+  ADD KEY `idx_rx_diag` (`diagnosis_id`),
+  ADD KEY `idx_rx_patient` (`patient_id`),
+  ADD KEY `idx_rx_status` (`status`);
+
+--
+-- Chỉ mục cho bảng `prescription_items`
+--
+ALTER TABLE `prescription_items`
+  ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `prescription_code` (`prescription_code`),
   ADD KEY `idx_medical_record` (`medical_record_id`),
   ADD KEY `idx_medicine` (`medicine_id`),
-  ADD KEY `idx_status` (`status`);
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_prescription_id` (`prescription_id`);
 
 --
 -- Chỉ mục cho bảng `specializations`
@@ -991,6 +1070,12 @@ ALTER TABLE `consultation_attachments`
 --
 ALTER TABLE `consultation_messages`
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT cho bảng `diagnoses`
+--
+ALTER TABLE `diagnoses`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT cho bảng `doctors`
@@ -1050,7 +1135,7 @@ ALTER TABLE `package_services`
 -- AUTO_INCREMENT cho bảng `package_test_results`
 --
 ALTER TABLE `package_test_results`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT cho bảng `patients`
@@ -1068,6 +1153,12 @@ ALTER TABLE `payments`
 -- AUTO_INCREMENT cho bảng `prescriptions`
 --
 ALTER TABLE `prescriptions`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT cho bảng `prescription_items`
+--
+ALTER TABLE `prescription_items`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -1166,11 +1257,11 @@ ALTER TABLE `payments`
   ADD CONSTRAINT `payments_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE;
 
 --
--- Các ràng buộc cho bảng `prescriptions`
+-- Các ràng buộc cho bảng `prescription_items`
 --
-ALTER TABLE `prescriptions`
-  ADD CONSTRAINT `prescriptions_ibfk_1` FOREIGN KEY (`medical_record_id`) REFERENCES `medical_records` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `prescriptions_ibfk_2` FOREIGN KEY (`medicine_id`) REFERENCES `medicines` (`id`);
+ALTER TABLE `prescription_items`
+  ADD CONSTRAINT `prescription_items_ibfk_1` FOREIGN KEY (`medical_record_id`) REFERENCES `medical_records` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `prescription_items_ibfk_2` FOREIGN KEY (`medicine_id`) REFERENCES `medicines` (`id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

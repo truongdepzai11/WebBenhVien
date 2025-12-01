@@ -22,6 +22,11 @@ ob_start();
           <i class="fas fa-file-pdf"></i>
           <span>Tải PDF</span>
         </a>
+      <?php elseif (($pa['final_status'] ?? '') === 'approved'): ?>
+        <a href="<?= APP_URL ?>/package-appointments/<?= (int)$pa['id'] ?>/export-pdf" class="inline-flex items-center gap-2 px-3 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700">
+          <i class="fas fa-download"></i>
+          <span>Xuất PDF</span>
+        </a>
       <?php endif; ?>
       <span class="px-3 py-1 text-sm font-semibold rounded-full <?= $fsColor ?>">Trạng thái: <?= htmlspecialchars($fs) ?></span>
     </div>

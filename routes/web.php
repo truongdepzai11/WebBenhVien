@@ -66,6 +66,8 @@ require_once __DIR__ . '/../app/Controllers/ValidationController.php';
 require_once __DIR__ . '/../app/Controllers/PackageController.php';
 require_once __DIR__ . '/../app/Controllers/PackageAppointmentController.php';
 require_once __DIR__ . '/../app/Controllers/ResultsController.php';
+require_once __DIR__ . '/../app/Controllers/PrescriptionController.php';
+require_once __DIR__ . '/../app/Controllers/DiagnosisController.php';
 
 // Home Route (Landing Page)
 $router->get('/', function() {
@@ -632,6 +634,100 @@ $router->get('/my-results', function() {
 $router->get('/my-results/package/{id}', function($id) {
     $controller = new ResultsController();
     $controller->package($id);
+});
+
+// ==================== API: Medicines search (simple) ====================
+$router->get('/api/medicines', function() {
+    require_once __DIR__ . '/../app/Controllers/PrescriptionController.php';
+    require_once __DIR__ . '/../config/database.php';
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+        $q = isset($_GET['q']) ? trim($_GET['q']) : '';
+        $db = new Database(); $conn = $db->getConnection();
+        if ($q === '') {
+            $stmt = $conn->query("SELECT id, name, dosage_form AS form, strength, generic_name FROM medicines ORDER BY name LIMIT 20");
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } else {
+            $like = '%' . $q . '%';
+            $stmt = $conn->prepare("SELECT id, name, dosage_form AS form, strength, generic_name
+                                     FROM medicines
+                                     WHERE name LIKE ? OR generic_name LIKE ?
+                                     ORDER BY name LIMIT 20");
+            $stmt->execute([$like, $like]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        }
+        echo json_encode(['items'=>$rows], JSON_UNESCAPED_UNICODE);
+    } catch (\Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['error'=>'server_error']);
+    }
+});
+
+// ==================== PRESCRIPTIONS ROUTES ====================
+// Doctor/Admin: save prescription for an appointment (create/update header + items)
+$router->post('/appointments/{id}/prescriptions/save', function($id) {
+    $controller = new PrescriptionController();
+    $controller->saveForAppointment($id);
+});
+
+// Doctor/Admin: submit prescription
+$router->post('/prescriptions/{id}/submit', function($id) {
+    $controller = new PrescriptionController();
+    $controller->submit($id);
+});
+
+// Admin/Doctor: approve prescription
+$router->post('/prescriptions/{id}/approve', function($id) {
+    $controller = new PrescriptionController();
+    $controller->approve($id);
+});
+
+// Admin: dispense
+$router->post('/prescriptions/{id}/dispense', function($id) {
+    $controller = new PrescriptionController();
+    $controller->dispense($id);
+});
+
+// Export/Download PDF
+$router->get('/prescriptions/{id}/export-pdf', function($id) {
+    $controller = new PrescriptionController();
+    $controller->exportPdf($id);
+});
+
+$router->get('/prescriptions/{id}/download-pdf', function($id) {
+    $controller = new PrescriptionController();
+    $controller->downloadPdf($id);
+});
+
+// Export consolidated prescriptions for a package appointment
+$router->get('/package-appointments/{id}/export-prescriptions', function($id) {
+    $controller = new PrescriptionController();
+    $controller->exportPackagePdf($id);
+});
+
+// ==================== DIAGNOSES ROUTES ====================
+// Doctor/Admin: save diagnosis for an appointment
+$router->post('/appointments/{id}/diagnoses/save', function($id) {
+    $controller = new DiagnosisController();
+    $controller->saveForAppointment($id);
+});
+
+// Doctor/Admin: submit diagnosis
+$router->post('/diagnoses/{id}/submit', function($id) {
+    $controller = new DiagnosisController();
+    $controller->submit($id);
+});
+
+// Admin/Doctor: approve diagnosis
+$router->post('/diagnoses/{id}/approve', function($id) {
+    $controller = new DiagnosisController();
+    $controller->approve($id);
+});
+
+// Helper API: get latest diagnosis json
+$router->get('/appointments/{id}/diagnoses/latest', function($id) {
+    $controller = new DiagnosisController();
+    $controller->latestJson($id);
 });
 
 // Phân công bác sĩ tự động

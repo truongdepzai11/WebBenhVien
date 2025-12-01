@@ -6,6 +6,7 @@ require_once __DIR__ . '/../Models/HealthPackage.php';
 require_once __DIR__ . '/../Models/Appointment.php';
 require_once __DIR__ . '/../Models/Doctor.php';
 require_once __DIR__ . '/../Helpers/Auth.php';
+require_once __DIR__ . '/../Helpers/Mailer.php';
 
 class PackageAppointmentController {
     private $packageAppointmentModel;
@@ -38,6 +39,20 @@ class PackageAppointmentController {
             $st = $conn->prepare('INSERT INTO notifications (user_id, title, message, link, type, is_read, created_at) VALUES (?,?,?,?,?,0, NOW())');
             $st->execute([(int)$userId, $title, $message, $link, $type]);
         } catch (\Throwable $e) { /* ignore */ }
+
+        try {
+            $db = new Database(); $conn = $db->getConnection();
+            $u = $conn->prepare('SELECT email, full_name FROM users WHERE id = ?');
+            $u->execute([(int)$userId]);
+            $row = $u->fetch(\PDO::FETCH_ASSOC);
+            if ($row && !empty($row['email'])) {
+                $mailer = new Mailer();
+                $url = $link ? (APP_URL . $link) : APP_URL;
+                $body = '<p>' . htmlspecialchars($message) . '</p>'
+                      . '<p><a href="' . htmlspecialchars($url) . '">Xem chi tiết</a></p>';
+                $mailer->send($row['email'], $title, $body);
+            }
+        } catch (\Throwable $e) { /* ignore email errors */ }
     }
 
     // Danh sách đăng ký gói khám
@@ -240,14 +255,21 @@ class PackageAppointmentController {
     // Xuất PDF tổng hợp kết quả
     public function exportPdf($packageAppointmentId) {
         Auth::requireLogin();
-        if (!Auth::isAdmin() && !Auth::isDoctor()) {
-            $_SESSION['error'] = 'Không có quyền xuất PDF';
-            header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId); exit;
-        }
 
         $pa = $this->packageAppointmentModel->findById($packageAppointmentId);
         $summary = $this->appointmentModel->getSummaryByPackageAppointmentId($packageAppointmentId);
         if (!$pa || !$summary) { $_SESSION['error']='Thiếu dữ liệu gói.'; header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId); exit; }
+
+        // Quyền: Admin/Doctor luôn được phép. Bệnh nhân chỉ được phép nếu là chủ sở hữu và gói đã approved.
+        $isOwnerPatient = false;
+        if (!Auth::isAdmin() && !Auth::isDoctor()) {
+            $patient = $this->patientModel->findByUserId(Auth::id());
+            $isOwnerPatient = $patient && (int)$patient['id'] === (int)$pa['patient_id'];
+            if (!$isOwnerPatient) {
+                $_SESSION['error'] = 'Không có quyền xuất PDF';
+                header('Location: ' . APP_URL . '/'); exit;
+            }
+        }
 
         $db = new Database(); $conn = $db->getConnection();
         // Kiểm tra đã approved hết chưa
@@ -257,6 +279,8 @@ class PackageAppointmentController {
         $final = $this->calculateFinalStatus($apsRows);
         if ($final !== 'approved') {
             $_SESSION['error'] = 'Chỉ xuất PDF khi tất cả dịch vụ đã được duyệt.';
+            // Nếu yêu cầu từ trang bệnh nhân, quay về trang bệnh nhân
+            if ($isOwnerPatient) { header('Location: ' . APP_URL . '/my-results/package/' . $packageAppointmentId); exit; }
             header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId); exit;
         }
 
@@ -268,11 +292,50 @@ class PackageAppointmentController {
         foreach ($metrics as $m) { $byService[(int)$m['service_id']][] = $m; }
 
         // Build HTML
-        $html = '<h2 style="text-align:center">Kết quả gói khám: '.htmlspecialchars($pa['package_name']).'</h2>';
-        $html .= '<p>Bệnh nhân: '.htmlspecialchars($pa['patient_name'] ?? '').' - Mã: '.htmlspecialchars($pa['patient_code'] ?? '').'</p>';
+        $styles = '<style>
+            body{ font-family: DejaVu Sans, sans-serif; font-size:12px; }
+            h2{ margin: 0 0 8px 0; }
+            h3{ margin: 14px 0 6px 0; }
+            table{ border-collapse:collapse; width:100%; }
+            th, td{ border:1px solid #444; padding:6px; vertical-align: top; }
+            th{ background:#f2f2f2; }
+            .meta td{ border:none; padding:4px 6px; }
+        </style>';
+        $html = $styles;
+        $html .= '<h2 style="text-align:center">Kết quả gói khám: '.htmlspecialchars($pa['package_name']).'</h2>';
+        $html .= '<table class="meta" width="100%">'
+              .  '<tr><td><strong>Bệnh nhân:</strong> ' . htmlspecialchars($pa['patient_name'] ?? '') . ' (' . htmlspecialchars($pa['patient_code'] ?? '') . ')</td><td><strong>Ngày khám:</strong> ' . (!empty($pa['appointment_date']) ? htmlspecialchars(date('d/m/Y', strtotime($pa['appointment_date']))) : '') . '</td></tr>'
+              .  '<tr><td><strong>SĐT:</strong> ' . htmlspecialchars($pa['patient_phone'] ?? '') . '</td><td><strong>Email:</strong> ' . htmlspecialchars($pa['patient_email'] ?? '') . '</td></tr>'
+              .  '</table>';
         foreach ($apsRows as $row) {
             $html .= '<h3>'.htmlspecialchars($row['service_name']).'</h3>';
-            $html .= '<table border="1" cellspacing="0" cellpadding="5" width="100%">'
+            // Doctor/state/date header per service: derive from service appointment by reason
+            $hdr = [];
+            try {
+                $aptQ = $conn->prepare('SELECT a.appointment_date, a.appointment_time, du.full_name AS doctor_name, s.name AS spec
+                                         FROM appointments a
+                                         LEFT JOIN doctors d ON d.id = a.doctor_id
+                                         LEFT JOIN users du ON du.id = d.user_id
+                                         LEFT JOIN specializations s ON s.id = d.specialization_id
+                                         WHERE a.package_appointment_id = ? AND LOWER(TRIM(a.reason)) = LOWER(TRIM(?)) AND a.doctor_id IS NOT NULL
+                                         ORDER BY a.appointment_date, a.appointment_time LIMIT 1');
+                $aptQ->execute([(int)$packageAppointmentId, (string)$row['service_name']]);
+                if ($aptRow = $aptQ->fetch(PDO::FETCH_ASSOC)) {
+                    if (!empty($aptRow['doctor_name'])) $hdr[] = '<strong>Bác sĩ:</strong> '.htmlspecialchars($aptRow['doctor_name']);
+                    if (!empty($aptRow['spec'])) $hdr[] = '<strong>Chuyên khoa:</strong> '.htmlspecialchars($aptRow['spec']);
+                    $dateStr = '';
+                    if (!empty($aptRow['appointment_date'])) {
+                        $dateStr = date('d/m/Y', strtotime($aptRow['appointment_date']));
+                        if (!empty($aptRow['appointment_time'])) { $dateStr .= ' - ' . date('H:i', strtotime($aptRow['appointment_time'])); }
+                        $hdr[] = '<strong>Ngày khám dịch vụ:</strong> ' . htmlspecialchars($dateStr);
+                    }
+                }
+            } catch(\Throwable $e) { /* ignore */ }
+            $stLbl = $row['result_state'] ?? '';
+            if ($stLbl !== '') $hdr[] = '<strong>Trạng thái dịch vụ:</strong> '.htmlspecialchars($stLbl);
+            if (!empty($hdr)) { $html .= '<div style="margin:4px 0 6px 0">'.implode(' — ', $hdr).'</div>'; }
+
+            $html .= '<table>'
                    .' <tr><th>Chỉ số</th><th>Kết quả</th><th>Khoảng tham chiếu</th><th>Tình trạng</th><th>Ghi chú</th></tr>';
             foreach ($byService[(int)$row['service_id']] ?? [] as $m) {
                 $html .= '<tr>'
@@ -285,6 +348,12 @@ class PackageAppointmentController {
             }
             $html .= '</table>';
         }
+
+        // Footer
+        $html .= '<div style="margin-top:24px; display:flex; justify-content:space-between;">'
+              .  '<div><strong>Ngày in:</strong> ' . date('d/m/Y H:i') . '</div>'
+              .  '<div style="text-align:right; min-width:240px;">Người duyệt kết quả<br><br><br>....................................</div>'
+              .  '</div>';
 
         // Try Dompdf if available
         $pdfPath = null; $ok = false;
@@ -314,6 +383,7 @@ class PackageAppointmentController {
                 }
             } catch (\Throwable $e) { /* ignore notify errors */ }
             $_SESSION['success'] = 'Đã tạo PDF kết quả.';
+            if ($isOwnerPatient) { header('Location: ' . APP_URL . '/my-results/package/' . $packageAppointmentId); exit; }
             header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId); exit;
         } else {
             // Fallback: render HTML inline

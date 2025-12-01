@@ -99,6 +99,19 @@ class ResultsController {
             }
         }
 
+        // Load prescription for this package (latest, prefer approved)
+        $prescription = null; $prescriptionItems = [];
+        try {
+            $stp = $conn->prepare("SELECT * FROM prescriptions WHERE package_appointment_id = ? ORDER BY (status='approved') DESC, id DESC LIMIT 1");
+            $stp->execute([(int)$packageAppointmentId]);
+            $prescription = $stp->fetch(PDO::FETCH_ASSOC) ?: null;
+            if ($prescription) {
+                $sti = $conn->prepare('SELECT * FROM prescription_items WHERE prescription_id = ? ORDER BY id');
+                $sti->execute([(int)$prescription['id']]);
+                $prescriptionItems = $sti->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+
         require_once APP_PATH . '/Views/results/package.php';
     }
 }
