@@ -64,10 +64,22 @@ class PrescriptionController {
         if (!Auth::isDoctor() && !Auth::isAdmin()) { $_SESSION['error'] = 'Không có quyền tạo đơn.'; header('Location: ' . APP_URL . '/appointments/' . $appointmentId); return; }
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: ' . APP_URL . '/appointments/' . $appointmentId); return; }
 
-        list($rx, $apt) = $this->ensureHeader($appointmentId);
-        if (!$rx) { $_SESSION['error'] = 'Không tạo được header đơn thuốc.'; header('Location: ' . APP_URL . '/appointments/' . $appointmentId); return; }
-
+        // CHÚ Ý: Không tạo header trước khi validate xong để tránh sinh đơn rác
+        $apt = $this->findAppointment($appointmentId);
+        if (!$apt) { $_SESSION['error'] = 'Không tìm thấy lịch hẹn.'; header('Location: ' . APP_URL . '/appointments'); return; }
         $db = new Database(); $conn = $db->getConnection();
+
+        // Yêu cầu: phải có chẩn đoán trước khi kê đơn (đảm bảo workflow hợp lý)
+        try {
+            $stmDx = $conn->prepare('SELECT id FROM diagnoses WHERE appointment_id = ? ORDER BY id DESC LIMIT 1');
+            $stmDx->execute([(int)$appointmentId]);
+            $hasDx = (bool)$stmDx->fetchColumn();
+            if (!$hasDx) {
+                $_SESSION['error'] = 'Vui lòng nhập chẩn đoán trước khi kê đơn.';
+                header('Location: ' . APP_URL . '/appointments/' . $appointmentId);
+                return;
+            }
+        } catch (\Throwable $e) { /* nếu lỗi DB, bỏ qua kiểm tra này */ }
 
         // Lấy medical_record_id nếu có (liên kết với appointment), nếu không thì NULL
         $medicalRecordId = null;
@@ -93,18 +105,96 @@ class PrescriptionController {
 
         $n = max(count($medicine_id), count($quantity), count($dosage));
 
-        // Validate có ít nhất 1 dòng hợp lệ (medicine_id và quantity > 0)
-        $validCount = 0;
+        // Validate sơ bộ: có ít nhất 1 dòng hợp lệ
+        $validCount = 0; $errors = [];
         for ($i=0; $i<$n; $i++) {
             $mid = (int)($medicine_id[$i] ?? 0);
             $qty = (int)($quantity[$i] ?? 0);
-            if ($mid > 0 && $qty > 0) { $validCount++; }
+            $dos = trim((string)($dosage[$i] ?? ''));
+            $freq = trim((string)($frequency[$i] ?? ''));
+            $dur = trim((string)($duration[$i] ?? ''));
+            if ($mid > 0 && $qty > 0) {
+                $validCount++;
+                if ($dos === '' || $freq === '' || $dur === '') {
+                    $errors[] = 'Dòng thuốc #'.($i+1).': thiếu liều dùng/tần suất/thời gian.';
+                }
+            }
         }
         if ($validCount === 0) {
             $_SESSION['error'] = 'Vui lòng chọn ít nhất 1 thuốc từ danh mục (có gợi ý) và số lượng > 0.';
             header('Location: ' . APP_URL . '/appointments/' . $appointmentId);
             return;
         }
+
+        // Lấy service_id nếu là lịch dịch vụ trong gói (để whitelist theo dịch vụ)
+        $serviceIdForWhitelist = null;
+        try {
+            if (!empty($apt['package_appointment_id']) && !empty($apt['reason'])) {
+                require_once APP_PATH . '/Models/AppointmentPackageService.php';
+                $apsModel = new AppointmentPackageService();
+                $aps = $apsModel->findByPackageAppointmentAndServiceName($apt['package_appointment_id'], $apt['reason']);
+                if ($aps && !empty($aps['service_id'])) { $serviceIdForWhitelist = (int)$aps['service_id']; }
+            }
+        } catch (\Throwable $e) { $serviceIdForWhitelist = null; }
+
+        // Chuẩn bị: tên thuốc và whitelist để báo lỗi rõ ràng
+        $nameById = [];
+        try {
+            if ($validCount > 0) {
+                $ids = array_values(array_unique(array_map('intval', array_filter($medicine_id))));
+                if (!empty($ids)) {
+                    $place = implode(',', array_fill(0, count($ids), '?'));
+                    $stMed = $conn->prepare("SELECT id, name FROM medicines WHERE id IN ($place)");
+                    $stMed->execute($ids);
+                    foreach ($stMed->fetchAll(PDO::FETCH_ASSOC) ?: [] as $r) { $nameById[(int)$r['id']] = $r['name']; }
+                }
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+
+        // Nếu có service whitelist: nếu whitelist tồn tại (>=1 dòng) thì bắt buộc thuốc phải nằm trong whitelist
+        if ($serviceIdForWhitelist) {
+            try {
+                $stCnt = $conn->prepare('SELECT COUNT(*) FROM service_allowed_medicines WHERE service_id = ?');
+                $stCnt->execute([$serviceIdForWhitelist]);
+                $wlCount = (int)$stCnt->fetchColumn();
+                if ($wlCount > 0) {
+                    $violations = [];
+                    for ($i=0; $i<$n; $i++) {
+                        $mid = (int)($medicine_id[$i] ?? 0);
+                        if ($mid <= 0) continue;
+                        $chk = $conn->prepare('SELECT 1 FROM service_allowed_medicines WHERE service_id = ? AND medicine_id = ? LIMIT 1');
+                        $chk->execute([$serviceIdForWhitelist, $mid]);
+                        if (!$chk->fetchColumn()) {
+                            $violations[] = $nameById[$mid] ?? ('ID '.$mid);
+                        }
+                    }
+                    if (!empty($violations)) {
+                        $_SESSION['error'] = 'Một số thuốc không nằm trong danh mục cho phép của dịch vụ: '.implode(', ', $violations);
+                        header('Location: ' . APP_URL . '/appointments/' . $appointmentId);
+                        return;
+                    }
+                }
+            } catch (\Throwable $e) { /* ignore whitelist errors */ }
+        }
+
+        // Kiểm tra trùng thuốc trong cùng đơn
+        $seen = [];
+        for ($i=0; $i<$n; $i++) {
+            $mid = (int)($medicine_id[$i] ?? 0);
+            if ($mid > 0) {
+                if (isset($seen[$mid])) { $errors[] = 'Dòng thuốc #'.($i+1).' trùng với thuốc đã chọn trước đó.'; }
+                $seen[$mid] = true;
+            }
+        }
+        if (!empty($errors)) {
+            $_SESSION['error'] = implode('\n', $errors);
+            header('Location: ' . APP_URL . '/appointments/' . $appointmentId);
+            return;
+        }
+
+        // Đến đây mới đảm bảo có ít nhất 1 thuốc hợp lệ => tạo/đảm bảo header
+        list($rx, $apt2) = $this->ensureHeader($appointmentId);
+        if (!$rx) { $_SESSION['error'] = 'Không tạo được header đơn thuốc.'; header('Location: ' . APP_URL . '/appointments/' . $appointmentId); return; }
 
         // Transaction: xóa cũ rồi chèn mới
         $conn->beginTransaction();
@@ -158,9 +248,17 @@ class PrescriptionController {
         Auth::requireLogin();
         if (!Auth::isDoctor() && !Auth::isAdmin()) { $_SESSION['error']='Không có quyền.'; header('Location: ' . APP_URL . '/appointments'); return; }
         $db = new Database(); $conn = $db->getConnection();
+        // Chỉ cho nộp khi có ít nhất 1 item
+        $st = $conn->prepare('SELECT id, appointment_id, total_items, status FROM prescriptions WHERE id = ?');
+        $st->execute([(int)$prescriptionId]);
+        $rx = $st->fetch(PDO::FETCH_ASSOC);
+        $redir = APP_URL . '/appointments' . (!empty($rx['appointment_id']) ? ('/' . (int)$rx['appointment_id']) : '');
+        if (!$rx) { $_SESSION['error'] = 'Không tìm thấy đơn thuốc.'; header('Location: ' . $redir); return; }
+        if ((int)($rx['total_items'] ?? 0) <= 0) { $_SESSION['error'] = 'Không thể nộp: đơn thuốc chưa có mục nào.'; header('Location: ' . $redir); return; }
+        if (($rx['status'] ?? '') !== 'draft') { $_SESSION['error'] = 'Đơn thuốc không ở trạng thái nháp.'; header('Location: ' . $redir); return; }
         $conn->prepare('UPDATE prescriptions SET status = "submitted" WHERE id = ?')->execute([(int)$prescriptionId]);
         $_SESSION['success'] = 'Đã nộp đơn thuốc.';
-        header('Location: ' . APP_URL . '/appointments');
+        header('Location: ' . $redir);
     }
 
     public function approve($prescriptionId) {

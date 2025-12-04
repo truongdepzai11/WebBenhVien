@@ -493,14 +493,19 @@ ob_start();
                                     <!-- Chọn bác sĩ -->
                                     <div>
                                         <label class="block text-xs font-medium text-gray-700 mb-1">Bác sĩ</label>
+                                        <?php $allowed = $doctorsByService[$service['id']] ?? []; ?>
                                         <select name="doctor_id" required 
                                                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
                                             <option value="">-- Chọn bác sĩ --</option>
-                                            <?php foreach ($doctors as $doctor): ?>
-                                            <option value="<?= $doctor['id'] ?>">
-                                                <?= htmlspecialchars($doctor['full_name']) ?> - <?= htmlspecialchars($doctor['specialization']) ?>
-                                            </option>
-                                            <?php endforeach; ?>
+                                            <?php if (!empty($allowed)): ?>
+                                                <?php foreach ($allowed as $doctor): ?>
+                                                <option value="<?= (int)$doctor['id'] ?>">
+                                                    <?= htmlspecialchars($doctor['full_name']) ?> - <?= htmlspecialchars($doctor['specialization']) ?>
+                                                </option>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <option value="" disabled>Chưa cấu hình bác sĩ cho dịch vụ này</option>
+                                            <?php endif; ?>
                                         </select>
                                     </div>
                                     

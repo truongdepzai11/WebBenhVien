@@ -138,8 +138,31 @@ class PackageAppointmentController {
         }
         $assignedCount = count($uniqueReasons);
 
-        // Lấy danh sách bác sĩ (cho phân công)
-        $doctors = $this->doctorModel->getAll();
+        // Lấy danh sách bác sĩ được phép theo từng dịch vụ để hiển thị đúng dropdown
+        $doctorsByService = [];
+        try {
+            $db = new Database(); $conn = $db->getConnection();
+            $svcIds = array_map(function($s){ return (int)$s['id']; }, $packageServices);
+            if (!empty($svcIds)) {
+                $in = implode(',', array_fill(0, count($svcIds), '?'));
+                $st = $conn->prepare("SELECT psd.service_id, d.id, u.full_name AS doctor_name, s.name AS spec
+                                       FROM package_service_doctors psd
+                                       JOIN doctors d ON d.id = psd.doctor_id
+                                       LEFT JOIN users u ON u.id = d.user_id
+                                       LEFT JOIN specializations s ON s.id = d.specialization_id
+                                       WHERE psd.service_id IN ($in)");
+                $st->execute($svcIds);
+                foreach ($st->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+                    $sid = (int)$row['service_id'];
+                    if (!isset($doctorsByService[$sid])) $doctorsByService[$sid] = [];
+                    $doctorsByService[$sid][] = [
+                        'id' => (int)$row['id'],
+                        'full_name' => $row['doctor_name'] ?? '',
+                        'specialization' => $row['spec'] ?? ''
+                    ];
+                }
+            }
+        } catch (\Throwable $e) { $doctorsByService = []; }
 
         // Tải trạng thái kết quả theo từng dịch vụ (APS) + metrics để điều phối xem/xét duyệt
         $apsByServiceId = [];
@@ -468,14 +491,14 @@ class PackageAppointmentController {
         $failedServices = [];
 
         foreach ($packageServices as $service) {
-            // Tìm bác sĩ phù hợp với dịch vụ
-            $doctor = $this->findSuitableDoctor($service, $startDate, $currentTime, $packageAppointmentId);
-
-            if (!$doctor) {
-                // Nếu không tìm được bác sĩ, thử ngày hôm sau
-                $startDate->modify('+1 day');
-                $currentTime = new DateTime('08:00:00');
-                $doctor = $this->findSuitableDoctor($service, $startDate, $currentTime, $packageAppointmentId);
+            // Tìm bác sĩ phù hợp với dịch vụ, thử tối đa 7 ngày kế tiếp
+            $doctor = null; $tryDate = clone $startDate; $tryTime = clone $currentTime;
+            for ($day=0; $day<7 && !$doctor; $day++) {
+                $doctor = $this->findSuitableDoctor($service, $tryDate, $tryTime, $packageAppointmentId);
+                if ($doctor) break;
+                // chuyển sang ngày kế tiếp và reset giờ
+                $tryDate->modify('+1 day');
+                $tryTime = new DateTime('08:00:00');
             }
 
             if ($doctor) {
@@ -486,18 +509,18 @@ class PackageAppointmentController {
                 $this->appointmentModel->package_id = $packageAppointment['package_id'];
                 $this->appointmentModel->package_appointment_id = $packageAppointmentId;
                 // Đảm bảo không trùng giờ với dịch vụ khác trong gói
-                $dateYmd = $startDate->format('Y-m-d');
-                $slot = $currentTime->format('H:i:s');
+                $dateYmd = $tryDate->format('Y-m-d');
+                $slot = $tryTime->format('H:i:s');
                 $usedSlots = $this->getUsedTimeSlots($packageAppointmentId, $dateYmd);
                 // Tránh trùng giờ bắt đầu với dịch vụ khác trong cùng gói/ngày
                 while (in_array($slot, $usedSlots, true)) {
-                    $currentTime->modify('+5 minutes');
-                    if ((int)$currentTime->format('H') >= 17) {
-                        $startDate->modify('+1 day');
-                        $dateYmd = $startDate->format('Y-m-d');
-                        $currentTime = new DateTime('08:00:00');
+                    $tryTime->modify('+5 minutes');
+                    if ((int)$tryTime->format('H') >= 17) {
+                        $tryDate->modify('+1 day');
+                        $dateYmd = $tryDate->format('Y-m-d');
+                        $tryTime = new DateTime('08:00:00');
                     }
-                    $slot = $currentTime->format('H:i:s');
+                    $slot = $tryTime->format('H:i:s');
                     $usedSlots = $this->getUsedTimeSlots($packageAppointmentId, $dateYmd);
                 }
                 $this->appointmentModel->appointment_date = $dateYmd;
@@ -520,8 +543,8 @@ class PackageAppointmentController {
                 if ($duration <= 0) { $duration = 30; }
                 $currentTime->modify('+' . $duration . ' minutes');
 
-                // Nếu quá 17h, chuyển sang ngày hôm sau
-                if ($currentTime->format('H') >= 17) {
+                // Nếu quá 17h, chuyển sang ngày hôm sau cho điểm bắt đầu các dịch vụ tiếp theo
+                if ($tryTime->format('H') >= 17) {
                     $startDate->modify('+1 day');
                     $currentTime = new DateTime('08:00:00');
                 }
@@ -597,107 +620,104 @@ class PackageAppointmentController {
 
     // Tìm bác sĩ phù hợp cho dịch vụ (theo chuyên môn)
     private function findSuitableDoctor($service, $date, $time, $packageAppointmentId) {
-        $serviceName = $service['service_name'];
+        $serviceName = $service["service_name"];
         $requiredSpecialization = $this->findSpecializationForService($serviceName);
         
-        // Query tìm bác sĩ theo chuyên khoa
         $database = new Database();
         $conn = $database->getConnection();
-        
-        // 1) Thử khớp chính xác + is_available = 1
-        $doctors = [];
-        $query1 = "SELECT d.*, u.full_name, s.name as specialization_name
-                   FROM doctors d
-                   LEFT JOIN users u ON d.user_id = u.id
-                   LEFT JOIN specializations s ON d.specialization_id = s.id
-                   WHERE s.name = :specialization
-                   AND (d.is_available = 1 OR d.is_available IS NULL)
-                   ORDER BY d.total_patients ASC";
-        $stmt1 = $conn->prepare($query1);
-        $stmt1->bindParam(':specialization', $requiredSpecialization);
-        if ($stmt1->execute()) {
-            $doctors = $stmt1->fetchAll(PDO::FETCH_ASSOC);
-        }
 
-        // 2) Nếu chưa có, bỏ điều kiện is_available
-        if (empty($doctors)) {
-            $query2 = "SELECT d.*, u.full_name, s.name as specialization_name
+        // Lấy danh sách bác sĩ được phép cho dịch vụ này (nếu cấu hình)
+        $allowedIds = [];
+        try {
+            $stAllowed = $conn->prepare('SELECT doctor_id FROM package_service_doctors WHERE service_id = ?');
+            $stAllowed->execute([(int)$service['id']]);
+            $allowedIds = array_map('intval', array_column($stAllowed->fetchAll(PDO::FETCH_ASSOC) ?: [], 'doctor_id'));
+        } catch (\Throwable $e) { $allowedIds = []; }
+
+        $doctors = [];
+        if (!empty($allowedIds)) {
+            // Ưu tiên tuyệt đối: chỉ chọn trong danh sách bác sĩ được cấu hình cho dịch vụ
+            $place = implode(',', array_fill(0, count($allowedIds), '?'));
+            $stmt = $conn->prepare("SELECT d.*, u.full_name, s.name as specialization_name FROM doctors d LEFT JOIN users u ON d.user_id=u.id LEFT JOIN specializations s ON s.id=d.specialization_id WHERE d.id IN ($place)");
+            $stmt->execute($allowedIds);
+            $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } else {
+            // 1) Chọn theo chuyên khoa, ưu tiên bác sĩ available
+            $query1 = "SELECT d.*, u.full_name, s.name as specialization_name
                        FROM doctors d
                        LEFT JOIN users u ON d.user_id = u.id
                        LEFT JOIN specializations s ON d.specialization_id = s.id
                        WHERE s.name = :specialization
+                       AND (d.is_available = 1 OR d.is_available IS NULL)
                        ORDER BY d.total_patients ASC";
-            $stmt2 = $conn->prepare($query2);
-            $stmt2->bindParam(':specialization', $requiredSpecialization);
-            $stmt2->execute();
-            $doctors = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+            $stmt1 = $conn->prepare($query1);
+            $stmt1->bindParam(':specialization', $requiredSpecialization);
+            if ($stmt1->execute()) { $doctors = $stmt1->fetchAll(PDO::FETCH_ASSOC) ?: []; }
+            // 2) Nếu chưa có, bỏ điều kiện available
+            if (empty($doctors)) {
+                $query2 = "SELECT d.*, u.full_name, s.name as specialization_name
+                           FROM doctors d
+                           LEFT JOIN users u ON d.user_id = u.id
+                           LEFT JOIN specializations s ON d.specialization_id = s.id
+                           WHERE s.name = :specialization
+                           ORDER BY d.total_patients ASC";
+                $stmt2 = $conn->prepare($query2);
+                $stmt2->bindParam(':specialization', $requiredSpecialization);
+                $stmt2->execute();
+                $doctors = $stmt2->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            }
+            // 3) Nếu vẫn chưa có, LIKE theo tên chuyên khoa (nới lỏng)
+            if (empty($doctors)) {
+                $like = '%' . $requiredSpecialization . '%';
+                $query3 = "SELECT d.*, u.full_name, s.name as specialization_name
+                           FROM doctors d
+                           LEFT JOIN users u ON d.user_id = u.id
+                           LEFT JOIN specializations s ON d.specialization_id = s.id
+                           WHERE s.name LIKE :like
+                           ORDER BY d.total_patients ASC";
+                $stmt3 = $conn->prepare($query3);
+                $stmt3->bindParam(':like', $like);
+                $stmt3->execute();
+                $doctors = $stmt3->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            }
         }
 
-        // 3) Nếu vẫn chưa có, thử LIKE theo chuyên khoa (trường hợp tên hơi khác)
-        if (empty($doctors)) {
-            $like = '%' . $requiredSpecialization . '%';
-            $query3 = "SELECT d.*, u.full_name, s.name as specialization_name
-                       FROM doctors d
-                       LEFT JOIN users u ON d.user_id = u.id
-                       LEFT JOIN specializations s ON d.specialization_id = s.id
-                       WHERE s.name LIKE :like
-                       ORDER BY d.total_patients ASC";
-            $stmt3 = $conn->prepare($query3);
-            $stmt3->bindParam(':like', $like);
-            $stmt3->execute();
-            $doctors = $stmt3->fetchAll(PDO::FETCH_ASSOC);
-        }
+        if (empty($doctors)) { return null; }
 
         // Tải hiện tại theo ngày và số dịch vụ đã gán trong gói này
         $loadMap = [];
         $inPackageMap = [];
+        $ymd = $date->format('Y-m-d');
         foreach ($doctors as $d) {
             $docId = (int)$d['id'];
-            // Số lịch trong ngày hiện tại
-            $q1 = "SELECT COUNT(*) c FROM appointments WHERE doctor_id = :did AND appointment_date = :d AND status IN ('pending','confirmed','completed')";
-            $st1 = $conn->prepare($q1);
-            $ymd = $date->format('Y-m-d');
-            $st1->bindParam(':did', $docId, PDO::PARAM_INT);
-            $st1->bindParam(':d', $ymd);
-            $st1->execute();
+            $st1 = $conn->prepare("SELECT COUNT(*) c FROM appointments WHERE doctor_id = :did AND appointment_date = :d AND status IN ('pending','confirmed','completed')");
+            $st1->execute([':did'=>$docId, ':d'=>$ymd]);
             $loadMap[$docId] = (int)$st1->fetchColumn();
-
-            // Số dịch vụ đã gán cho cùng package_appointment
-            $q2 = "SELECT COUNT(*) c FROM appointments WHERE doctor_id = :did AND package_appointment_id = :pa";
-            $st2 = $conn->prepare($q2);
-            $st2->bindParam(':did', $docId, PDO::PARAM_INT);
-            $st2->bindParam(':pa', $packageAppointmentId, PDO::PARAM_INT);
-            $st2->execute();
+            $st2 = $conn->prepare("SELECT COUNT(*) c FROM appointments WHERE doctor_id = :did AND package_appointment_id = :pa");
+            $st2->execute([':did'=>$docId, ':pa'=>$packageAppointmentId]);
             $inPackageMap[$docId] = (int)$st2->fetchColumn();
         }
 
-        // Giới hạn: 1 bác sĩ không nhận quá 2 dịch vụ trong cùng một gói
-        $perPackageCap = 2;
+        // Nới giới hạn mỗi bác sĩ trong cùng gói: nếu có cấu hình allowedIds thì bỏ giới hạn; nếu không, cap=3
+        $perPackageCap = !empty($allowedIds) ? 99 : 3;
 
-        // Sắp xếp bác sĩ theo tiêu chí cân tải: ít lịch trong ngày hơn, ít dịch vụ trong gói hơn
+        // Sắp xếp cân tải
         usort($doctors, function($a, $b) use ($loadMap, $inPackageMap) {
             $da = (int)$a['id']; $db = (int)$b['id'];
             $cmp = ($loadMap[$da] <=> $loadMap[$db]);
             if ($cmp !== 0) return $cmp;
             return ($inPackageMap[$da] <=> $inPackageMap[$db]);
         });
-        
-        // Kiểm tra từng bác sĩ xem có rảnh không
+
         foreach ($doctors as $doctor) {
             $docId = (int)$doctor['id'];
             if ($inPackageMap[$docId] >= $perPackageCap) { continue; }
-            $isAvailable = $this->appointmentModel->isDoctorAvailable(
-                $docId,
-                $date->format('Y-m-d'),
-                $time->format('H:i:s')
-            );
-
-            if ($isAvailable) {
+            if ($this->appointmentModel->isDoctorAvailable($docId, $ymd, $time->format('H:i:s'))) {
                 return $doctor;
             }
         }
         
-        // Nếu không tìm được bác sĩ chuyên khoa, tìm bác sĩ Nội khoa
+        // Nếu không tìm được bác sĩ chuyên khoa, thử Nội khoa nhưng vẫn phải thuộc allowedIds nếu có cấu hình
         if ($requiredSpecialization !== 'Nội khoa') {
             $query = "SELECT d.*, u.full_name, s.name as specialization_name
                       FROM doctors d
@@ -711,6 +731,9 @@ class PackageAppointmentController {
             $stmt->execute();
             
             $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if (!empty($allowedIds)) {
+                $doctors = array_values(array_filter($doctors, function($d) use ($allowedIds){ return in_array((int)$d['id'], $allowedIds, true); }));
+            }
 
             // Tương tự sắp xếp cân tải
             foreach ($doctors as $d) {
@@ -753,13 +776,21 @@ class PackageAppointmentController {
             }
         }
         
-        // 4) Cuối cùng: chọn bất kỳ bác sĩ nào (bất kể chuyên khoa) theo tải thấp nhất
-        $queryAny = "SELECT d.*, u.full_name
-                     FROM doctors d
-                     LEFT JOIN users u ON d.user_id = u.id";
-        $stmtAny = $conn->prepare($queryAny);
-        $stmtAny->execute();
-        $anyDocs = $stmtAny->fetchAll(PDO::FETCH_ASSOC);
+        // 4) Cuối cùng: chỉ chọn trong allowedIds (nếu có). Nếu không có allowedIds cấu hình thì có thể lấy tất cả.
+        $anyDocs = [];
+        if (empty($doctors) && empty($allowedIds)) {
+            // Không có cấu hình allowedIds: cho phép lấy tất cả như cũ
+            $queryAny = "SELECT d.*, u.full_name FROM doctors d LEFT JOIN users u ON d.user_id = u.id";
+            $stmtAny = $conn->prepare($queryAny);
+            $stmtAny->execute();
+            $anyDocs = $stmtAny->fetchAll(PDO::FETCH_ASSOC);
+        } else if (empty($doctors) && !empty($allowedIds)) {
+            // Có cấu hình allowedIds: chỉ lấy trong danh sách này
+            $place = implode(',', array_fill(0, count($allowedIds), '?'));
+            $stmtAny = $conn->prepare("SELECT d.*, u.full_name FROM doctors d LEFT JOIN users u ON d.user_id = u.id WHERE d.id IN ($place)");
+            $stmtAny->execute($allowedIds);
+            $anyDocs = $stmtAny->fetchAll(PDO::FETCH_ASSOC);
+        }
         if (!empty($anyDocs)) {
             // Tính tải và sắp xếp
             $loadMap = [];
@@ -873,6 +904,19 @@ class PackageAppointmentController {
             header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId);
             exit;
         }
+
+        // Kiểm tra bác sĩ được phép cho dịch vụ này
+        try {
+            $db = new Database(); $conn = $db->getConnection();
+            $st = $conn->prepare('SELECT 1 FROM package_service_doctors WHERE service_id = ? AND doctor_id = ? LIMIT 1');
+            $st->execute([(int)$serviceId, (int)$doctorId]);
+            $ok = (bool)$st->fetchColumn();
+            if (!$ok) {
+                $_SESSION['error'] = 'Bác sĩ chọn không được cấu hình cho dịch vụ này.';
+                header('Location: ' . APP_URL . '/package-appointments/' . $packageAppointmentId);
+                exit;
+            }
+        } catch (\Throwable $e) { /* nếu lỗi DB, tiếp tục nhưng về nguyên tắc không nên */ }
 
         // Tạo appointment CHI TIẾT cho dịch vụ (để có thể có nhiều bác sĩ cho 1 gói)
         $this->appointmentModel->appointment_code = 'APT' . date('YmdHis') . rand(100, 999);

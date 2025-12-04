@@ -121,7 +121,7 @@ class AppointmentController {
             header('Location: ' . APP_URL . '/appointments/' . $id); exit;
         }
 
-        // Lưu dữ liệu giống như saveResults rồi đặt state=submitted
+        // Lưu dữ liệu giống như saveResults rồi đặt state=approved (bỏ duyệt admin)
         $metrics = $_POST['metric_name'] ?? [];
         $values  = $_POST['result_value'] ?? [];
         $units   = $_POST['unit'] ?? [];
@@ -162,9 +162,27 @@ class AppointmentController {
                 $up = $conn->prepare('UPDATE appointment_package_services SET result_json = :js WHERE id = :id');
                 $up->execute([':js'=>json_encode($json, JSON_UNESCAPED_UNICODE), ':id'=>(int)$aps['id']]);
             }
-            $apsModel->updateResultStateById($aps['id'], 'submitted');
+            $apsModel->updateResultStateById($aps['id'], 'approved');
+
+            // Recalc final_status của package_appointments ngay sau khi approve một dịch vụ
+            // Đếm trạng thái các dịch vụ thuộc summary appointment
+            $st = $conn->prepare('SELECT result_state FROM appointment_package_services WHERE appointment_id = ?');
+            $st->execute([(int)$summary['id']]);
+            $rows = $st->fetchAll(PDO::FETCH_COLUMN) ?: [];
+            $allApproved = !empty($rows) && count(array_filter($rows, function($s){ return $s === 'approved'; })) === count($rows);
+            $final = $allApproved ? 'approved' : 'in_progress';
+            $paUpdSql = 'UPDATE package_appointments SET final_status = :fs';
+            $params = [':fs'=>$final, ':id'=>$apt['package_appointment_id']];
+            if ($final === 'approved') {
+                $paUpdSql .= ', approved_by = :ab, approved_at = NOW()';
+                $params[':ab'] = Auth::id();
+            }
+            $paUpdSql .= ' WHERE id = :id';
+            $paUpd = $conn->prepare($paUpdSql);
+            $paUpd->execute($params);
+
             $conn->commit();
-            $_SESSION['success'] = 'Đã nộp kết quả. Chờ điều phối duyệt.';
+            $_SESSION['success'] = 'Đã gửi và phê duyệt kết quả cho bệnh nhân.';
         } catch (\Throwable $e) {
             $conn->rollBack();
             $_SESSION['error'] = 'Lỗi nộp kết quả: ' . $e->getMessage();

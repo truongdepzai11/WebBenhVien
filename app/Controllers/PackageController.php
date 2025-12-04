@@ -10,6 +10,40 @@ class PackageController {
         $this->packageModel = new HealthPackage();
     }
 
+    // Cập nhật whitelist thuốc cho một dịch vụ trong gói
+    public function updateServiceMedicines($package_id, $service_id) {
+        Auth::requireAdmin();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . APP_URL . '/admin/packages/' . $package_id . '/services');
+            exit;
+        }
+
+        $medicineIds = $_POST['medicine_ids'] ?? [];
+        if (!is_array($medicineIds)) { $medicineIds = []; }
+
+        $database = new Database();
+        $conn = $database->getConnection();
+        try {
+            $conn->beginTransaction();
+            $del = $conn->prepare('DELETE FROM service_allowed_medicines WHERE service_id = ?');
+            $del->execute([(int)$service_id]);
+            if (!empty($medicineIds)) {
+                $ins = $conn->prepare('INSERT INTO service_allowed_medicines(service_id, medicine_id, created_at) VALUES(?, ?, NOW())');
+                foreach ($medicineIds as $mid) {
+                    $ins->execute([(int)$service_id, (int)$mid]);
+                }
+            }
+            $conn->commit();
+            $_SESSION['success'] = 'Cập nhật whitelist thuốc thành công!';
+        } catch (\Throwable $e) {
+            if ($conn->inTransaction()) { $conn->rollBack(); }
+            $_SESSION['error'] = 'Lưu whitelist thuốc thất bại!';
+        }
+
+        header('Location: ' . APP_URL . '/admin/packages/' . $package_id . '/services');
+        exit;
+    }
+
     // Cập nhật thời lượng dịch vụ (phút)
     public function updateServiceDuration($package_id, $service_id) {
         Auth::requireAdmin();
@@ -30,6 +64,41 @@ class PackageController {
             $_SESSION['success'] = 'Cập nhật thời lượng dịch vụ thành công!';
         } else {
             $_SESSION['error'] = 'Cập nhật thời lượng dịch vụ thất bại!';
+        }
+
+        header('Location: ' . APP_URL . '/admin/packages/' . $package_id . '/services');
+        exit;
+    }
+
+    // Cập nhật danh sách bác sĩ được phép thực hiện một dịch vụ trong gói
+    public function updateServiceDoctors($package_id, $service_id) {
+        Auth::requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . APP_URL . '/admin/packages/' . $package_id . '/services');
+            exit;
+        }
+
+        $doctorIds = $_POST['doctor_ids'] ?? [];
+        if (!is_array($doctorIds)) { $doctorIds = []; }
+
+        $database = new Database();
+        $conn = $database->getConnection();
+        try {
+            $conn->beginTransaction();
+            $del = $conn->prepare('DELETE FROM package_service_doctors WHERE service_id = ?');
+            $del->execute([(int)$service_id]);
+            if (!empty($doctorIds)) {
+                $ins = $conn->prepare('INSERT INTO package_service_doctors(service_id, doctor_id, created_at) VALUES(?, ?, NOW())');
+                foreach ($doctorIds as $did) {
+                    $ins->execute([(int)$service_id, (int)$did]);
+                }
+            }
+            $conn->commit();
+            $_SESSION['success'] = 'Cập nhật bác sĩ cho dịch vụ thành công!';
+        } catch (\Throwable $e) {
+            if ($conn->inTransaction()) { $conn->rollBack(); }
+            $_SESSION['error'] = 'Lưu danh sách bác sĩ thất bại!';
         }
 
         header('Location: ' . APP_URL . '/admin/packages/' . $package_id . '/services');
@@ -254,13 +323,51 @@ class PackageController {
         }
 
         $services = $this->packageModel->getServices($package_id);
-        
+
+        // Tải danh sách bác sĩ và mapping bác sĩ theo từng dịch vụ để hiển thị chọn lọc
+        $database = new Database();
+        $conn = $database->getConnection();
+        // Tất cả bác sĩ kèm chuyên khoa và tên hiển thị
+        $doctors = [];
+        try {
+            $st = $conn->query("SELECT d.id, du.full_name AS doctor_name, s.name AS spec FROM doctors d LEFT JOIN users du ON du.id = d.user_id LEFT JOIN specializations s ON s.id = d.specialization_id ORDER BY du.full_name ASC");
+            $doctors = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (\Throwable $e) { $doctors = []; }
+        // Mapping: service_id => [doctor_id,...]
+        $allowedByService = [];
+        try {
+            $st2 = $conn->prepare('SELECT service_id, doctor_id FROM package_service_doctors WHERE service_id IN (SELECT id FROM package_services WHERE package_id = ?)');
+            $st2->execute([(int)$package_id]);
+            foreach ($st2->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+                $sid = (int)$row['service_id'];
+                if (!isset($allowedByService[$sid])) $allowedByService[$sid] = [];
+                $allowedByService[$sid][] = (int)$row['doctor_id'];
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+
+        // Tải danh sách thuốc và whitelist thuốc theo dịch vụ
+        $medicines = [];
+        try {
+            $st3 = $conn->query("SELECT id, name, strength, dosage_form AS form FROM medicines ORDER BY name ASC");
+            $medicines = $st3->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (\Throwable $e) { $medicines = []; }
+        $medWhitelistByService = [];
+        try {
+            $st4 = $conn->prepare('SELECT service_id, medicine_id FROM service_allowed_medicines WHERE service_id IN (SELECT id FROM package_services WHERE package_id = ?)');
+            $st4->execute([(int)$package_id]);
+            foreach ($st4->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+                $sid = (int)$row['service_id'];
+                if (!isset($medWhitelistByService[$sid])) $medWhitelistByService[$sid] = [];
+                $medWhitelistByService[$sid][] = (int)$row['medicine_id'];
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+
         require_once APP_PATH . '/Views/admin/packages/services.php';
     }
 
     // Thêm dịch vụ vào gói
     public function addService($package_id) {
-        Auth::requireAdmin();
+        // ...
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ' . APP_URL . '/admin/packages/' . $package_id . '/services');
@@ -289,6 +396,17 @@ class PackageController {
         $stmt->bindParam(':display_order', $_POST['display_order']);
 
         if ($stmt->execute()) {
+            // Ghi nhận danh sách bác sĩ được chọn cho dịch vụ mới
+            $newServiceId = (int)$conn->lastInsertId();
+            $doctorIds = $_POST['doctor_ids'] ?? [];
+            if (is_array($doctorIds) && !empty($doctorIds) && $newServiceId > 0) {
+                try {
+                    $ins = $conn->prepare('INSERT IGNORE INTO package_service_doctors(service_id, doctor_id, created_at) VALUES(?, ?, NOW())');
+                    foreach ($doctorIds as $did) {
+                        $ins->execute([$newServiceId, (int)$did]);
+                    }
+                } catch (\Throwable $e) { /* ignore mapping errors */ }
+            }
             $_SESSION['success'] = 'Thêm dịch vụ thành công!';
         } else {
             $_SESSION['error'] = 'Thêm dịch vụ thất bại!';

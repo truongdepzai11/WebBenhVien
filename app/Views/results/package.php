@@ -112,6 +112,71 @@ ob_start();
           <?php endif; ?>
         <?php endif; ?>
 
+        <?php 
+          // Dùng lịch con (service_appointment_id) để ánh xạ chẩn đoán/đơn thuốc đúng dịch vụ
+          $svcAptId = (int)($row['service_appointment_id'] ?? 0);
+          $dx = $diagnosisByAppointmentId[$svcAptId] ?? null;
+          $rx = $prescriptionByAppointmentId[$svcAptId] ?? null;
+          $rxItems = $rx ? ($prescriptionItemsByRxId[(int)$rx['id']] ?? []) : [];
+        ?>
+
+        <?php if (!empty($dx)): ?>
+        <div class="mt-4 border-t pt-4">
+          <h5 class="font-semibold text-gray-800 mb-2"><i class="fas fa-notes-medical mr-2"></i>Chẩn đoán</h5>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+            <div><span class="font-semibold">ICD-10:</span> <?= htmlspecialchars($dx['primary_icd10'] ?? '') ?></div>
+            <div><span class="font-semibold">Trạng thái:</span> <?= htmlspecialchars($dx['status'] ?? '') ?></div>
+            <div class="md:col-span-2"><span class="font-semibold">Dấu hiệu & lâm sàng:</span><br><?= nl2br(htmlspecialchars($dx['clinical_findings'] ?? '')) ?></div>
+            <div class="md:col-span-2"><span class="font-semibold">Đánh giá:</span><br><?= nl2br(htmlspecialchars($dx['assessment'] ?? '')) ?></div>
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($rx) && ($rx['status'] ?? '') !== 'draft'): ?>
+        <div class="mt-4 border-t pt-4">
+          <div class="flex items-center justify-between mb-2">
+            <h5 class="font-semibold text-gray-800"><i class="fas fa-prescription-bottle-alt mr-2"></i>Đơn thuốc</h5>
+            <?php 
+              $rxs = $rx['status'] ?? 'draft';
+              $rxColor = $rxs==='approved' ? 'bg-green-100 text-green-800' : ($rxs==='submitted' ? 'bg-blue-100 text-blue-800' : ($rxs==='dispensed' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'));
+            ?>
+            <span class="px-2 py-0.5 text-xs font-semibold rounded-full <?= $rxColor ?>"><?= htmlspecialchars($rxs) ?></span>
+          </div>
+          <?php if (!empty($rxItems)): ?>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-3 py-2 text-left">Thuốc</th>
+                  <th class="px-3 py-2 text-left">SL</th>
+                  <th class="px-3 py-2 text-left">Liều</th>
+                  <th class="px-3 py-2 text-left">Số lần</th>
+                  <th class="px-3 py-2 text-left">Thời gian</th>
+                  <th class="px-3 py-2 text-left">Đường dùng</th>
+                  <th class="px-3 py-2 text-left">Hướng dẫn</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-100">
+                <?php foreach ($rxItems as $it): ?>
+                <tr>
+                  <td class="px-3 py-2"><?= htmlspecialchars($it['drug_name'] ?? '') ?><?= empty($it['drug_name']) && !empty($it['medicine_id']) ? ('#'.(int)$it['medicine_id']) : '' ?></td>
+                  <td class="px-3 py-2"><?= htmlspecialchars($it['quantity']) ?></td>
+                  <td class="px-3 py-2"><?= htmlspecialchars($it['dosage']) ?></td>
+                  <td class="px-3 py-2"><?= htmlspecialchars($it['frequency']) ?></td>
+                  <td class="px-3 py-2"><?= htmlspecialchars($it['duration']) ?></td>
+                  <td class="px-3 py-2"><?= htmlspecialchars($it['route'] ?? '') ?></td>
+                  <td class="px-3 py-2 whitespace-pre-wrap"><?= nl2br(htmlspecialchars($it['instructions'] ?? '')) ?></td>
+                </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+          <?php else: ?>
+          <div class="text-gray-500 text-sm">Đơn thuốc không có mục nào.</div>
+          <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
       </div>
     <?php endforeach; ?>
   </div>

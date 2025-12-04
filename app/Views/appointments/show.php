@@ -221,7 +221,6 @@ if (($appointment['status'] ?? '') === 'completed'):
                         <td class="px-4 py-2"><input <?= $isLocked ? 'readonly' : '' ?> type="text" name="reference_range[]" value="<?= htmlspecialchars($row['reference_range'] ?? '') ?>" class="w-full border rounded px-2 py-1"></td>
                         <td class="px-4 py-2">
                             <select <?= $isLocked ? 'disabled' : '' ?> name="result_status[]" class="w-full border rounded px-2 py-1">
-                                <option value="pending" <?= (isset($row['result_status']) && $row['result_status']==='pending') ? 'selected' : '' ?>>Chờ đánh giá</option>
                                 <option value="normal" <?= (isset($row['result_status']) && $row['result_status']==='normal') ? 'selected' : '' ?>>Bình thường</option>
                                 <option value="abnormal" <?= (isset($row['result_status']) && $row['result_status']==='abnormal') ? 'selected' : '' ?>>Bất thường</option>
                             </select>
@@ -263,7 +262,6 @@ if (($appointment['status'] ?? '') === 'completed'):
             <td class="px-4 py-2"><input type="text" name="reference_range[]" class="w-full border rounded px-2 py-1"></td>
             <td class="px-4 py-2">
                 <select name="result_status[]" class="w-full border rounded px-2 py-1">
-                    <option value="pending">Chờ đánh giá</option>
                     <option value="normal">Bình thường</option>
                     <option value="abnormal">Bất thường</option>
                 </select>
@@ -292,36 +290,24 @@ if (($appointment['status'] ?? '') === 'completed'):
             $stmDx->execute([(int)$appointment['id']]);
             $dx = $stmDx->fetch(PDO::FETCH_ASSOC) ?: null;
             $dxStatus = $dx['status'] ?? null;
-            $dxLocked = in_array($dxStatus, ['submitted','approved'], true);
+            // Chỉ khóa khi đã approved (không còn trạng thái chờ duyệt)
+            $dxLocked = ($dxStatus === 'approved');
         } catch (\Throwable $e) { $dx = null; }
     ?>
     <div class="bg-white rounded-lg shadow-md p-8 mt-6">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-bold text-gray-800">Chẩn đoán</h3>
-            <?php if ($dxStatus): 
-                $cls = $dxStatus==='approved' ? 'bg-green-100 text-green-800' : ($dxStatus==='submitted' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800');
-            ?>
-            <span class="px-3 py-1 text-xs font-semibold rounded-full <?= $cls ?>">Trạng thái: <?= htmlspecialchars($dxStatus) ?></span>
+            <?php if ($dxStatus === 'approved'): ?>
+            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Trạng thái: approved</span>
             <?php endif; ?>
         </div>
-        <div class="mb-3 flex items-center gap-2">
-            <?php if (!empty($dx) && ($dx['status'] ?? '') === 'draft' && Auth::isDoctor()): ?>
-                <form method="post" action="<?= APP_URL ?>/diagnoses/<?= (int)$dx['id'] ?>/submit">
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"><i class="fas fa-paper-plane mr-1"></i>Nộp chẩn đoán</button>
-                </form>
-            <?php endif; ?>
-            <?php if (!empty($dx) && ($dx['status'] ?? '') === 'submitted' && (Auth::isAdmin() || Auth::isDoctor())): ?>
-                <form method="post" action="<?= APP_URL ?>/diagnoses/<?= (int)$dx['id'] ?>/approve">
-                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"><i class="fas fa-check mr-1"></i>Duyệt chẩn đoán</button>
-                </form>
-            <?php endif; ?>
-        </div>
+        <div class="mb-3"></div>
 
         <form method="post" action="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/diagnoses/save">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm text-gray-600 mb-1">Chẩn đoán chính</label>
-                    <input type="text" name="primary_section" value="<?= htmlspecialchars($dx['primary_section'] ?? '') ?>" class="w-full border rounded px-3 py-2" <?= $dxLocked ? 'readonly' : '' ?>>
+                    <input type="text" name="primary_section" value="<?= htmlspecialchars($dx['primary_icd10'] ?? '') ?>" class="w-full border rounded px-3 py-2" <?= $dxLocked ? 'readonly' : '' ?>>
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-sm text-gray-600 mb-1">Dấu hiệu & lâm sàng</label>
@@ -329,16 +315,16 @@ if (($appointment['status'] ?? '') === 'completed'):
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-sm text-gray-600 mb-1">Kết luận chính thức</label>
-                    <textarea name="official_findings" rows="3" class="w-full border rounded px-3 py-2" <?= $dxLocked ? 'readonly' : '' ?>><?= htmlspecialchars($dx['official_findings'] ?? '') ?></textarea>
+                    <textarea name="official_findings" rows="3" class="w-full border rounded px-3 py-2" <?= $dxLocked ? 'readonly' : '' ?>><?= htmlspecialchars($dx['assessment'] ?? '') ?></textarea>
                 </div>
             </div>
             <?php if (!$dxLocked): ?>
             <div class="flex items-center justify-end mt-4 space-x-3">
-                <label class="text-sm text-gray-600"><input type="checkbox" name="submit_after" value="1" class="mr-1">Lưu xong nộp luôn</label>
+                <label class="text-sm text-gray-600"><input type="checkbox" name="submit_after" value="1" class="mr-1">Lưu xong duyệt luôn</label>
                 <button type="submit" class="px-6 py-2 bg-teal-600 text-white rounded hover:bg-teal-700">Lưu chẩn đoán</button>
             </div>
             <?php else: ?>
-            <div class="mt-2 text-sm text-gray-500">Chẩn đoán đã <?= $dxStatus==='approved' ? 'được duyệt' : 'được nộp, chờ duyệt' ?>.</div>
+            <div class="mt-2 text-sm text-gray-500">Chẩn đoán đã được duyệt.</div>
             <?php endif; ?>
         </form>
 
@@ -346,10 +332,10 @@ if (($appointment['status'] ?? '') === 'completed'):
         <div class="mt-6">
             <h4 class="text-md font-semibold text-gray-800 mb-2">Chẩn đoán mới nhất</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-                <div><span class="font-semibold">Chẩn đoán chính:</span> <?= htmlspecialchars($dx['primary_section'] ?? '') ?></div>
+                <div><span class="font-semibold">Chẩn đoán chính:</span> <?= htmlspecialchars($dx['primary_icd10'] ?? '') ?></div>
                 <div><span class="font-semibold">Trạng thái:</span> <?= htmlspecialchars($dx['status'] ?? '') ?></div>
                 <div class="md:col-span-2"><span class="font-semibold">Dấu hiệu & lâm sàng:</span><br><?= nl2br(htmlspecialchars($dx['clinical_findings'] ?? '')) ?></div>
-                <div class="md:col-span-2"><span class="font-semibold">Kết luận chính thức:</span><br><?= nl2br(htmlspecialchars($dx['official_findings'] ?? '')) ?></div>
+                <div class="md:col-span-2"><span class="font-semibold">Kết luận chính thức:</span><br><?= nl2br(htmlspecialchars($dx['assessment'] ?? '')) ?></div>
             </div>
         </div>
         <?php endif; ?>
@@ -494,18 +480,18 @@ if (($appointment['status'] ?? '') === 'completed'):
                             <td class="px-3 py-2">
                                 <input type="hidden" name="medicine_id[]" class="rx-med-id">
                                 <div class="relative">
-                                    <input type="text" class="w-56 border rounded px-2 py-1 rx-med-search" placeholder="Nhập tên thuốc...">
-                                    <div class="absolute z-10 bg-white border rounded mt-1 shadow max-h-52 overflow-auto hidden rx-med-list"></div>
+                                    <input type="text" class="w-96 md:w-[28rem] lg:w-[32rem] border rounded px-2 py-1 rx-med-search" placeholder="Tìm theo tên/generic...">
+                                    <div class="absolute z-10 bg-white border rounded mt-1 shadow max-h-64 overflow-auto hidden rx-med-list"></div>
                                 </div>
                             </td>
-                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="number" name="quantity[]" class="w-20 border rounded px-2 py-1" min="1" value="1"></td>
-                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="text" name="dosage[]" class="w-32 border rounded px-2 py-1" placeholder="1 viên"></td>
-                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="text" name="frequency[]" class="w-28 border rounded px-2 py-1" placeholder="2 lần/ngày"></td>
-                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="text" name="duration[]" class="w-28 border rounded px-2 py-1" placeholder="5 ngày"></td>
-                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="text" name="route[]" class="w-24 border rounded px-2 py-1" placeholder="uống"></td>
-                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="text" name="instructions[]" class="w-40 border rounded px-2 py-1" placeholder="sau ăn"></td>
-                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="date" name="start_date[]" class="border rounded px-2 py-1"></td>
-                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="date" name="end_date[]" class="border rounded px-2 py-1"></td>
+                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="number" name="quantity[]" class="w-24 border rounded px-2 py-1" min="1" value="1"></td>
+                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="text" name="dosage[]" class="w-48 border rounded px-2 py-1" placeholder="1 viên"></td>
+                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="text" name="frequency[]" class="w-40 border rounded px-2 py-1" placeholder="2 lần/ngày"></td>
+                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="text" name="duration[]" class="w-40 border rounded px-2 py-1" placeholder="5 ngày"></td>
+                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="text" name="route[]" class="w-32 border rounded px-2 py-1" placeholder="uống"></td>
+                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="text" name="instructions[]" class="w-64 border rounded px-2 py-1" placeholder="sau ăn"></td>
+                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="date" name="start_date[]" class="w-36 border rounded px-2 py-1"></td>
+                            <td class="px-3 py-2"><input <?= $rxLocked ? 'readonly' : '' ?> type="date" name="end_date[]" class="w-36 border rounded px-2 py-1"></td>
                             <td class="px-2 text-center"><button type="button" class="text-red-600" onclick="removeRxRow(this)"><i class="fas fa-trash"></i></button></td>
                         </tr>
                     </tbody>
@@ -533,18 +519,18 @@ if (($appointment['status'] ?? '') === 'completed'):
                 <td class="px-3 py-2">
                     <input type="hidden" name="medicine_id[]" class="rx-med-id">
                     <div class="relative"> 
-                        <input type="text" class="w-56 border rounded px-2 py-1 rx-med-search" placeholder="Nhập tên thuốc...">
-                        <div class="absolute z-10 bg-white border rounded mt-1 shadow max-h-52 overflow-auto hidden rx-med-list"></div>
+                        <input type="text" class="w-96 md:w-[28rem] lg:w-[32rem] border rounded px-2 py-1 rx-med-search" placeholder="Tìm theo tên/generic...">
+                        <div class="absolute z-10 bg-white border rounded mt-1 shadow max-h-64 overflow-auto hidden rx-med-list"></div>
                     </div>
                 </td>
-                <td class="px-3 py-2"><input type="number" name="quantity[]" class="w-20 border rounded px-2 py-1" min="1" value="1"></td>
-                <td class="px-3 py-2"><input type="text" name="dosage[]" class="w-32 border rounded px-2 py-1"></td>
-                <td class="px-3 py-2"><input type="text" name="frequency[]" class="w-28 border rounded px-2 py-1"></td>
-                <td class="px-3 py-2"><input type="text" name="duration[]" class="w-28 border rounded px-2 py-1"></td>
-                <td class="px-3 py-2"><input type="text" name="route[]" class="w-24 border rounded px-2 py-1"></td>
-                <td class="px-3 py-2"><input type="text" name="instructions[]" class="w-40 border rounded px-2 py-1"></td>
-                <td class="px-3 py-2"><input type="date" name="start_date[]" class="border rounded px-2 py-1"></td>
-                <td class="px-3 py-2"><input type="date" name="end_date[]" class="border rounded px-2 py-1"></td>
+                <td class="px-3 py-2"><input type="number" name="quantity[]" class="w-24 border rounded px-2 py-1" min="1" value="1"></td>
+                <td class="px-3 py-2"><input type="text" name="dosage[]" class="w-48 border rounded px-2 py-1"></td>
+                <td class="px-3 py-2"><input type="text" name="frequency[]" class="w-40 border rounded px-2 py-1"></td>
+                <td class="px-3 py-2"><input type="text" name="duration[]" class="w-40 border rounded px-2 py-1"></td>
+                <td class="px-3 py-2"><input type="text" name="route[]" class="w-32 border rounded px-2 py-1"></td>
+                <td class="px-3 py-2"><input type="text" name="instructions[]" class="w-64 border rounded px-2 py-1"></td>
+                <td class="px-3 py-2"><input type="date" name="start_date[]" class="w-36 border rounded px-2 py-1"></td>
+                <td class="px-3 py-2"><input type="date" name="end_date[]" class="w-36 border rounded px-2 py-1"></td>
                 <td class="px-2 text-center"><button type="button" class="text-red-600" onclick="removeRxRow(this)"><i class="fas fa-trash"></i></button></td>
             `;
             tbody.appendChild(tr);
@@ -567,12 +553,17 @@ if (($appointment['status'] ?? '') === 'completed'):
                         const res = await fetch('<?= APP_URL ?>/api/medicines?q='+encodeURIComponent(q));
                         const data = await res.json();
                         const items = data.items||[];
-                        list.innerHTML = items.map(it=>`<div class="px-2 py-1 hover:bg-purple-50 cursor-pointer text-sm" data-id="${it.id}">${it.name}${it.strength?(' '+it.strength):''}${it.form?(' ('+it.form+')'):''}</div>`).join('');
+                        list.innerHTML = items.map(it=>`
+                            <div class="px-2 py-1 hover:bg-purple-50 cursor-pointer text-sm border-b" data-id="${it.id}">
+                                <div class="font-medium text-gray-800">${it.name}${it.strength?(' '+it.strength):''}${it.form?(' ('+it.form+')'):''}</div>
+                                <div class="text-xs text-gray-600">Generic: ${it.generic_name||'-'} · Hãng: ${it.manufacturer||'-'} · Nhóm: ${it.category||'-'}</div>
+                                ${it.requires_prescription?'<span class="inline-block mt-1 px-2 py-0.5 text-[10px] bg-red-100 text-red-700 rounded">Thuốc kê đơn</span>':''}
+                            </div>`).join('');
                         list.classList.remove('hidden');
                         Array.from(list.children).forEach(el=>{
                             el.addEventListener('click', ()=>{
                                 hidden.value = el.getAttribute('data-id');
-                                input.value = el.textContent;
+                                input.value = el.querySelector('.font-medium').textContent;
                                 list.classList.add('hidden');
                             });
                         });
@@ -582,6 +573,34 @@ if (($appointment['status'] ?? '') === 'completed'):
             input.addEventListener('blur', ()=> setTimeout(()=> list.classList.add('hidden'), 200));
         }
         document.querySelectorAll('.rx-med-search').forEach(bindMedicineSearch);
+
+        // Client-side validation: require selecting from the list (medicine_id must be set if name not empty)
+        const rxForm = document.querySelector('form[action$="/prescriptions/save"]');
+        if (rxForm) {
+            rxForm.addEventListener('submit', function(e){
+                const rows = Array.from(document.querySelectorAll('#rx-table tbody tr'));
+                for (const tr of rows) {
+                    const nameInput = tr.querySelector('.rx-med-search');
+                    const idInput = tr.querySelector('.rx-med-id');
+                    if (nameInput && nameInput.value.trim() !== '' && (!idInput || !idInput.value)) {
+                        e.preventDefault();
+                        alert('Vui lòng chọn thuốc từ danh sách gợi ý để tránh nhầm lẫn.');
+                        nameInput.focus();
+                        return false;
+                    }
+                }
+            });
+        }
+
+        // Default: show 4 rows initially if the form is not locked
+        (function(){
+            const rxLockedFlag = <?= $rxLocked ? 'true' : 'false' ?>;
+            if (rxLockedFlag) return;
+            const tbody = document.querySelector('#rx-table tbody');
+            if (!tbody) return;
+            let current = tbody.querySelectorAll('tr').length;
+            while (current < 4) { addRxRow(); current++; }
+        })();
         </script>
     </div>
     <?php endif; ?>

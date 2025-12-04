@@ -110,6 +110,21 @@ $categoryNames = [
                               placeholder="Ghi chú về dịch vụ..."></textarea>
                 </div>
 
+                <!-- Bác sĩ thực hiện cho dịch vụ mới -->
+                <div>
+                    <div class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-user-md mr-1"></i>Bác sĩ thực hiện (có thể chọn nhiều)
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-auto pr-1 border rounded p-2 bg-gray-50">
+                        <?php foreach (($doctors ?? []) as $doc): ?>
+                        <label class="flex items-center text-sm text-gray-700">
+                            <input type="checkbox" name="doctor_ids[]" value="<?= (int)$doc['id'] ?>" class="mr-2" />
+                            <span><?= htmlspecialchars(($doc['doctor_name'] ?? '')) ?><?= !empty($doc['spec']) ? (' — ' . htmlspecialchars($doc['spec'])) : '' ?></span>
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
                 <div class="flex items-center">
                     <input type="checkbox" id="is_required" name="is_required" value="1" checked
                            class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
@@ -275,6 +290,33 @@ $categoryNames = [
                                     <?php if ($service['notes']): ?>
                                     <p class="text-sm text-gray-600 mt-1"><?= htmlspecialchars($service['notes']) ?></p>
                                     <?php endif; ?>
+
+                                    <!-- Bác sĩ được phép thực hiện dịch vụ này -->
+                                    <div class="mt-3 p-3 bg-white border rounded">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <div class="font-medium text-gray-800"><i class="fas fa-user-md mr-1"></i>Bác sĩ thực hiện</div>
+                                        </div>
+                                        <form action="<?= APP_URL ?>/admin/packages/<?= $package['id'] ?>/services/<?= $service['id'] ?>/doctors" method="POST">
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-auto pr-1">
+                                                <?php foreach (($doctors ?? []) as $doc): 
+                                                    $checked = in_array((int)$doc['id'], ($allowedByService[$service['id']] ?? []), true);
+                                                ?>
+                                                <label class="flex items-center text-sm text-gray-700">
+                                                    <input type="checkbox" name="doctor_ids[]" value="<?= (int)$doc['id'] ?>" class="mr-2"
+                                                           <?= $checked ? 'checked' : '' ?> />
+                                                    <span><?= htmlspecialchars(($doc['doctor_name'] ?? '')) ?><?= !empty($doc['spec']) ? (' — ' . htmlspecialchars($doc['spec'])) : '' ?></span>
+                                                </label>
+                                                <?php endforeach; ?>
+                                            </div>
+                                            <div class="mt-2 text-right">
+                                                <button type="submit" class="px-3 py-1.5 text-xs font-semibold bg-purple-600 text-white rounded hover:opacity-90">
+                                                    Lưu danh sách bác sĩ
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+
+                                    
                                 </div>
                                 <form action="<?= APP_URL ?>/admin/packages/<?= $package['id'] ?>/services/<?= $service['id'] ?>/delete" 
                                       method="POST" class="ml-3"
@@ -305,3 +347,50 @@ $categoryNames = [
 $content = ob_get_clean();
 require_once APP_PATH . '/Views/layouts/main.php';
 ?>
+<script>
+let medWlTimers = {};
+async function medWlSearch(serviceId, q){
+  const list = document.getElementById('med-wl-list-'+serviceId);
+  if (!list) return;
+  if (medWlTimers[serviceId]) clearTimeout(medWlTimers[serviceId]);
+  if (!q || q.trim().length < 1){ list.classList.add('hidden'); list.innerHTML=''; return; }
+  medWlTimers[serviceId] = setTimeout(async()=>{
+    try{
+      const res = await fetch('<?= APP_URL ?>/api/medicines?q='+encodeURIComponent(q.trim()));
+      const data = await res.json();
+      const items = data.items||[];
+      list.innerHTML = items.map(it=>{
+        const label = `${it.name}${it.strength?(' '+it.strength):''}${it.form?(' ('+it.form+')'):''}`;
+        return `<div class="px-2 py-1 text-sm hover:bg-indigo-50 cursor-pointer border-b" data-id="${it.id}" data-label="${label.replace(/"/g,'&quot;')}">
+                  <div class="font-medium text-gray-800">${label}</div>
+                  <div class="text-xs text-gray-600">Generic: ${it.generic_name||'-'} · Hãng: ${it.manufacturer||'-'} · Nhóm: ${it.category||'-'}</div>
+                </div>`;
+      }).join('');
+      list.classList.remove('hidden');
+      Array.from(list.children).forEach(el=>{
+        el.onclick = ()=>{
+          const mid = parseInt(el.getAttribute('data-id'));
+          const label = el.getAttribute('data-label');
+          const wrap = document.getElementById('med-wl-selected-'+serviceId);
+          if (!wrap) return;
+          const exists = wrap.querySelector(`input[name="medicine_ids[]"][value="${mid}"]`);
+          if (exists) { list.classList.add('hidden'); return; }
+          const span = document.createElement('span');
+          span.className = 'inline-flex items-center px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded';
+          span.innerHTML = `<input type="hidden" name="medicine_ids[]" value="${mid}">`
+                           + `<i class="fas fa-check mr-1"></i>${label}`
+                           + `<button type="button" class="ml-1 text-indigo-600 hover:text-red-600" onclick="medWlRemove(${serviceId}, ${mid})"><i class=\"fas fa-times\"></i></button>`;
+          wrap.appendChild(span);
+          list.classList.add('hidden');
+        };
+      });
+    }catch(e){ list.classList.add('hidden'); }
+  }, 250);
+}
+function medWlRemove(serviceId, mid){
+  const wrap = document.getElementById('med-wl-selected-'+serviceId);
+  if (!wrap) return;
+  const hidden = wrap.querySelector(`input[name="medicine_ids[]"][value="${mid}"]`);
+  if (hidden){ const chip = hidden.closest('span'); if (chip) chip.remove(); }
+}
+</script>

@@ -52,6 +52,7 @@ class ResultsController {
                 $total = count($rows);
                 foreach ($rows as $s) { if ($s === 'approved') $approvedCount++; }
             }
+
             $pa['approved_count'] = $approvedCount;
             $pa['total_services'] = $total;
         }
@@ -86,6 +87,25 @@ class ResultsController {
             $st->execute([(int)$summary['id']]);
             $apsRows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
+            // Gắn appointment_id của lịch con cho từng dịch vụ (service_appointment_id)
+            // để dùng lấy chẩn đoán/đơn thuốc chính xác theo từng lịch dịch vụ
+            if (!empty($apsRows)) {
+                foreach ($apsRows as &$row) {
+                    try {
+                        $q = $conn->prepare('SELECT id FROM appointments 
+                                             WHERE package_appointment_id = ? 
+                                               AND doctor_id IS NOT NULL 
+                                               AND LOWER(TRIM(reason)) = LOWER(TRIM(?))
+                                             ORDER BY appointment_date, appointment_time LIMIT 1');
+                        $q->execute([(int)$packageAppointmentId, (string)($row['service_name'] ?? '')]);
+                        $row['service_appointment_id'] = (int)($q->fetchColumn() ?: 0);
+                    } catch (\Throwable $e) {
+                        $row['service_appointment_id'] = 0;
+                    }
+                }
+                unset($row);
+            }
+
             // Load metrics
             $st2 = $conn->prepare('SELECT service_id, metric_name, result_value, result_status, reference_range, notes
                                     FROM package_test_results
@@ -97,20 +117,76 @@ class ResultsController {
                 if (!isset($metricsByServiceId[$sid])) $metricsByServiceId[$sid] = [];
                 $metricsByServiceId[$sid][] = $m;
             }
+
+            // Collect appointment_ids of services (child appointments)
+            $serviceAppointmentIds = [];
+            foreach ($apsRows as $r) {
+                $sid = (int)($r['service_appointment_id'] ?? 0);
+                if ($sid > 0) { $serviceAppointmentIds[] = $sid; }
+            }
+            $serviceAppointmentIds = array_values(array_unique(array_filter($serviceAppointmentIds)));
+
+            // Load latest approved diagnosis per service appointment
+            $diagnosisByAppointmentId = [];
+            if (!empty($serviceAppointmentIds)) {
+                $in = implode(',', array_fill(0, count($serviceAppointmentIds), '?'));
+                $sqlDx = "SELECT d.* FROM diagnoses d
+                          JOIN (
+                             SELECT appointment_id, MAX(id) AS max_id
+                             FROM diagnoses
+                             WHERE appointment_id IN ($in) AND status='approved'
+                             GROUP BY appointment_id
+                          ) t ON t.max_id = d.id";
+                $stDx = $conn->prepare($sqlDx);
+                $stDx->execute($serviceAppointmentIds);
+                foreach ($stDx->fetchAll(PDO::FETCH_ASSOC) ?: [] as $rowDx) {
+                    $diagnosisByAppointmentId[(int)$rowDx['appointment_id']] = $rowDx;
+                }
+            }
+
+            // Load latest non-draft prescription per service appointment + their items
+            $prescriptionByAppointmentId = []; $prescriptionItemsByRxId = [];
+            if (!empty($serviceAppointmentIds)) {
+                $in = implode(',', array_fill(0, count($serviceAppointmentIds), '?'));
+                $sqlRx = "SELECT p.* FROM prescriptions p
+                          JOIN (
+                            SELECT appointment_id, MAX(id) AS max_id
+                            FROM prescriptions
+                            WHERE appointment_id IN ($in) AND status IN ('approved','dispensed')
+                            GROUP BY appointment_id
+                          ) t ON t.max_id = p.id";
+                $stRx = $conn->prepare($sqlRx);
+                $stRx->execute($serviceAppointmentIds);
+                $rxRows = $stRx->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                if (!empty($rxRows)) {
+                    $rxIds = [];
+                    foreach ($rxRows as $rx) {
+                        $prescriptionByAppointmentId[(int)$rx['appointment_id']] = $rx;
+                        $rxIds[] = (int)$rx['id'];
+                    }
+                    if (!empty($rxIds)) {
+                        $in2 = implode(',', array_fill(0, count($rxIds), '?'));
+                        $sti = $conn->prepare("SELECT pi.*, COALESCE(pi.drug_name, m.name) AS drug_name
+                                               FROM prescription_items pi
+                                               LEFT JOIN medicines m ON m.id = pi.medicine_id
+                                               WHERE pi.prescription_id IN ($in2)
+                                               ORDER BY pi.id");
+                        $sti->execute($rxIds);
+                        foreach ($sti->fetchAll(PDO::FETCH_ASSOC) ?: [] as $it) {
+                            $pid = (int)$it['prescription_id'];
+                            if (!isset($prescriptionItemsByRxId[$pid])) $prescriptionItemsByRxId[$pid] = [];
+                            $prescriptionItemsByRxId[$pid][] = $it;
+                        }
+                    }
+                }
+            }
+        } else {
+            $diagnosisByAppointmentId = [];
+            $prescriptionByAppointmentId = [];
+            $prescriptionItemsByRxId = [];
         }
 
-        // Load prescription for this package (latest, prefer approved)
-        $prescription = null; $prescriptionItems = [];
-        try {
-            $stp = $conn->prepare("SELECT * FROM prescriptions WHERE package_appointment_id = ? ORDER BY (status='approved') DESC, id DESC LIMIT 1");
-            $stp->execute([(int)$packageAppointmentId]);
-            $prescription = $stp->fetch(PDO::FETCH_ASSOC) ?: null;
-            if ($prescription) {
-                $sti = $conn->prepare('SELECT * FROM prescription_items WHERE prescription_id = ? ORDER BY id');
-                $sti->execute([(int)$prescription['id']]);
-                $prescriptionItems = $sti->fetchAll(PDO::FETCH_ASSOC) ?: [];
-            }
-        } catch (\Throwable $e) { /* ignore */ }
+        // Per-service maps prepared above only
 
         require_once APP_PATH . '/Views/results/package.php';
     }

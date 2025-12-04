@@ -582,6 +582,18 @@ $router->post('/admin/packages/{package_id}/services/{service_id}/toggle-require
     $controller->toggleServiceRequired($package_id, $service_id);
 });
 
+// Admin - Save allowed doctors for a package service
+$router->post('/admin/packages/{package_id}/services/{service_id}/doctors', function($package_id, $service_id) {
+    $controller = new PackageController();
+    $controller->updateServiceDoctors($package_id, $service_id);
+});
+
+// Admin - Save allowed medicines (whitelist) for a package service
+$router->post('/admin/packages/{package_id}/services/{service_id}/medicines', function($package_id, $service_id) {
+    $controller = new PackageController();
+    $controller->updateServiceMedicines($package_id, $service_id);
+});
+
 // API - Get package services
 $router->get('/api/package-services/{package_id}', function($package_id) {
     $controller = new PackageController();
@@ -645,15 +657,31 @@ $router->get('/api/medicines', function() {
         $q = isset($_GET['q']) ? trim($_GET['q']) : '';
         $db = new Database(); $conn = $db->getConnection();
         if ($q === '') {
-            $stmt = $conn->query("SELECT id, name, dosage_form AS form, strength, generic_name FROM medicines ORDER BY name LIMIT 20");
+            $stmt = $conn->query("SELECT id, medicine_code, name, dosage_form AS form, strength, generic_name, manufacturer, category, requires_prescription, side_effects, contraindications FROM medicines ORDER BY name LIMIT 20");
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
         } else {
-            $like = '%' . $q . '%';
-            $stmt = $conn->prepare("SELECT id, name, dosage_form AS form, strength, generic_name
-                                     FROM medicines
-                                     WHERE name LIKE ? OR generic_name LIKE ?
-                                     ORDER BY name LIMIT 20");
-            $stmt->execute([$like, $like]);
+            // Advanced search: split by spaces and match each term against multiple fields
+            $terms = preg_split('/\s+/', $q, -1, PREG_SPLIT_NO_EMPTY);
+            $whereParts = [];
+            $params = [];
+            foreach ($terms as $t) {
+                $like = '%' . $t . '%';
+                $whereParts[] = "(medicine_code LIKE ? OR name LIKE ? OR generic_name LIKE ? OR manufacturer LIKE ? OR category LIKE ? OR strength LIKE ? OR dosage_form LIKE ? OR description LIKE ?)";
+                array_push($params, $like, $like, $like, $like, $like, $like, $like, $like);
+            }
+            $whereSql = implode(' AND ', $whereParts);
+            $orderHint = '%' . $q . '%';
+            $sql = "SELECT id, medicine_code, name, dosage_form AS form, strength, generic_name, manufacturer, category, requires_prescription, side_effects, contraindications
+                    FROM medicines
+                    WHERE $whereSql
+                    ORDER BY 
+                        CASE WHEN medicine_code LIKE ? THEN 0 ELSE 1 END,
+                        CASE WHEN name LIKE ? THEN 0 ELSE 1 END,
+                        name
+                    LIMIT 20";
+            $stmt = $conn->prepare($sql);
+            $execParams = array_merge($params, [$orderHint, $orderHint]);
+            $stmt->execute($execParams);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
         }
         echo json_encode(['items'=>$rows], JSON_UNESCAPED_UNICODE);
