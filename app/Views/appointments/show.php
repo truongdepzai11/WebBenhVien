@@ -111,21 +111,21 @@ ob_start();
                 <i class="fas fa-external-link-alt mr-2"></i>Xem chi tiết gói khám
             </a>
             <?php endif; ?>
-            <?php if (Auth::isDoctor() && $appointment['status'] === 'confirmed'): ?>
+            <?php if (Auth::isDoctor() && $appointment['status'] === 'confirmed' && !$isPackageSummary): ?>
             <a href="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/complete" 
                class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
                 <i class="fas fa-check mr-2"></i>Hoàn thành khám
             </a>
             <?php endif; ?>
 
-            <?php if ($appointment['status'] === 'pending' && (Auth::isDoctor() || Auth::isAdmin())): ?>
+            <?php if ($appointment['status'] === 'pending' && (Auth::isDoctor() || Auth::isAdmin()) && !$isPackageSummary): ?>
             <a href="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/confirm" 
                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                 <i class="fas fa-check-circle mr-2"></i>Xác nhận lịch
             </a>
             <?php endif; ?>
 
-            <?php if (in_array($appointment['status'], ['pending', 'confirmed'])): ?>
+            <?php if (in_array($appointment['status'], ['pending', 'confirmed']) && !$isPackageSummary): ?>
             <a href="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/cancel" 
                class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
                 <i class="fas fa-times-circle mr-2"></i>Hủy lịch
@@ -279,20 +279,155 @@ if (($appointment['status'] ?? '') === 'completed'):
 </div>
 <?php endif; ?>
 
-    <!-- Diagnosis (Doctor) placed between Results and Prescription -->
-    <?php if (Auth::isDoctor() || Auth::isAdmin()): ?>
+<?php if (empty($appointment['package_appointment_id'])): ?>
     <?php
-        $dx = null; $dxStatus = null; $dxLocked = false;
+        $regularResult = $regularResult ?? null;
+        $regularResultItems = $regularResultItems ?? [];
+        $regularResultStatus = $regularResult['status'] ?? null;
+        $regularResultLocked = ($regularResultStatus === 'submitted');
+        $regularResultNote = $regularResult['review_note'] ?? '';
+
+        $dx = $regularDiagnosis ?? null;
+        $dxStatus = $dx['status'] ?? null;
+
+        $assignedDoctorId = (int)($appointment['doctor_id'] ?? 0);
+        $canEditRegularResults = false;
+        if (Auth::isDoctor() && $assignedDoctorId > 0) {
+            if (!class_exists('Doctor')) { require_once APP_PATH . '/Models/Doctor.php'; }
+            $doctorModelRegular = new Doctor();
+            $currentDoctorRegular = $doctorModelRegular->findByUserId(Auth::id());
+            $canEditRegularResults = $currentDoctorRegular && ((int)$currentDoctorRegular['id'] === $assignedDoctorId);
+        }
+
+        $regularResultRows = !empty($regularResultItems) ? $regularResultItems : [[]];
+        $regularStatusBadge = $regularResultStatus === 'submitted' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700';
+    ?>
+
+    <div class="bg-white rounded-lg shadow-md p-8 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-stethoscope text-purple-500"></i>
+                Kết quả khám thường
+            </h3>
+            <?php if ($regularResultStatus): ?>
+            <span class="px-3 py-1 text-xs font-semibold rounded-full <?= $regularStatusBadge ?>">
+                <?= strtoupper(htmlspecialchars($regularResultStatus)) ?>
+            </span>
+            <?php endif; ?>
+        </div>
+
+        <?php if ($canEditRegularResults && !$regularResultLocked): ?>
+        <form method="post" id="regular-results-form" action="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/regular-results/save">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200" id="regular-results-table">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Chỉ số</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kết quả</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Khoảng tham chiếu</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tình trạng</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ghi chú</th>
+                            <th class="px-2"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <?php foreach ($regularResultRows as $row):
+                            $rrMetric = htmlspecialchars($row['metric_name'] ?? '');
+                            $rrValue = htmlspecialchars($row['result_value'] ?? '');
+                            $rrReference = htmlspecialchars($row['reference_range'] ?? '');
+                            $rrStatus = strtolower($row['result_status'] ?? 'normal');
+                            if (!in_array($rrStatus, ['normal', 'abnormal', 'pending'], true)) { $rrStatus = 'normal'; }
+                            $rrNote = htmlspecialchars($row['notes'] ?? '');
+                        ?>
+                        <tr>
+                            <td class="px-3 py-2"><input type="text" name="metric_name[]" value="<?= $rrMetric ?>" class="w-full border rounded px-2 py-1"></td>
+                            <td class="px-3 py-2"><input type="text" name="result_value[]" value="<?= $rrValue ?>" class="w-full border rounded px-2 py-1"></td>
+                            <td class="px-3 py-2"><input type="text" name="reference_range[]" value="<?= $rrReference ?>" class="w-full border rounded px-2 py-1"></td>
+                            <td class="px-3 py-2">
+                                <select name="result_status[]" class="w-full border rounded px-2 py-1">
+                                    <option value="normal" <?= $rrStatus === 'normal' ? 'selected' : '' ?>>Bình thường</option>
+                                    <option value="abnormal" <?= $rrStatus === 'abnormal' ? 'selected' : '' ?>>Bất thường</option>
+                                    <option value="pending" <?= $rrStatus === 'pending' ? 'selected' : '' ?>>Đang xử lý</option>
+                                </select>
+                            </td>
+                            <td class="px-3 py-2"><input type="text" name="notes[]" value="<?= $rrNote ?>" class="w-full border rounded px-2 py-1"></td>
+                            <td class="px-2 text-center"><button type="button" class="text-red-600" onclick="removeRegularResultRow(this)"><i class="fas fa-trash"></i></button></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4">
+                <label class="block text-sm text-gray-600 mb-1" for="regular-general-note">Ghi chú chung (tùy chọn)</label>
+                <textarea name="general_note" id="regular-general-note" rows="3" class="w-full border rounded px-3 py-2"><?= htmlspecialchars($regularResultNote) ?></textarea>
+            </div>
+
+            <div class="flex items-center justify-between mt-6">
+                <button type="button" onclick="addRegularResultRow()" class="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50"><i class="fas fa-plus mr-1"></i>Thêm dòng</button>
+                <div class="space-x-2">
+                    <button type="submit" class="px-6 py-2 bg-gray-700 text-white rounded hover:bg-gray-800">Lưu nháp</button>
+                    <button type="submit" formaction="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/regular-results/submit" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Nộp kết quả</button>
+                </div>
+            </div>
+        </form>
+
+        <script>
+        function addRegularResultRow(){
+            const tbody = document.querySelector('#regular-results-table tbody');
+            if (!tbody) return;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="px-3 py-2"><input type="text" name="metric_name[]" class="w-full border rounded px-2 py-1"></td>
+                <td class="px-3 py-2"><input type="text" name="result_value[]" class="w-full border rounded px-2 py-1"></td>
+                <td class="px-3 py-2"><input type="text" name="reference_range[]" class="w-full border rounded px-2 py-1"></td>
+                <td class="px-3 py-2">
+                    <select name="result_status[]" class="w-full border rounded px-2 py-1">
+                        <option value="normal">Bình thường</option>
+                        <option value="abnormal">Bất thường</option>
+                        <option value="pending">Đang xử lý</option>
+                    </select>
+                </td>
+                <td class="px-3 py-2"><input type="text" name="notes[]" class="w-full border rounded px-2 py-1"></td>
+                <td class="px-2 text-center"><button type="button" class="text-red-600" onclick="removeRegularResultRow(this)"><i class="fas fa-trash"></i></button></td>`;
+            tbody.appendChild(tr);
+        }
+        function removeRegularResultRow(btn){ const tr = btn.closest('tr'); if (tr) tr.remove(); }
+        </script>
+        <?php elseif (!empty($regularResultItems)): ?>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-3 py-2 text-left">Chỉ số</th>
+                        <th class="px-3 py-2 text-left">Kết quả</th>
+                        <th class="px-3 py-2 text-left">Khoảng tham chiếu</th>
+                        <th class="px-3 py-2 text-left">Tình trạng</th>
+                        <th class="px-3 py-2 text-left">Ghi chú</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    <?php foreach ($regularResultItems as $row): ?>
+                    <tr>
+                        <td class="px-3 py-2 text-gray-700"><?= htmlspecialchars($row['metric_name'] ?? '') ?></td>
+                        <td class="px-3 py-2 text-gray-700"><?= htmlspecialchars($row['result_value'] ?? '') ?></td>
+                        <td class="px-3 py-2 text-gray-700"><?= htmlspecialchars($row['reference_range'] ?? '') ?></td>
+                        <td class="px-3 py-2 text-gray-700 text-sm uppercase"><?= htmlspecialchars($row['result_status'] ?? '') ?></td>
+                        <td class="px-3 py-2 text-gray-700"><?= htmlspecialchars($row['notes'] ?? '') ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
+        <?php
         try {
-            if (!class_exists('Database')) { require_once APP_PATH . '/../config/database.php'; }
-            $dbdx = new Database(); $cndx = $dbdx->getConnection();
-            $stmDx = $cndx->prepare('SELECT * FROM diagnoses WHERE appointment_id = ? ORDER BY id DESC LIMIT 1');
-            $stmDx->execute([(int)$appointment['id']]);
-            $dx = $stmDx->fetch(PDO::FETCH_ASSOC) ?: null;
-            $dxStatus = $dx['status'] ?? null;
-            // Chỉ khóa khi đã approved (không còn trạng thái chờ duyệt)
             $dxLocked = ($dxStatus === 'approved');
-        } catch (\Throwable $e) { $dx = null; }
+        } catch (\Throwable $e) {
+            $dx = null;
+            $dxLocked = false;
+            $dxStatus = null;
+        }
     ?>
     <div class="bg-white rounded-lg shadow-md p-8 mt-6">
         <div class="flex items-center justify-between mb-4">
@@ -342,8 +477,8 @@ if (($appointment['status'] ?? '') === 'completed'):
     </div>
     <?php endif; ?>
 
-    <!-- Prescription (Doctor/Admin) -->
-    <?php if (Auth::isDoctor() || Auth::isAdmin()): ?>
+    <!-- Prescription (Doctor Only for Regular Appointments and Package Services) -->
+    <?php if (Auth::isDoctor() && (!$isPackageSummary || !empty($appointment['doctor_id']))): ?>
     <div class="bg-white rounded-lg shadow-md p-8 mt-6">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-bold text-gray-800">Đơn thuốc</h3>
@@ -363,7 +498,7 @@ if (($appointment['status'] ?? '') === 'completed'):
             }
             ?>
         </div>
-        <?php if (!empty($currentRx) && in_array(($currentRx['status'] ?? ''), ['approved','dispensed'], true)): ?>
+        <?php if (!empty($currentRx) && in_array(($currentRx['status'] ?? ''), ['approved','dispensed'], true) && !$isPackageSummary): ?>
         <div class="mb-3 flex items-center gap-2">
             <a href="<?= APP_URL ?>/prescriptions/<?= (int)$currentRx['id'] ?>/export-pdf" class="px-4 py-2 border border-purple-600 text-purple-700 rounded hover:bg-purple-50">
                 <i class="fas fa-file-pdf mr-1"></i>Xuất PDF đơn thuốc
@@ -385,12 +520,12 @@ if (($appointment['status'] ?? '') === 'completed'):
         </form>
         <?php endif; ?>
 
-        <?php if (!empty($currentRx) && ($currentRx['status'] ?? '') === 'submitted' && (Auth::isAdmin() || Auth::isDoctor())): ?>
+        <?php if (!empty($currentRx) && ($currentRx['status'] ?? '') === 'submitted' && (Auth::isAdmin() || Auth::isDoctor()) && !$isPackageSummary): ?>
         <form method="post" action="<?= APP_URL ?>/prescriptions/<?= (int)$currentRx['id'] ?>/approve" class="mb-3">
             <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"><i class="fas fa-check mr-1"></i>Duyệt đơn</button>
         </form>
         <?php endif; ?>
-        <?php if (!empty($currentRx) && ($currentRx['status'] ?? '') === 'approved' && Auth::isAdmin()): ?>
+        <?php if (!empty($currentRx) && ($currentRx['status'] ?? '') === 'approved' && Auth::isAdmin() && !$isPackageSummary): ?>
         <form method="post" action="<?= APP_URL ?>/prescriptions/<?= (int)$currentRx['id'] ?>/dispense" class="mb-3">
             <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"><i class="fas fa-pills mr-1"></i>Phát thuốc</button>
         </form>
@@ -411,7 +546,7 @@ if (($appointment['status'] ?? '') === 'completed'):
                 $rxItems = $stmIt->fetchAll(PDO::FETCH_ASSOC);
             }
         } catch (\Throwable $e) { $rxItems = []; }
-        if (!empty($currentRx) && !empty($rxItems)):
+        if (!empty($currentRx) && !empty($rxItems) && !$isPackageSummary):
         ?>
         <div class="mt-6">
             <div class="flex items-center justify-between mb-2">
@@ -454,7 +589,6 @@ if (($appointment['status'] ?? '') === 'completed'):
                 </table>
             </div>
         </div>
-        <?php endif; ?>
         <?php endif; ?>
 
         <?php if (!isset($rxLocked)) { $rxLocked = false; } ?>
@@ -605,7 +739,64 @@ if (($appointment['status'] ?? '') === 'completed'):
     </div>
     <?php endif; ?>
 
-<?php endif; // end only show when completed ?>
+    <!-- PACKAGE SERVICE DIAGNOSIS - DOCTOR ONLY -->
+    <?php if (!empty($appointment['package_appointment_id']) && !empty($appointment['doctor_id']) && Auth::isDoctor()): ?>
+    <div class="bg-white rounded-lg shadow-md p-8 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-800">Chẩn đoán</h3>
+            <?php 
+                $pkgDx = $packageDiagnosis ?? null;
+                $pkgDxStatus = $pkgDx['status'] ?? null;
+                $pkgDxLocked = ($pkgDxStatus === 'approved');
+                if ($pkgDxStatus === 'approved'): 
+            ?>
+            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Trạng thái: approved</span>
+            <?php endif; ?>
+        </div>
+
+        <form method="post" action="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/diagnoses/save">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">Chẩn đoán chính</label>
+                    <input type="text" name="primary_section" value="<?= htmlspecialchars($pkgDx['primary_icd10'] ?? '') ?>" class="w-full border rounded px-3 py-2" <?= $pkgDxLocked ? 'readonly' : '' ?>>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm text-gray-600 mb-1">Dấu hiệu & lâm sàng</label>
+                    <textarea name="clinical_findings" rows="3" class="w-full border rounded px-3 py-2" <?= $pkgDxLocked ? 'readonly' : '' ?>><?= htmlspecialchars($pkgDx['clinical_findings'] ?? '') ?></textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm text-gray-600 mb-1">Kết luận chính thức</label>
+                    <textarea name="official_findings" rows="3" class="w-full border rounded px-3 py-2" <?= $pkgDxLocked ? 'readonly' : '' ?>><?= htmlspecialchars($pkgDx['assessment'] ?? '') ?></textarea>
+                </div>
+            </div>
+            <?php if (!$pkgDxLocked): ?>
+            <div class="flex items-center justify-end mt-4 space-x-3">
+                <label class="text-sm text-gray-600"><input type="checkbox" name="submit_after" value="1" class="mr-1">Lưu xong duyệt luôn</label>
+                <button type="submit" class="px-6 py-2 bg-teal-600 text-white rounded hover:bg-teal-700">Lưu chẩn đoán</button>
+            </div>
+            <?php else: ?>
+            <div class="mt-2 text-sm text-gray-500">Chẩn đoán đã được duyệt.</div>
+            <?php endif; ?>
+        </form>
+
+        <?php if (!empty($pkgDx)): ?>
+        <div class="mt-6">
+            <h4 class="text-md font-semibold text-gray-800 mb-2">Chẩn đoán mới nhất</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                <div><span class="font-semibold">Chẩn đoán chính:</span> <?= htmlspecialchars($pkgDx['primary_icd10'] ?? '') ?></div>
+                <div><span class="font-semibold">Trạng thái:</span> <?= htmlspecialchars($pkgDx['status'] ?? '') ?></div>
+                <div class="md:col-span-2"><span class="font-semibold">Dấu hiệu & lâm sàng:</span><br><?= nl2br(htmlspecialchars($pkgDx['clinical_findings'] ?? '')) ?></div>
+                <div class="md:col-span-2"><span class="font-semibold">Kết luận chính thức:</span><br><?= nl2br(htmlspecialchars($pkgDx['assessment'] ?? '')) ?></div>
+            </div>
+        </div>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
+    
+
+<?php endif // end only show when completed ?>
+<?php endif // end empty package_appointment_id ?>
 
 <?php 
 $content = ob_get_clean();

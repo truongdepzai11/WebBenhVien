@@ -213,6 +213,12 @@ ob_start();
                        class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
                         <i class="fas fa-check-circle mr-2"></i>Xác nhận thanh toán
                     </a>
+                    
+                    <a href="<?= APP_URL ?>/momo-payment/confirm/<?= $invoice['id'] ?>" 
+                       onclick="return confirm('Xác nhận bệnh nhân đã thanh toán qua MoMo?')"
+                       class="px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition">
+                        <i class="fas fa-qrcode mr-2"></i>Xác nhận MoMo
+                    </a>
                     <?php endif; ?>
                 <?php endif; ?>
             </div>
@@ -230,7 +236,7 @@ ob_start();
                     <p class="font-semibold text-gray-900"><?= htmlspecialchars($payment['payment_code']) ?></p>
                     <p class="text-sm text-gray-600">
                         <?php
-                        $methodLabels = ['cash' => 'Tiền mặt', 'momo' => 'MoMo', 'vnpay' => 'VNPay', 'bank_transfer' => 'Chuyển khoản'];
+                        $methodLabels = ['cash' => 'Tiền mặt', 'momo' => 'MoMo', 'vnpay' => 'VNPay', 'bank_transfer' => 'Chuyển khoản', 'zalopay' => 'ZaloPay'];
                         echo $methodLabels[$payment['payment_method']];
                         ?>
                         <?php if ($payment['payment_date']): ?>

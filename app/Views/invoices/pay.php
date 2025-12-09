@@ -20,7 +20,7 @@ ob_start();
         </div>
 
         <!-- Payment Methods -->
-        <form method="POST" action="<?= APP_URL ?>/invoices/<?= $invoice['id'] ?>/process-payment">
+        <form id="paymentForm" method="POST" action="<?= APP_URL ?>/invoices/<?= $invoice['id'] ?>/process-payment">
             <div class="mb-6">
                 <label class="block text-sm font-medium text-gray-700 mb-4">Chọn phương thức thanh toán</label>
                 <div class="space-y-3">
@@ -38,6 +38,15 @@ ob_start();
                         <i class="fab fa-cc-visa text-pink-600 text-2xl mr-3"></i>
                         <div>
                             <p class="font-semibold text-gray-900">Ví MoMo</p>
+                            <p class="text-sm text-gray-500">Quét mã QR hoặc thanh toán qua app</p>
+                        </div>
+                    </label>
+
+                    <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-purple-500 transition">
+                        <input type="radio" name="payment_method" value="zalopay" class="mr-3">
+                        <i class="fas fa-wallet text-blue-500 text-2xl mr-3"></i>
+                        <div>
+                            <p class="font-semibold text-gray-900">Ví ZaloPay</p>
                             <p class="text-sm text-gray-500">Quét mã QR hoặc thanh toán qua app</p>
                         </div>
                     </label>
@@ -75,6 +84,20 @@ ob_start();
         </form>
     </div>
 </div>
+
+<script>
+document.getElementById('paymentForm').addEventListener('submit', function(e) {
+    const selectedMethod = document.querySelector('input[name="payment_method"]:checked').value;
+    
+    if (selectedMethod === 'momo') {
+        e.preventDefault();
+        window.location.href = '<?= APP_URL ?>/momo-payment/pay/<?= $invoice['id'] ?>';
+    } else if (selectedMethod === 'zalopay') {
+        e.preventDefault();
+        window.location.href = '<?= APP_URL ?>/zalopay-payment/pay/<?= $invoice['id'] ?>';
+    }
+});
+</script>
 
 <?php 
 $content = ob_get_clean();

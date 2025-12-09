@@ -68,6 +68,7 @@ require_once __DIR__ . '/../app/Controllers/PackageAppointmentController.php';
 require_once __DIR__ . '/../app/Controllers/ResultsController.php';
 require_once __DIR__ . '/../app/Controllers/PrescriptionController.php';
 require_once __DIR__ . '/../app/Controllers/DiagnosisController.php';
+require_once __DIR__ . '/../app/Controllers/AppointmentResultController.php';
 
 // Home Route (Landing Page)
 $router->get('/', function() {
@@ -269,6 +270,17 @@ $router->post('/appointments/{id}/results/submit', function($id) {
     $controller->submitResults($id);
 });
 
+// Regular appointment result workflows
+$router->post('/appointments/{id}/regular-results/save', function($id) {
+    $controller = new AppointmentResultController();
+    $controller->save($id);
+});
+
+$router->post('/appointments/{id}/regular-results/submit', function($id) {
+    $controller = new AppointmentResultController();
+    $controller->submit($id);
+});
+
 $router->post('/appointments/{id}/cancel', function($id) {
     $controller = new AppointmentController();
     $controller->cancel($id);
@@ -426,7 +438,32 @@ $router->post('/invoices/{id}/pay', function($id) {
     $controller->processPayment($id);
 });
 
-// MoMo payment routes
+// ZaloPay Payment Routes
+$router->get('/zalopay-payment/pay/{id}', function($id){
+    require_once APP_PATH . '/Controllers/ZaloPaymentController.php';
+    $controller = new ZaloPaymentController();
+    $controller->showPaymentPage($id);
+});
+
+$router->get('/zalopay-payment/confirm/{id}', function($id){
+    require_once APP_PATH . '/Controllers/ZaloPaymentController.php';
+    $controller = new ZaloPaymentController();
+    $controller->confirmPayment($id);
+});
+
+$router->get('/zalopay-payment/patient-confirm/{id}', function($id){
+    require_once APP_PATH . '/Controllers/ZaloPaymentController.php';
+    $controller = new ZaloPaymentController();
+    $controller->patientConfirmPayment($id);
+});
+
+$router->get('/zalopay-payment/cancel/{id}', function($id){
+    require_once APP_PATH . '/Controllers/ZaloPaymentController.php';
+    $controller = new ZaloPaymentController();
+    $controller->cancelPayment($id);
+});
+
+// MoMo Payment Routes
 $router->get('/invoices/{id}/momo', function($id){
     $controller = new InvoiceController();
     $controller->momo($id);
@@ -442,6 +479,48 @@ $router->post('/payments/momo/ipn', function(){
     require_once APP_PATH . '/Controllers/PaymentController.php';
     $pc = new PaymentController();
     $pc->momoIpn();
+});
+
+// MoMo QR Payment routes (Simple version)
+$router->get('/momo-payment/pay/{id}', function($id){
+    require_once APP_PATH . '/Controllers/MomoPaymentController.php';
+    $controller = new MomoPaymentController();
+    $controller->showPaymentPage($id);
+});
+
+$router->get('/momo-payment/confirm/{id}', function($id){
+    require_once APP_PATH . '/Controllers/MomoPaymentController.php';
+    $controller = new MomoPaymentController();
+    $controller->confirmPayment($id);
+});
+
+$router->get('/momo-payment/patient-confirm/{id}', function($id){
+    require_once APP_PATH . '/Controllers/MomoPaymentController.php';
+    $controller = new MomoPaymentController();
+    $controller->patientConfirmPayment($id);
+});
+
+$router->get('/momo-payment/cancel/{id}', function($id){
+    require_once APP_PATH . '/Controllers/MomoPaymentController.php';
+    $controller = new MomoPaymentController();
+    $controller->cancelPayment($id);
+});
+
+// API endpoint for checking invoice status
+$router->get('/api/invoices/{id}/status', function($id){
+    require_once APP_PATH . '/Models/Invoice.php';
+    $invoiceModel = new Invoice();
+    $invoice = $invoiceModel->findById($id);
+    
+    header('Content-Type: application/json');
+    if ($invoice) {
+        echo json_encode([
+            'payment_status' => $invoice['payment_status'],
+            'status' => $invoice['status']
+        ]);
+    } else {
+        echo json_encode(['error' => 'Invoice not found']);
+    }
 });
 
 // ==================== MEDICAL RECORDS ROUTES ====================

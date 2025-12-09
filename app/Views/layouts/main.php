@@ -211,7 +211,7 @@
                     <div class="px-6 py-4 flex items-center justify-between">
                         <h2 class="text-2xl font-bold text-gray-800"><?= $page_title ?? 'Dashboard' ?></h2>
                         <div class="flex items-center space-x-4">
-                            <?php if (Auth::isPatient() || Auth::isDoctor()): ?>
+                            <?php if (Auth::isPatient() || Auth::isDoctor() || Auth::isAdmin()): ?>
                             <a href="<?= APP_URL ?>/notifications" class="relative inline-flex items-center text-gray-600 hover:text-purple-700">
                                 <i class="fas fa-bell text-xl"></i>
                                 <span id="notifBadge" class="hidden absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] rounded-full bg-red-600 text-white">0</span>

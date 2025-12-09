@@ -8,6 +8,7 @@ require_once __DIR__ . '/../Models/Invoice.php';
 require_once __DIR__ . '/../Models/HealthPackage.php';
 require_once __DIR__ . '/../Helpers/Auth.php';
 require_once __DIR__ . '/../Helpers/Validator.php';
+require_once __DIR__ . '/../Models/User.php';
 require_once __DIR__ . '/../../config/database.php';
 
 class AppointmentController {
@@ -17,6 +18,7 @@ class AppointmentController {
     private $specializationModel;
     private $invoiceModel;
     private $packageModel;
+    private $userModel;
 
     public function __construct() {
         $this->appointmentModel = new Appointment();
@@ -25,75 +27,7 @@ class AppointmentController {
         $this->specializationModel = new Specialization();
         $this->invoiceModel = new Invoice();
         $this->packageModel = new HealthPackage();
-    }
-
-    // Lưu nháp kết quả chỉ số cho lịch con (dịch vụ trong gói)
-    public function saveResults($id) {
-        Auth::requireLogin();
-        if (!Auth::isDoctor()) { header('Location: ' . APP_URL . '/appointments/' . $id); exit; }
-
-        $apt = $this->appointmentModel->findById($id);
-        if (!$apt || empty($apt['package_appointment_id']) || empty($apt['doctor_id'])) {
-            $_SESSION['error'] = 'Chỉ áp dụng cho lịch dịch vụ trong gói đã phân công.';
-            header('Location: ' . APP_URL . '/appointments/' . $id); exit;
-        }
-
-        // Chỉ bác sĩ được phân công mới được nhập
-        $doctor = $this->doctorModel->findByUserId(Auth::id());
-        if (!$doctor || (int)$doctor['id'] !== (int)$apt['doctor_id']) {
-            $_SESSION['error'] = 'Bạn không có quyền thao tác kết quả cho lịch này.';
-            header('Location: ' . APP_URL . '/appointments/' . $id); exit;
-        }
-
-        // Tìm appointment tổng hợp của gói và hàng APS tương ứng theo service name (reason)
-        require_once APP_PATH . '/Models/AppointmentPackageService.php';
-        $summary = $this->appointmentModel->findSummaryByPackageAppointmentId($apt['package_appointment_id']);
-        $apsModel = new AppointmentPackageService();
-        $aps = $apsModel->findByPackageAppointmentAndServiceName($apt['package_appointment_id'], $apt['reason']);
-        if (!$summary || !$aps) {
-            $_SESSION['error'] = 'Không xác định được dịch vụ trong gói để lưu kết quả.';
-            header('Location: ' . APP_URL . '/appointments/' . $id); exit;
-        }
-
-        // Lưu các dòng chỉ số vào package_test_results (xóa cũ rồi chèn lại đơn giản)
-        $metrics = $_POST['metric_name'] ?? [];
-        $values  = $_POST['result_value'] ?? [];
-        $units   = $_POST['unit'] ?? [];
-        $ranges  = $_POST['reference_range'] ?? [];
-        $flags   = $_POST['flag'] ?? [];
-        $notes   = $_POST['note'] ?? [];
-
-        $db = new Database(); $conn = $db->getConnection();
-        $conn->beginTransaction();
-        try {
-            $del = $conn->prepare('DELETE FROM package_test_results WHERE appointment_id = ? AND service_id = ?');
-            $del->execute([(int)$summary['id'], (int)$aps['service_id']]);
-
-            $ins = $conn->prepare('INSERT INTO package_test_results (appointment_id, service_id, metric_name, result_value, result_status, reference_range, notes) VALUES (?,?,?,?,?,?,?)');
-            $count = max(count($metrics), count($values));
-            for ($i=0; $i<$count; $i++) {
-                $m = trim($metrics[$i] ?? '');
-                $v = trim($values[$i] ?? '');
-                if ($m === '' && $v === '') continue; // bỏ dòng trống
-                $ins->execute([
-                    (int)$summary['id'],
-                    (int)$aps['service_id'],
-                    $m,
-                    $v,
-                    $_POST['result_status'][$i] ?? null,
-                    $ranges[$i] ?? null,
-                    $_POST['notes'][$i] ?? null,
-                ]);
-            }
-            // Cập nhật trạng thái nháp
-            $apsModel->updateResultStateById($aps['id'], 'draft');
-            $conn->commit();
-            $_SESSION['success'] = 'Đã lưu nháp kết quả.';
-        } catch (\Throwable $e) {
-            $conn->rollBack();
-            $_SESSION['error'] = 'Lỗi lưu kết quả: ' . $e->getMessage();
-        }
-        header('Location: ' . APP_URL . '/appointments/' . $id); exit;
+        $this->userModel = new User();
     }
 
     // Nộp kết quả (khóa bác sĩ chỉnh) → chuyển result_state = submitted
@@ -206,8 +140,22 @@ class AppointmentController {
             $appointments = $this->appointmentModel->getAll();
         }
         
-        // Áp dụng lọc gộp (summary) cho BỆNH NHÂN và ADMIN để ẩn các lịch chi tiết dịch vụ trong gói
-        if ($role === 'patient' || $role === 'admin') {
+        // Gắn thông tin tiến độ hoàn thành dịch vụ cho các lịch thuộc gói
+        $completionCache = [];
+        foreach ($appointments as &$aptRef) {
+            if (!empty($aptRef['package_appointment_id'])) {
+                $pkgId = (int)$aptRef['package_appointment_id'];
+                if (!isset($completionCache[$pkgId])) {
+                    $completionCache[$pkgId] = $this->appointmentModel->getChildCompletionStats($pkgId);
+                }
+                $aptRef['child_completion_done'] = $completionCache[$pkgId]['completed'];
+                $aptRef['child_completion_total'] = $completionCache[$pkgId]['total'];
+            }
+        }
+        unset($aptRef);
+
+        // Áp dụng lọc gộp (summary) cho BỆNH NHÂN, ADMIN và RECEPTIONIST để ẩn các lịch chi tiết dịch vụ trong gói
+        if ($role === 'patient' || $role === 'admin' || $role === 'receptionist') {
             // Lọc appointments để chỉ hiển thị 1 dòng cho gói khám (summary)
             // - Giữ: Khám thường (package_appointment_id = NULL)
             // - Giữ: Appointment tổng hợp gói khám (reason bắt đầu bằng 'Khám theo gói')
@@ -224,8 +172,8 @@ class AppointmentController {
                 }
                 return false;
             });
-            // Bổ sung thông tin hiển thị cho lịch gói (dùng cho bảng của patient/admin)
-            $regularAppointments = array_map(function($apt) {
+            // Bổ sung thông tin hiển thị cho lịch gói (dùng cho bảng của patient/admin/receptionist)
+            $regularAppointments = array_map(function($apt) use ($completionCache) {
                 if (!empty($apt['package_appointment_id'])) {
                     $assigned = $this->appointmentModel->getAssignedDoctorsByPackageAppointmentId($apt['package_appointment_id']);
                     $apt['assigned_doctors'] = $assigned ?: [];
@@ -239,6 +187,9 @@ class AppointmentController {
                     $apt['total_services'] = is_array($services) ? count($services) : 0;
                     // Lấy danh sách các ngày khám khác nhau
                     $apt['appointment_dates'] = $this->appointmentModel->getAppointmentDatesByPackageAppointmentId($apt['package_appointment_id']);
+                    // Gắn tiến độ hoàn thành dịch vụ
+                    $apt['child_completion_done'] = $completionCache[(int)$apt['package_appointment_id']]['completed'] ?? 0;
+                    $apt['child_completion_total'] = $completionCache[(int)$apt['package_appointment_id']]['total'] ?? 0;
                 }
                 return $apt;
             }, array_values($regularAppointments));
@@ -442,6 +393,20 @@ class AppointmentController {
             require_once APP_PATH . '/Models/PackageAppointment.php';
             $packageAppointmentModel = new PackageAppointment();
             
+            // Kiểm tra xem bệnh nhân đã đặt gói này trong tháng này chưa
+            if ($packageAppointmentModel->hasBookingThisMonth($patient_id, $_POST['package_id'])) {
+                require_once APP_PATH . '/Models/HealthPackage.php';
+                $pkgModel = new HealthPackage();
+                $pkg = $pkgModel->findById($_POST['package_id']);
+                $packageName = $pkg['name'] ?? 'gói khám này';
+                $cooldownDays = (int)($pkg['cooldown_days'] ?? 30);
+                
+                $_SESSION['error'] = 'Bạn đã đặt khám gói "' . htmlspecialchars($packageName) . '" rồi. Vui lòng chờ thêm ' . $cooldownDays . ' ngày nữa trước khi có thể đặt lại gói này.';
+                $_SESSION['old'] = $_POST;
+                header('Location: ' . APP_URL . '/appointments/create?package_id=' . $_POST['package_id']);
+                exit;
+            }
+            
             $packageAppointmentModel->patient_id = $patient_id;
             $packageAppointmentModel->package_id = $_POST['package_id'];
             $packageAppointmentModel->appointment_date = $_POST['appointment_date'];
@@ -450,10 +415,23 @@ class AppointmentController {
             $packageAppointmentModel->total_price = $totalSelected;
             $packageAppointmentModel->created_by = Auth::id();
             
-            if (!$packageAppointmentModel->create()) {
-                $_SESSION['error'] = 'Đăng ký gói khám thất bại';
+            try {
+                $packageAppointmentModel->create();
+            } catch (PDOException $e) {
+                // Catch UNIQUE constraint violation
+                if (strpos($e->getMessage(), 'Duplicate entry') !== false || $e->getCode() == 23000) {
+                    require_once APP_PATH . '/Models/HealthPackage.php';
+                    $pkgModel = new HealthPackage();
+                    $pkg = $pkgModel->findById($_POST['package_id']);
+                    $packageName = $pkg['name'] ?? 'gói khám này';
+                    $cooldownDays = (int)($pkg['cooldown_days'] ?? 30);
+                    
+                    $_SESSION['error'] = 'Bạn đã đặt khám gói "' . htmlspecialchars($packageName) . '" rồi. Vui lòng chờ thêm ' . $cooldownDays . ' ngày nữa trước khi có thể đặt lại gói này.';
+                } else {
+                    $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
+                }
                 $_SESSION['old'] = $_POST;
-                header('Location: ' . APP_URL . '/appointments/create');
+                header('Location: ' . APP_URL . '/appointments/create?package_id=' . $_POST['package_id']);
                 exit;
             }
             
@@ -503,6 +481,8 @@ class AppointmentController {
                                       . '<p>Xem chi tiết: <a href="' . APP_URL . $link . '">' . APP_URL . $link . '</a></p>';
                                 $mailer->send($email, $title, $html);
                             }
+
+                            $this->notifyAdminsAboutAppointment($apt, true);
                         }
                     }
                 } catch (\Throwable $e) { /* silent */ }
@@ -516,8 +496,17 @@ class AppointmentController {
         }
         
         // Nếu đặt KHÁM THƯỜNG → Tạo appointment
+        $doctorId = (int)($_POST['doctor_id'] ?? 0);
+        $doctorInfo = $doctorId > 0 ? $this->doctorModel->findById($doctorId) : null;
+        if (!$doctorInfo) {
+            $_SESSION['error'] = 'Không tìm thấy thông tin bác sĩ để đặt lịch.';
+            $_SESSION['old'] = $_POST;
+            header('Location: ' . APP_URL . '/appointments/create');
+            exit;
+        }
+
         $this->appointmentModel->patient_id = $patient_id;
-        $this->appointmentModel->doctor_id = $_POST['doctor_id'];
+        $this->appointmentModel->doctor_id = $doctorId;
         $this->appointmentModel->appointment_date = $_POST['appointment_date'];
         $this->appointmentModel->appointment_time = $_POST['appointment_time'];
         $this->appointmentModel->reason = $_POST['reason'];
@@ -527,7 +516,8 @@ class AppointmentController {
         $this->appointmentModel->package_appointment_id = null;
         $this->appointmentModel->appointment_type = 'regular';
         $this->appointmentModel->coordinator_doctor_id = null;
-        $this->appointmentModel->total_price = 0;
+        $doctorFee = isset($doctorInfo['consultation_fee']) ? (float)$doctorInfo['consultation_fee'] : 0;
+        $this->appointmentModel->total_price = $doctorFee;
 
         if ($this->appointmentModel->create()) {
             $_SESSION['success'] = 'Đặt lịch hẹn thành công!';
@@ -580,6 +570,8 @@ class AppointmentController {
                                 }
                             }
                         }
+
+                        $this->notifyAdminsAboutAppointment($apt, false);
                     }
                 }
             } catch (\Throwable $e) { /* silent */ }
@@ -590,6 +582,59 @@ class AppointmentController {
             $_SESSION['error'] = 'Đặt lịch hẹn thất bại. Vui lòng thử lại.';
             header('Location: ' . APP_URL . '/appointments/create');
             exit;
+        }
+    }
+
+    private function notifyAdminsAboutAppointment(array $appointment, bool $isPackage)
+    {
+        try {
+            require_once APP_PATH . '/Models/User.php';
+            if (!isset($this->userModel)) {
+                $this->userModel = new User();
+            }
+            $admins = $this->userModel->getAll('admin');
+            if (empty($admins)) {
+                return;
+            }
+
+            require_once APP_PATH . '/Models/Notification.php';
+            require_once APP_PATH . '/Helpers/Mailer.php';
+            $notificationModel = new Notification();
+            $mailer = new Mailer();
+
+            $patientName = $appointment['patient_name'] ?? 'Bệnh nhân';
+            $dateStr = !empty($appointment['appointment_date']) ? date('d/m/Y', strtotime($appointment['appointment_date'])) : 'N/A';
+            $timeStr = !empty($appointment['appointment_time']) ? date('H:i', strtotime($appointment['appointment_time'])) : null;
+            $link = $isPackage
+                ? '/package-appointments/' . ($appointment['package_appointment_id'] ?? '')
+                : '/appointments/' . ($appointment['id'] ?? '');
+            $title = 'Có lịch hẹn mới từ bệnh nhân ' . $patientName;
+            $message = $patientName . ' vừa đặt ' . ($isPackage ? 'gói khám' : 'lịch khám')
+                     . ' vào ngày ' . $dateStr . ($timeStr ? (' lúc ' . $timeStr) : '') . '. Vui lòng kiểm tra và xử lý.';
+
+            foreach ($admins as $admin) {
+                $adminId = (int)($admin['id'] ?? 0);
+                if ($adminId <= 0) {
+                    continue;
+                }
+                $notificationModel->createIfNotExists(
+                    $adminId,
+                    $title,
+                    $message,
+                    $link,
+                    'system'
+                );
+
+                $email = $admin['email'] ?? null;
+                if (!empty($email)) {
+                    $body = '<p>Xin chào ' . htmlspecialchars($admin['full_name'] ?? 'Admin') . ',</p>'
+                          . '<p>' . htmlspecialchars($message) . '</p>'
+                          . '<p><a href="' . APP_URL . $link . '">Xem chi tiết</a></p>';
+                    $mailer->send($email, $title, $body);
+                }
+            }
+        } catch (\Throwable $e) {
+            // tránh chặn flow đặt lịch vì lỗi thông báo
         }
     }
     
@@ -892,6 +937,57 @@ class AppointmentController {
             }
         }
 
+        $regularDiagnosis = null;
+        $regularPrescription = null;
+        $regularPrescriptionItems = [];
+        $regularResult = null;
+        $regularResultItems = [];
+        $packageDiagnosis = null;
+        
+        if (empty($appointment['package_appointment_id'])) {
+            try {
+                $dbDiag = new Database();
+                $connDiag = $dbDiag->getConnection();
+                // Results header + items
+                $stmRes = $connDiag->prepare('SELECT * FROM appointment_results WHERE appointment_id = ? LIMIT 1');
+                $stmRes->execute([(int)$id]);
+                $regularResult = $stmRes->fetch(PDO::FETCH_ASSOC) ?: null;
+                if ($regularResult) {
+                    $stmResItems = $connDiag->prepare('SELECT * FROM appointment_result_items WHERE result_id = ? ORDER BY id');
+                    $stmResItems->execute([(int)$regularResult['id']]);
+                    $regularResultItems = $stmResItems->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                }
+                $stmDiag = $connDiag->prepare('SELECT d.*, u.full_name AS signed_user_name FROM diagnoses d LEFT JOIN users u ON u.id = d.signed_by WHERE d.appointment_id = ? ORDER BY d.id DESC LIMIT 1');
+                $stmDiag->execute([(int)$id]);
+                $regularDiagnosis = $stmDiag->fetch(PDO::FETCH_ASSOC) ?: null;
+                $stmRx = $connDiag->prepare('SELECT p.*, du.full_name AS doctor_full_name FROM prescriptions p LEFT JOIN doctors d ON d.id = p.doctor_id LEFT JOIN users du ON du.id = d.user_id WHERE p.appointment_id = ? ORDER BY p.id DESC LIMIT 1');
+                $stmRx->execute([(int)$id]);
+                $regularPrescription = $stmRx->fetch(PDO::FETCH_ASSOC) ?: null;
+                if ($regularPrescription) {
+                    $stmItems = $connDiag->prepare('SELECT pi.*, COALESCE(pi.drug_name, m.name) AS drug_label, m.dosage_form, m.strength FROM prescription_items pi LEFT JOIN medicines m ON m.id = pi.medicine_id WHERE pi.prescription_id = ? ORDER BY pi.id');
+                    $stmItems->execute([(int)$regularPrescription['id']]);
+                    $regularPrescriptionItems = $stmItems->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                }
+            } catch (\Throwable $e) {
+                $regularDiagnosis = null;
+                $regularPrescription = null;
+                $regularPrescriptionItems = [];
+                $regularResult = null;
+                $regularResultItems = [];
+            }
+        } else {
+            // Load diagnosis for PACKAGE appointments
+            try {
+                $dbPkg = new Database();
+                $connPkg = $dbPkg->getConnection();
+                $stmPkgDiag = $connPkg->prepare('SELECT d.*, u.full_name AS signed_user_name FROM diagnoses d LEFT JOIN users u ON u.id = d.signed_by WHERE d.appointment_id = ? ORDER BY d.id DESC LIMIT 1');
+                $stmPkgDiag->execute([(int)$id]);
+                $packageDiagnosis = $stmPkgDiag->fetch(PDO::FETCH_ASSOC) ?: null;
+            } catch (\Throwable $e) {
+                $packageDiagnosis = null;
+            }
+        }
+
         // Kiểm tra xem đã có hóa đơn chưa
         $invoice = null;
         $allInvoices = $this->invoiceModel->getAll();
@@ -923,12 +1019,15 @@ class AppointmentController {
             exit;
         }
 
+        $isPackageSummary = false;
+
         // Kiểm tra nếu là lịch gói khám: phải phân công hết dịch vụ mới được xác nhận
         if (!empty($appointment['package_id']) && !empty($appointment['package_appointment_id'])) {
             $reason = $appointment['reason'] ?? '';
             
             // Kiểm tra xem đây có phải là lịch tổng hợp gói không (có chứa dấu ":")
             if (strpos($reason, ':') !== false) {
+                $isPackageSummary = true;
                 // Lấy tổng số dịch vụ trong gói
                 require_once APP_PATH . '/Models/HealthPackage.php';
                 $packageModel = new HealthPackage();
@@ -948,6 +1047,18 @@ class AppointmentController {
 
         if ($this->appointmentModel->updateStatus($id, 'confirmed')) {
             $_SESSION['success'] = 'Đã xác nhận lịch hẹn thành công';
+
+            if ($isPackageSummary) {
+                try {
+                    $this->appointmentModel->updateChildrenStatusByPackageAppointmentId(
+                        $appointment['package_appointment_id'],
+                        ['pending'],
+                        'confirmed'
+                    );
+                } catch (\Throwable $e) {
+                    // Không chặn flow nếu đồng bộ lịch con lỗi
+                }
+            }
 
             // Tạo thông báo cho bệnh nhân + gửi email (nếu cấu hình)
             try {
@@ -1009,7 +1120,51 @@ class AppointmentController {
             exit;
         }
 
+        $appointment = $this->appointmentModel->findById($id);
+        if (!$appointment) {
+            $_SESSION['error'] = 'Không tìm thấy lịch hẹn';
+            header('Location: ' . APP_URL . '/appointments');
+            exit;
+        }
+
+        $isPackageSummary = !empty($appointment['package_id']) && !empty($appointment['package_appointment_id'])
+            && !empty($appointment['reason']) && strpos($appointment['reason'], ':') !== false
+            && empty($appointment['doctor_id']);
+
+        if ($isPackageSummary) {
+            $stats = $this->appointmentModel->getChildCompletionStats($appointment['package_appointment_id']);
+            if ($stats['total'] > 0 && $stats['completed'] < $stats['total']) {
+                $_SESSION['error'] = 'Không thể hoàn thành lịch tổng khi vẫn còn dịch vụ chưa hoàn tất ('
+                    . $stats['completed'] . '/' . $stats['total'] . ' đã hoàn thành).';
+                header('Location: ' . APP_URL . '/appointments/' . $id);
+                exit;
+            }
+        }
+
         if ($this->appointmentModel->updateStatus($id, 'completed')) {
+            // Nếu là lịch con trong gói, kiểm tra và tự động hoàn thành lịch tổng hợp
+            if (!empty($appointment['package_appointment_id']) && !empty($appointment['doctor_id'])) {
+                try {
+                    $stats = $this->appointmentModel->getChildCompletionStats($appointment['package_appointment_id']);
+                    if ($stats['total'] > 0 && $stats['completed'] === $stats['total']) {
+                        // Tất cả lịch con đã hoàn thành, cập nhật lịch tổng hợp
+                        $summary = $this->appointmentModel->getSummaryByPackageAppointmentId($appointment['package_appointment_id']);
+                        if ($summary && $summary['status'] !== 'completed') {
+                            $this->appointmentModel->updateStatus($summary['id'], 'completed');
+                        }
+                    }
+                } catch (\Throwable $e) { /* ignore auto-update errors */ }
+            }
+            
+            if ($isPackageSummary) {
+                try {
+                    $this->appointmentModel->updateChildrenStatusByPackageAppointmentId(
+                        $appointment['package_appointment_id'],
+                        ['confirmed'],
+                        'completed'
+                    );
+                } catch (\Throwable $e) { /* ignore child sync errors */ }
+            }
             $_SESSION['success'] = 'Hoàn thành lịch hẹn thành công';
         } else {
             $_SESSION['error'] = 'Hoàn thành lịch hẹn thất bại';

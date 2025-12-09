@@ -393,6 +393,11 @@ class InvoiceController {
             $this->paymentModel->create();
             header('Location: ' . APP_URL . '/invoices/' . $id . '/momo');
             exit;
+        } elseif ($payment_method === 'zalopay') {
+            // Chuyển đến trang thanh toán ZaloPay
+            $this->paymentModel->create();
+            header('Location: ' . APP_URL . '/invoices/' . $id . '/zalopay');
+            exit;
         } elseif ($payment_method === 'vnpay') {
             // Chuyển đến trang thanh toán VNPay
             $this->paymentModel->create();

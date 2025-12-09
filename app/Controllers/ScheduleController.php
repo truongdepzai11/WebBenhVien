@@ -233,6 +233,8 @@ class ScheduleController {
 
     // Lưu đăng ký gói khám walk-in
     public function storePackageWalkin() {
+        file_put_contents(__DIR__ . '/../../debug.log', "[" . date('Y-m-d H:i:s') . "] storePackageWalkin() called\n", FILE_APPEND);
+        
         Auth::requireLogin();
         
         // Chỉ cho phép Receptionist
@@ -250,81 +252,156 @@ class ScheduleController {
         $packageAppointmentModel = new PackageAppointment();
         $userModel = new User();
 
-        // Xử lý bệnh nhân
-        $patientId = null;
-        if ($_POST['patient_type_pkg'] == 'existing') {
-            // Bệnh nhân cũ
-            $patientId = $_POST['patient_id'];
-        } else {
-            // Bệnh nhân mới - Tạo user account trước
-            $timestamp = date('YmdHis');
-            $userModel->username = 'patient_' . $timestamp; // Username tự động
-            $userModel->full_name = $_POST['new_patient_name'];
-            $userModel->email = 'patient_' . $timestamp . '@temp.com'; // Email tạm
-            $userModel->phone = $_POST['new_patient_phone'];
-            $userModel->password = password_hash('123456', PASSWORD_DEFAULT); // Mật khẩu mặc định
-            $userModel->role = 'patient';
-            $userModel->is_active = 1;
-            
-            if (!$userModel->create()) {
-                $_SESSION['error'] = 'Tạo tài khoản bệnh nhân thất bại';
-                header('Location: ' . APP_URL . '/schedule');
-                exit;
-            }
-            
-            // Tạo patient record
-            $patientModel->user_id = $userModel->id;
-            $patientModel->patient_code = 'BN' . date('YmdHis');
-            $patientModel->date_of_birth = $_POST['new_patient_dob'];
-            $patientModel->gender = $_POST['new_patient_gender'];
-            $patientModel->address = $_POST['new_patient_address'];
-            
-            if ($patientModel->create()) {
-                $patientId = $patientModel->id;
+        // START TRANSACTION để đảm bảo tính nguyên tử
+        try {
+            $db = new Database();
+            $conn = $db->getConnection();
+            $conn->beginTransaction();
+
+            // Xử lý bệnh nhân
+            $patientId = null;
+            if ($_POST['patient_type_pkg'] == 'existing') {
+                // Bệnh nhân cũ
+                $patientId = $_POST['patient_id'];
             } else {
-                $_SESSION['error'] = 'Tạo hồ sơ bệnh nhân thất bại';
+                // Bệnh nhân mới - Tạo user account trước
+                $timestamp = date('YmdHis');
+                $userModel->username = 'patient_' . $timestamp; // Username tự động
+                $userModel->full_name = $_POST['new_patient_name'];
+                $userModel->email = 'patient_' . $timestamp . '@temp.com'; // Email tạm
+                $userModel->phone = $_POST['new_patient_phone'];
+                $userModel->password = password_hash('123456', PASSWORD_DEFAULT); // Mật khẩu mặc định
+                $userModel->role = 'patient';
+                $userModel->is_active = 1;
+                
+                if (!$userModel->create()) {
+                    $conn->rollBack();
+                    $_SESSION['error'] = 'Tạo tài khoản bệnh nhân thất bại';
+                    header('Location: ' . APP_URL . '/schedule');
+                    exit;
+                }
+                
+                // Tạo patient record
+                $patientModel->user_id = $userModel->id;
+                $patientModel->patient_code = 'BN' . date('YmdHis');
+                $patientModel->date_of_birth = $_POST['new_patient_dob'];
+                $patientModel->gender = $_POST['new_patient_gender'];
+                $patientModel->address = $_POST['new_patient_address'];
+                
+                if ($patientModel->create()) {
+                    $patientId = $patientModel->id;
+                } else {
+                    $conn->rollBack();
+                    $_SESSION['error'] = 'Tạo hồ sơ bệnh nhân thất bại';
+                    header('Location: ' . APP_URL . '/schedule');
+                    exit;
+                }
+            }
+
+            // Kiểm tra xem bệnh nhân đã đặt gói này trong tháng này chưa
+            $hasBooking = $packageAppointmentModel->hasBookingThisMonth($patientId, $_POST['package_id']);
+            
+            if ($hasBooking) {
+                // Lấy tên gói để hiển thị trong thông báo
+                require_once APP_PATH . '/Models/HealthPackage.php';
+                $pkgModel = new HealthPackage();
+                $pkg = $pkgModel->findById($_POST['package_id']);
+                $packageName = $pkg['name'] ?? 'gói khám này';
+                
+                // Lấy cooldown_days từ package
+                $cooldownDays = (int)($pkg['cooldown_days'] ?? 30);
+                
+                // Rollback transaction
+                if ($conn->inTransaction()) {
+                    $conn->rollBack();
+                }
+                
+                // Set error và display form lại
+                $_SESSION['error'] = 'Bạn đã đặt khám gói "' . htmlspecialchars($packageName) . '" rồi. Vui lòng chờ thêm ' . $cooldownDays . ' ngày nữa trước khi có thể đặt lại gói này.';
+                
+                // Redirect to schedule page with error
+                header('Location: ' . APP_URL . '/schedule?error=1');
+                exit;
+            }
+
+            // Tạo đăng ký gói khám
+            $packageAppointmentModel->patient_id = $patientId;
+            $packageAppointmentModel->package_id = $_POST['package_id'];
+            $packageAppointmentModel->appointment_date = $_POST['appointment_date'];
+            $packageAppointmentModel->status = 'scheduled';
+            $packageAppointmentModel->notes = $_POST['reason'] ?? '';
+            $packageAppointmentModel->created_by = Auth::id();
+
+            try {
+                if (!$packageAppointmentModel->create()) {
+                    throw new Exception('Tạo đăng ký gói khám thất bại');
+                }
+                
+                // Tạo appointment tổng hợp để xuất hiện trong danh sách Lịch hẹn
+                require_once APP_PATH . '/Models/HealthPackage.php';
+                $pkgModel = new HealthPackage();
+                $pkg = $pkgModel->findById($_POST['package_id']);
+                $services = $pkgModel->getPackageServices($_POST['package_id']);
+                $totalPrice = 0;
+                foreach ($services as $svc) { $totalPrice += (float)($svc['service_price'] ?? 0); }
+
+                $this->appointmentModel->patient_id = $patientId;
+                $this->appointmentModel->doctor_id = null;
+                $this->appointmentModel->package_id = $_POST['package_id'];
+                $this->appointmentModel->package_appointment_id = $packageAppointmentModel->id;
+                $this->appointmentModel->appointment_date = $_POST['appointment_date'];
+                $this->appointmentModel->appointment_time = null;
+                $this->appointmentModel->reason = 'Khám theo gói: ' . ($pkg['name'] ?? '');
+                $this->appointmentModel->status = 'pending';
+                $this->appointmentModel->notes = $_POST['reason'] ?? '';
+                $this->appointmentModel->appointment_type = 'package';
+                $this->appointmentModel->coordinator_doctor_id = null;
+                $this->appointmentModel->total_price = $totalPrice;
+
+                if (!$this->appointmentModel->create()) {
+                    throw new Exception('Tạo appointment thất bại');
+                }
+
+                // COMMIT TRANSACTION
+                $conn->commit();
+
+                $_SESSION['success'] = 'Đăng ký gói khám Walk-in thành công';
+                header('Location: ' . APP_URL . '/schedule');
+                exit;
+            } catch (PDOException $e) {
+                $conn->rollBack();
+                file_put_contents(__DIR__ . '/../../debug.log', "[" . date('Y-m-d H:i:s') . "] PDOException caught: " . $e->getMessage() . " (code: " . $e->getCode() . ")\n", FILE_APPEND);
+                
+                // Bắt lỗi UNIQUE constraint violation (Duplicate entry)
+                if (strpos($e->getMessage(), 'Duplicate entry') !== false || $e->getCode() == 23000) {
+                    require_once APP_PATH . '/Models/HealthPackage.php';
+                    $pkgModel = new HealthPackage();
+                    $pkg = $pkgModel->findById($_POST['package_id']);
+                    $packageName = $pkg['name'] ?? 'gói khám này';
+                    
+                    // Lấy cooldown_days từ package
+                    $pkgData = $pkgModel->findById($_POST['package_id']);
+                    $cooldownDays = (int)($pkgData['cooldown_days'] ?? 30);
+                    
+                    $_SESSION['error'] = 'Bạn đã đặt khám gói "' . htmlspecialchars($packageName) . '" rồi. Vui lòng chờ thêm ' . $cooldownDays . ' ngày nữa trước khi có thể đặt lại gói này.';
+                    file_put_contents(__DIR__ . '/../../debug.log', "[" . date('Y-m-d H:i:s') . "] Set error message from PDOException\n", FILE_APPEND);
+                } else {
+                    $_SESSION['error'] = 'Lỗi Database: ' . $e->getMessage();
+                }
+                
+                header('Location: ' . APP_URL . '/schedule');
+                exit;
+            } catch (Exception $e) {
+                $conn->rollBack();
+                $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
                 header('Location: ' . APP_URL . '/schedule');
                 exit;
             }
-        }
-
-        // Tạo đăng ký gói khám
-        $packageAppointmentModel->patient_id = $patientId;
-        $packageAppointmentModel->package_id = $_POST['package_id'];
-        $packageAppointmentModel->appointment_date = $_POST['appointment_date'];
-        $packageAppointmentModel->status = 'scheduled';
-        $packageAppointmentModel->notes = $_POST['reason'] ?? '';
-        $packageAppointmentModel->created_by = Auth::id();
-
-        if ($packageAppointmentModel->create()) {
-            // Tạo appointment tổng hợp để xuất hiện trong danh sách Lịch hẹn
-            require_once APP_PATH . '/Models/HealthPackage.php';
-            $pkgModel = new HealthPackage();
-            $pkg = $pkgModel->findById($_POST['package_id']);
-            $services = $pkgModel->getPackageServices($_POST['package_id']);
-            $totalPrice = 0;
-            foreach ($services as $svc) { $totalPrice += (float)($svc['service_price'] ?? 0); }
-
-            $this->appointmentModel->patient_id = $patientId;
-            $this->appointmentModel->doctor_id = null;
-            $this->appointmentModel->package_id = $_POST['package_id'];
-            $this->appointmentModel->package_appointment_id = $packageAppointmentModel->id;
-            $this->appointmentModel->appointment_date = $_POST['appointment_date'];
-            $this->appointmentModel->appointment_time = null;
-            $this->appointmentModel->reason = 'Khám theo gói: ' . ($pkg['name'] ?? '');
-            $this->appointmentModel->status = 'pending';
-            $this->appointmentModel->notes = $_POST['reason'] ?? '';
-            $this->appointmentModel->appointment_type = 'package';
-            $this->appointmentModel->coordinator_doctor_id = null;
-            $this->appointmentModel->total_price = $totalPrice;
-
-            $this->appointmentModel->create();
-
-            $_SESSION['success'] = 'Đăng ký gói khám Walk-in thành công';
-            header('Location: ' . APP_URL . '/schedule');
-            exit;
-        } else {
-            $_SESSION['error'] = 'Đăng ký gói khám thất bại';
+        } catch (Exception $e) {
+            if (isset($conn) && $conn->inTransaction()) {
+                $conn->rollBack();
+            }
+            $_SESSION['error'] = 'Lỗi: ' . $e->getMessage();
             header('Location: ' . APP_URL . '/schedule');
             exit;
         }

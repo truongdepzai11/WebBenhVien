@@ -24,9 +24,9 @@ class PackageAppointment {
     // Tạo đăng ký gói khám mới
     public function create() {
         $query = "INSERT INTO " . $this->table . " 
-                  (patient_id, package_id, appointment_date, status, notes, total_price, created_by, created_at) 
+                  (patient_id, package_id, appointment_date, status, notes, total_price, created_by, appointment_year_month, created_at) 
                   VALUES 
-                  (:patient_id, :package_id, :appointment_date, :status, :notes, :total_price, :created_by, NOW())";
+                  (:patient_id, :package_id, :appointment_date, :status, :notes, :total_price, :created_by, DATE_FORMAT(NOW(), '%Y-%m'), NOW())";
 
         $stmt = $this->conn->prepare($query);
 
@@ -38,12 +38,11 @@ class PackageAppointment {
         $stmt->bindParam(':total_price', $this->total_price);
         $stmt->bindParam(':created_by', $this->created_by);
 
-        if ($stmt->execute()) {
-            $this->id = $this->conn->lastInsertId();
-            return true;
-        }
-
-        return false;
+        // execute() will throw PDOException if there's a UNIQUE constraint violation
+        $stmt->execute();
+        
+        $this->id = $this->conn->lastInsertId();
+        return true;
     }
 
     // Lấy tất cả đăng ký gói khám
@@ -119,5 +118,24 @@ class PackageAppointment {
         $stmt->bindParam(':id', $id);
 
         return $stmt->execute();
+    }
+
+    // Kiểm tra xem bệnh nhân đã đăng ký gói này trong tháng hiện tại chưa
+    public function hasBookingThisMonth($patientId, $packageId) {
+        $month = date('Y-m');
+        $query = "SELECT COUNT(*) as count FROM " . $this->table . " 
+                  WHERE patient_id = :patient_id 
+                  AND package_id = :package_id 
+                  AND appointment_year_month = :month
+                  LIMIT 1";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':patient_id', $patientId);
+        $stmt->bindParam(':package_id', $packageId);
+        $stmt->bindParam(':month', $month);
+        $stmt->execute();
+        
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['count'] > 0;
     }
 }

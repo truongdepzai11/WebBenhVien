@@ -65,6 +65,23 @@ class Appointment {
         return (int)($row['c'] ?? 0);
     }
 
+    public function getChildCompletionStats($packageAppointmentId) {
+        $query = "SELECT COUNT(*) AS total_children,
+                         SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_children
+                  FROM " . $this->table . "
+                  WHERE package_appointment_id = :pkg_id
+                    AND doctor_id IS NOT NULL
+                    AND reason NOT LIKE '%:%'";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':pkg_id', $packageAppointmentId, PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        return [
+            'total' => (int)($row['total_children'] ?? 0),
+            'completed' => (int)($row['completed_children'] ?? 0),
+        ];
+    }
+
     // Tạo lịch hẹn mới
     public function create() {
         $this->appointment_code = $this->generateAppointmentCode();

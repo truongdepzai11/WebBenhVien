@@ -78,6 +78,60 @@ ob_start();
     </div>
 </div>
 
+<?php 
+$summaryStatus = $summaryAppointment['status'] ?? ($packageAppointment['status'] ?? 'scheduled');
+$summaryStatusMap = [
+    'pending' => ['label' => 'Chờ xác nhận', 'icon' => 'fas fa-clock', 'bg' => 'bg-yellow-50 border-yellow-200 text-yellow-800'],
+    'confirmed' => ['label' => 'Đã xác nhận', 'icon' => 'fas fa-check-circle', 'bg' => 'bg-blue-50 border-blue-200 text-blue-800'],
+    'completed' => ['label' => 'Đã hoàn thành', 'icon' => 'fas fa-check-double', 'bg' => 'bg-green-50 border-green-200 text-green-700'],
+    'cancelled' => ['label' => 'Đã hủy', 'icon' => 'fas fa-ban', 'bg' => 'bg-red-50 border-red-200 text-red-700'],
+];
+$summaryStatusMeta = $summaryStatusMap[$summaryStatus] ?? ['label' => ucfirst($summaryStatus), 'icon' => 'fas fa-info-circle', 'bg' => 'bg-gray-50 border-gray-200 text-gray-700'];
+
+$childDone = (int)($completionStats['completed'] ?? 0);
+$childTotal = (int)($completionStats['total'] ?? 0);
+if ($childTotal === 0) {
+    $progressMeta = ['label' => 'Chưa có lịch con nào được ghi nhận', 'detail' => '0/0 dịch vụ', 'icon' => 'fas fa-calendar-minus', 'bg' => 'bg-amber-50 border-amber-200 text-amber-700'];
+} elseif ($childDone === 0) {
+    $progressMeta = ['label' => 'Chưa khám dịch vụ nào', 'detail' => '0/' . $childTotal . ' dịch vụ', 'icon' => 'fas fa-hourglass-start', 'bg' => 'bg-amber-50 border-amber-200 text-amber-700'];
+} elseif ($childDone < $childTotal) {
+    $progressMeta = ['label' => 'Đang khám', 'detail' => $childDone . '/' . $childTotal . ' dịch vụ đã hoàn thành', 'icon' => 'fas fa-stethoscope', 'bg' => 'bg-blue-50 border-blue-200 text-blue-800'];
+} else {
+    $progressMeta = ['label' => 'Đã hoàn thành tất cả dịch vụ', 'detail' => $childTotal . '/' . $childTotal . ' dịch vụ', 'icon' => 'fas fa-trophy', 'bg' => 'bg-green-50 border-green-200 text-green-700'];
+}
+?>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+    <div class="rounded-xl border <?= $summaryStatusMeta['bg'] ?> p-5 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full bg-white/70 flex items-center justify-center text-xl">
+                <i class="<?= $summaryStatusMeta['icon'] ?>"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wider font-semibold opacity-80">Tình trạng lịch tổng</p>
+                <p class="text-lg font-bold leading-tight"><?= $summaryStatusMeta['label'] ?></p>
+                <?php if (!empty($summaryAppointment['appointment_date'])): ?>
+                <p class="text-sm font-medium opacity-80 mt-1">
+                    Ngày khám: <?= date('d/m/Y', strtotime($summaryAppointment['appointment_date'])) ?>
+                </p>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    <div class="rounded-xl border <?= $progressMeta['bg'] ?> p-5 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full bg-white/70 flex items-center justify-center text-xl">
+                <i class="<?= $progressMeta['icon'] ?>"></i>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wider font-semibold opacity-80">Trạng thái dịch vụ</p>
+                <p class="text-lg font-bold leading-tight"><?= $progressMeta['label'] ?></p>
+                <p class="text-sm font-medium opacity-80 mt-1"><?= $progressMeta['detail'] ?></p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Thông tin bệnh nhân & gói khám -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
     <!-- Thông tin bệnh nhân -->
@@ -281,6 +335,71 @@ ob_start();
             foreach ($packageServices as $svc) {
                 $durationByService[strtolower(trim($svc['service_name']))] = (int)($svc['duration_minutes'] ?? 30);
             }
+            $svcStatusMeta = [
+                'pending' => [
+                    'label' => 'Chờ xác nhận',
+                    'note' => 'Chưa khám',
+                    'icon' => 'fas fa-clock',
+                    'badgeClass' => 'bg-yellow-100 text-yellow-800',
+                    'panelBorder' => 'border-yellow-200',
+                    'panelBg' => 'bg-yellow-50',
+                    'textClass' => 'text-yellow-800'
+                ],
+                'confirmed' => [
+                    'label' => 'Đã xác nhận',
+                    'note' => 'Đang chờ khám',
+                    'icon' => 'fas fa-user-check',
+                    'badgeClass' => 'bg-blue-100 text-blue-800',
+                    'panelBorder' => 'border-blue-200',
+                    'panelBg' => 'bg-blue-50',
+                    'textClass' => 'text-blue-800'
+                ],
+                'completed' => [
+                    'label' => 'Hoàn thành',
+                    'note' => 'Đã hoàn thành dịch vụ',
+                    'icon' => 'fas fa-check-double',
+                    'badgeClass' => 'bg-green-100 text-green-800',
+                    'panelBorder' => 'border-green-200',
+                    'panelBg' => 'bg-green-50',
+                    'textClass' => 'text-green-800'
+                ],
+                'cancelled' => [
+                    'label' => 'Đã hủy',
+                    'note' => 'Dịch vụ đã bị hủy',
+                    'icon' => 'fas fa-ban',
+                    'badgeClass' => 'bg-gray-200 text-gray-700',
+                    'panelBorder' => 'border-gray-200',
+                    'panelBg' => 'bg-gray-50',
+                    'textClass' => 'text-gray-700'
+                ],
+                'late_cancelled' => [
+                    'label' => 'Hủy muộn',
+                    'note' => 'Bệnh nhân hủy muộn',
+                    'icon' => 'fas fa-exclamation-triangle',
+                    'badgeClass' => 'bg-orange-100 text-orange-800',
+                    'panelBorder' => 'border-orange-200',
+                    'panelBg' => 'bg-orange-50',
+                    'textClass' => 'text-orange-800'
+                ],
+                'no_show' => [
+                    'label' => 'Vắng mặt',
+                    'note' => 'Bệnh nhân không đến khám',
+                    'icon' => 'fas fa-user-times',
+                    'badgeClass' => 'bg-red-100 text-red-800',
+                    'panelBorder' => 'border-red-200',
+                    'panelBg' => 'bg-red-50',
+                    'textClass' => 'text-red-800'
+                ],
+                'default' => [
+                    'label' => 'Trạng thái khác',
+                    'note' => 'Đang cập nhật',
+                    'icon' => 'fas fa-info-circle',
+                    'badgeClass' => 'bg-gray-100 text-gray-700',
+                    'panelBorder' => 'border-gray-200',
+                    'panelBg' => 'bg-gray-50',
+                    'textClass' => 'text-gray-700'
+                ],
+            ];
             // Tập khoảng thời gian đã chiếm theo ngày trong gói
             $usedIntervalsByDate = [];
             foreach ($serviceAppointments as $apt) {
@@ -369,13 +488,21 @@ ob_start();
                         </div>
                         
                         <?php if ($hasAppointment): ?>
+                        <?php 
+                            $apptStatus = $appointment['status'] ?? 'pending';
+                            $meta = $svcStatusMeta[$apptStatus] ?? $svcStatusMeta['default'];
+                        ?>
                         <!-- Đã phân công -->
-                        <div class="ml-11 mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div class="ml-11 mt-3 p-3 <?= $meta['panelBg'] ?> border <?= $meta['panelBorder'] ?> rounded-lg">
                             <div class="flex items-center justify-between">
                                 <div class="flex-1">
-                                    <p class="text-sm font-medium text-green-800 mb-1">
-                                        <i class="fas fa-check-circle mr-1"></i>Đã phân công
-                                    </p>
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="px-3 py-1 text-xs font-semibold rounded-full <?= $meta['badgeClass'] ?> flex items-center gap-1">
+                                            <i class="<?= $meta['icon'] ?>"></i>
+                                            <?= $meta['label'] ?>
+                                        </span>
+                                        <span class="text-xs font-medium <?= $meta['textClass'] ?>"><?= $meta['note'] ?></span>
+                                    </div>
                                     <div class="grid grid-cols-3 gap-4 text-sm">
                                         <div>
                                             <p class="text-gray-600">Bác sĩ</p>
@@ -398,7 +525,7 @@ ob_start();
                                     </div>
                                 </div>
                                 <div class="ml-4 flex items-center space-x-3">
-                                    <?php if (($appointment['status'] ?? 'pending') === 'pending' && (Auth::isDoctor() || Auth::isAdmin())): ?>
+                                    <?php if ($apptStatus === 'pending' && (Auth::isDoctor() || Auth::isAdmin())): ?>
                                     <form action="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/update-status" method="POST" class="inline"
                                           onsubmit="return confirm('Xác nhận lịch hẹn này?');">
                                         <input type="hidden" name="status" value="confirmed">

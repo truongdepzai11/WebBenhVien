@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th12 04, 2025 lúc 05:27 AM
+-- Thời gian đã tạo: Th12 07, 2025 lúc 04:56 AM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.2.12
 
@@ -56,33 +56,51 @@ CREATE TABLE `appointments` (
 --
 
 INSERT INTO `appointments` (`id`, `appointment_code`, `patient_id`, `doctor_id`, `coordinator_doctor_id`, `package_id`, `package_appointment_id`, `total_price`, `appointment_date`, `appointment_time`, `reason`, `status`, `appointment_type`, `notes`, `confirmed_at`, `completed_at`, `cancelled_at`, `cancellation_reason`, `cancellation_fee`, `created_at`, `updated_at`) VALUES
-(176, 'APT00001', 14, NULL, NULL, 5, 28, 1770000.00, '2025-11-25', NULL, 'Khám theo gói: Gói khám tầm soát ung thư cơ bản', 'confirmed', 'package', 'ko', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:25:37', '2025-11-24 08:26:45'),
-(177, 'APT00002', 14, 2, NULL, 5, 28, 500000.00, '2025-11-25', '08:00:00', 'Khám nội tổng quát', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-25 09:40:12'),
-(178, 'APT00003', 14, 2, NULL, 5, 28, 300000.00, '2025-11-25', '08:50:00', 'Khám phát hiện khối u ngoại biên', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-24 08:40:30'),
-(179, 'APT00004', 14, 1, NULL, 5, 28, 50000.00, '2025-11-25', '09:20:00', 'AFP (gan)', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-25 09:42:17'),
-(180, 'APT00005', 14, 3, NULL, 5, 28, 70000.00, '2025-11-25', '09:50:00', 'CA 19-9 (tụy)', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-25 09:43:20'),
-(181, 'APT00006', 14, 4, NULL, 5, 28, 100000.00, '2025-11-25', '10:20:00', 'CEA (đại tràng)', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-25 09:42:53'),
-(182, 'APT00007', 14, 5, NULL, 5, 28, 200000.00, '2025-11-25', '10:50:00', 'Siêu âm toàn bộ ổ bụng', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-25 09:45:06'),
-(183, 'APT00008', 14, 6, NULL, 5, 28, 150000.00, '2025-11-25', '11:20:00', 'Siêu âm tuyến giáp', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-25 09:40:56'),
-(184, 'APT00009', 14, 7, NULL, 5, 28, 300000.00, '2025-11-25', '11:50:00', 'X-quang ngực', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-25 09:44:11'),
-(185, 'APT00010', 14, 9, NULL, 5, 28, 100000.00, '2025-11-25', '12:20:00', 'Tư vấn nguy cơ ung thư theo tuổi', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-11-24 08:26:34', '2025-11-25 09:37:00'),
-(186, 'APT00011', 14, NULL, NULL, 3, 29, 1600000.00, '2025-12-03', NULL, 'Khám theo gói: Gói khám phụ sản (mẹ bầu và thai nhi)', 'confirmed', 'package', 'ko', NULL, NULL, NULL, NULL, 0.00, '2025-12-01 10:56:06', '2025-12-01 10:58:11'),
-(187, 'APT00012', 14, 2, NULL, 3, 29, 100000.00, '2025-12-03', '08:00:00', 'Khám tổng quát và tư vấn thai kỳ với bác sĩ sản khoa', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám phụ sản (mẹ bầu và thai nhi)', NULL, NULL, NULL, NULL, 0.00, '2025-12-01 10:57:32', '2025-12-01 10:58:11'),
-(188, 'APT00013', 14, 2, NULL, 3, 29, 300000.00, '2025-12-03', '09:00:00', 'Siêu âm thai định kỳ', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám phụ sản (mẹ bầu và thai nhi)', NULL, NULL, NULL, NULL, 0.00, '2025-12-01 10:57:32', '2025-12-01 11:02:22'),
-(189, 'APT00014', 14, 1, NULL, 3, 29, 500000.00, '2025-12-03', '09:20:00', 'Theo dõi sự phát triển của thai nhi qua từng giai đoạn', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám phụ sản (mẹ bầu và thai nhi)', NULL, NULL, NULL, NULL, 0.00, '2025-12-01 10:57:32', '2025-12-01 10:58:11'),
-(190, 'APT00015', 14, 3, NULL, 3, 29, 200000.00, '2025-12-03', '10:00:00', 'Xét nghiệm máu', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám phụ sản (mẹ bầu và thai nhi)', NULL, NULL, NULL, NULL, 0.00, '2025-12-01 10:57:32', '2025-12-01 10:58:11'),
-(191, 'APT00016', 14, 4, NULL, 3, 29, 50000.00, '2025-12-03', '10:50:00', 'Xét nghiệm nước tiểu', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám phụ sản (mẹ bầu và thai nhi)', NULL, NULL, NULL, NULL, 0.00, '2025-12-01 10:57:32', '2025-12-01 10:58:11'),
-(192, 'APT00017', 14, 5, NULL, 3, 29, 400000.00, '2025-12-03', '11:20:00', 'kiểm tra đường huyết, huyết áp', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám phụ sản (mẹ bầu và thai nhi)', NULL, NULL, NULL, NULL, 0.00, '2025-12-01 10:57:32', '2025-12-01 10:58:11'),
-(193, 'APT00018', 14, 6, NULL, 3, 29, 50000.00, '2025-12-03', '11:50:00', 'Tư vấn dinh dưỡng và chế độ chăm sóc mẹ bầu', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám phụ sản (mẹ bầu và thai nhi)', NULL, NULL, NULL, NULL, 0.00, '2025-12-01 10:57:33', '2025-12-01 10:58:11'),
-(194, 'APT00019', 14, NULL, NULL, 4, 30, 1530000.00, '2025-12-05', NULL, 'Khám theo gói: Gói khám sức khỏe tổng quát Nam-Nữ', 'confirmed', 'package', 'ko', NULL, NULL, NULL, NULL, 0.00, '2025-12-03 03:19:06', '2025-12-03 06:32:21'),
-(195, 'APT00020', 14, 2, NULL, 4, 30, 50000.00, '2025-12-05', '08:00:00', 'Đo huyết áp', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám sức khỏe tổng quát Nam-Nữ', NULL, NULL, NULL, NULL, 0.00, '2025-12-03 06:27:46', '2025-12-03 06:33:25'),
-(196, 'APT00021', 14, 2, NULL, 4, 30, 400000.00, '2025-12-05', '09:00:00', 'Khám nội tổng quát', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám sức khỏe tổng quát Nam-Nữ', NULL, NULL, NULL, NULL, 0.00, '2025-12-03 06:27:46', '2025-12-04 04:23:03'),
-(197, 'APT00022', 14, 1, NULL, 4, 30, 100000.00, '2025-12-05', '09:30:00', 'Đo đường huyết (Glucose)', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám sức khỏe tổng quát Nam-Nữ', NULL, NULL, NULL, NULL, 0.00, '2025-12-03 06:27:46', '2025-12-03 06:32:21'),
-(198, 'APT00023', 14, 3, NULL, 4, 30, 300000.00, '2025-12-05', '11:30:00', 'Mỡ máu (Cholesterol – Triglyceride – HDL – LDL)', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám sức khỏe tổng quát Nam-Nữ', NULL, NULL, NULL, NULL, 0.00, '2025-12-03 06:27:46', '2025-12-03 06:32:21'),
-(199, 'APT00024', 14, 5, NULL, 4, 30, 80000.00, '2025-12-05', '12:00:00', 'Tổng phân tích nước tiểu 10 thông số', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám sức khỏe tổng quát Nam-Nữ', NULL, NULL, NULL, NULL, 0.00, '2025-12-03 06:27:46', '2025-12-03 06:32:21'),
-(200, 'APT00025', 14, 6, NULL, 4, 30, 50000.00, '2025-12-06', '08:00:00', 'Siêu âm ổ bụng tổng quát', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám sức khỏe tổng quát Nam-Nữ', NULL, NULL, NULL, NULL, 0.00, '2025-12-03 06:27:46', '2025-12-03 06:32:21'),
-(201, 'APT00026', 14, 1, NULL, 4, 30, 50000.00, '2025-12-06', '08:30:00', 'In kết quả + tư vấn sức khỏe', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám sức khỏe tổng quát Nam-Nữ', NULL, NULL, NULL, NULL, 0.00, '2025-12-03 06:27:46', '2025-12-03 06:32:21'),
-(202, 'APT00027', 14, 2, NULL, 4, 30, 500000.00, '2025-12-05', '13:50:00', 'Chụp X-quang ngực thẳng', 'completed', 'package', 'Phân công thủ công - Gói khám: Gói khám sức khỏe tổng quát Nam-Nữ', NULL, NULL, NULL, NULL, 0.00, '2025-12-03 06:28:38', '2025-12-03 06:33:06');
+(265, 'APT00001', 14, NULL, NULL, 5, 38, 1270000.00, '2025-12-14', NULL, 'Khám theo gói: Gói khám tầm soát ung thư cơ bản', 'completed', 'package', 'ko', NULL, NULL, NULL, NULL, 0.00, '2025-12-04 13:47:24', '2025-12-06 02:32:37'),
+(266, 'APT00002', 14, 1, NULL, 5, 38, 300000.00, '2025-12-14', '08:00:00', 'Khám phát hiện khối u ngoại biên', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-04 13:47:50', '2025-12-04 13:47:54'),
+(267, 'APT00003', 14, 5, NULL, 5, 38, 50000.00, '2025-12-14', '08:30:00', 'AFP (gan)', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-04 13:47:50', '2025-12-04 13:47:54'),
+(268, 'APT00004', 14, 1, NULL, 5, 38, 70000.00, '2025-12-14', '09:00:00', 'CA 19-9 (tụy)', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-04 13:47:50', '2025-12-06 06:32:25'),
+(269, 'APT00005', 14, 5, NULL, 5, 38, 100000.00, '2025-12-14', '09:30:00', 'CEA (đại tràng)', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-04 13:47:50', '2025-12-04 13:47:54'),
+(270, 'APT00006', 14, 1, NULL, 5, 38, 200000.00, '2025-12-14', '10:00:00', 'Siêu âm toàn bộ ổ bụng', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-04 13:47:50', '2025-12-04 13:47:54'),
+(271, 'APT00007', 14, 5, NULL, 5, 38, 150000.00, '2025-12-14', '10:30:00', 'Siêu âm tuyến giáp', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-04 13:47:50', '2025-12-04 13:47:54'),
+(272, 'APT00008', 14, 1, NULL, 5, 38, 300000.00, '2025-12-14', '11:00:00', 'X-quang ngực', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-04 13:47:50', '2025-12-04 13:48:12'),
+(273, 'APT00009', 14, 5, NULL, 5, 38, 100000.00, '2025-12-14', '11:30:00', 'Tư vấn nguy cơ ung thư theo tuổi', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-04 13:47:50', '2025-12-04 13:47:54'),
+(274, 'APT00010', 14, NULL, NULL, 5, 39, 1270000.00, '2025-12-07', NULL, 'Khám theo gói: Gói khám tầm soát ung thư cơ bản', 'confirmed', 'package', 'ko', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:17:35', '2025-12-06 06:03:20'),
+(275, 'APT00011', 14, 1, NULL, 5, 39, 300000.00, '2025-12-07', '08:00:00', 'Khám phát hiện khối u ngoại biên', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:18:40', '2025-12-06 06:03:20'),
+(276, 'APT00012', 14, 5, NULL, 5, 39, 50000.00, '2025-12-07', '08:30:00', 'AFP (gan)', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:18:40', '2025-12-06 06:03:20'),
+(277, 'APT00013', 14, 1, NULL, 5, 39, 70000.00, '2025-12-07', '09:00:00', 'CA 19-9 (tụy)', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:18:40', '2025-12-06 06:03:20'),
+(278, 'APT00014', 14, 5, NULL, 5, 39, 100000.00, '2025-12-07', '09:30:00', 'CEA (đại tràng)', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:18:40', '2025-12-06 06:03:20'),
+(279, 'APT00015', 14, 1, NULL, 5, 39, 200000.00, '2025-12-07', '10:00:00', 'Siêu âm toàn bộ ổ bụng', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:18:40', '2025-12-06 06:03:20'),
+(280, 'APT00016', 14, 5, NULL, 5, 39, 150000.00, '2025-12-07', '10:30:00', 'Siêu âm tuyến giáp', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:18:40', '2025-12-06 06:03:20'),
+(281, 'APT00017', 14, 1, NULL, 5, 39, 300000.00, '2025-12-07', '11:00:00', 'X-quang ngực', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:18:40', '2025-12-06 06:03:20'),
+(282, 'APT00018', 14, 5, NULL, 5, 39, 100000.00, '2025-12-07', '11:30:00', 'Tư vấn nguy cơ ung thư theo tuổi', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:18:40', '2025-12-06 06:03:20'),
+(283, 'APT00019', 14, NULL, NULL, 5, 40, 1270000.00, '2025-12-19', NULL, 'Khám theo gói: Gói khám tầm soát ung thư cơ bản', 'confirmed', 'package', 'ko', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:21:42', '2025-12-06 03:31:06'),
+(284, 'APT00020', 14, 1, NULL, 5, 40, 300000.00, '2025-12-19', '08:00:00', 'Khám phát hiện khối u ngoại biên', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:30:51', '2025-12-06 03:53:57'),
+(285, 'APT00021', 14, 5, NULL, 5, 40, 50000.00, '2025-12-19', '08:30:00', 'AFP (gan)', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:30:51', '2025-12-06 03:31:06'),
+(286, 'APT00022', 14, 1, NULL, 5, 40, 70000.00, '2025-12-19', '09:00:00', 'CA 19-9 (tụy)', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:30:51', '2025-12-06 04:03:12'),
+(287, 'APT00023', 14, 5, NULL, 5, 40, 100000.00, '2025-12-19', '09:30:00', 'CEA (đại tràng)', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:30:51', '2025-12-06 03:31:06'),
+(288, 'APT00024', 14, 1, NULL, 5, 40, 200000.00, '2025-12-19', '10:00:00', 'Siêu âm toàn bộ ổ bụng', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:30:51', '2025-12-06 06:10:37'),
+(289, 'APT00025', 14, 5, NULL, 5, 40, 150000.00, '2025-12-19', '10:30:00', 'Siêu âm tuyến giáp', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:30:51', '2025-12-06 03:31:06'),
+(290, 'APT00026', 14, 1, NULL, 5, 40, 300000.00, '2025-12-19', '11:00:00', 'X-quang ngực', 'completed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:30:51', '2025-12-06 03:52:51'),
+(291, 'APT00027', 14, 5, NULL, 5, 40, 100000.00, '2025-12-19', '11:30:00', 'Tư vấn nguy cơ ung thư theo tuổi', 'confirmed', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 03:30:51', '2025-12-06 03:31:06'),
+(292, 'APT00028', 14, NULL, NULL, 5, 41, 1270000.00, '2025-12-26', NULL, 'Khám theo gói: Gói khám tầm soát ung thư cơ bản', 'confirmed', 'package', 'ko', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 04:29:40', '2025-12-06 05:46:11'),
+(293, 'APT00029', 14, NULL, NULL, 5, 42, 1270000.00, '2025-12-18', NULL, 'Khám theo gói: Gói khám tầm soát ung thư cơ bản', 'pending', 'package', 'ko', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 04:59:38', '2025-12-06 04:59:38'),
+(294, 'APT00030', 14, 6, NULL, NULL, NULL, 0.00, '2025-12-21', '14:00:00', 'ko', 'pending', 'regular', 'ko', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 05:08:04', '2025-12-06 05:08:04'),
+(295, 'APT00031', 14, 5, NULL, NULL, NULL, 0.00, '2025-12-07', '15:00:00', 'ko', 'confirmed', 'regular', 'ko', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 05:11:39', '2025-12-06 06:04:25'),
+(296, 'APT00032', 14, 2, NULL, NULL, NULL, 0.00, '2025-12-07', '15:00:00', 'ko', 'pending', 'regular', 'ko', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 05:14:47', '2025-12-06 05:14:47'),
+(297, 'APT00033', 14, 7, NULL, NULL, NULL, 190000.00, '2025-12-21', '10:30:00', 'ko', 'completed', 'regular', 'ko', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 05:30:13', '2025-12-06 06:09:18'),
+(298, 'APT00034', 14, 1, NULL, 5, 41, 300000.00, '2025-12-26', '08:00:00', 'Khám phát hiện khối u ngoại biên', 'pending', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 05:45:20', '2025-12-06 05:45:20'),
+(299, 'APT00035', 14, 5, NULL, 5, 41, 50000.00, '2025-12-26', '08:30:00', 'AFP (gan)', 'pending', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 05:45:20', '2025-12-06 05:45:20'),
+(300, 'APT00036', 14, 1, NULL, 5, 41, 70000.00, '2025-12-26', '09:00:00', 'CA 19-9 (tụy)', 'pending', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 05:45:20', '2025-12-06 05:45:20'),
+(301, 'APT00037', 14, 5, NULL, 5, 41, 100000.00, '2025-12-26', '09:30:00', 'CEA (đại tràng)', 'pending', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 05:45:20', '2025-12-06 05:45:20'),
+(302, 'APT00038', 14, 1, NULL, 5, 41, 200000.00, '2025-12-26', '10:00:00', 'Siêu âm toàn bộ ổ bụng', 'pending', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 05:45:20', '2025-12-06 05:45:20'),
+(303, 'APT00039', 14, 5, NULL, 5, 41, 150000.00, '2025-12-26', '10:30:00', 'Siêu âm tuyến giáp', 'pending', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 05:45:20', '2025-12-06 05:45:20'),
+(304, 'APT00040', 14, 1, NULL, 5, 41, 300000.00, '2025-12-26', '11:00:00', 'X-quang ngực', 'pending', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 05:45:20', '2025-12-06 05:45:20'),
+(305, 'APT00041', 14, 5, NULL, 5, 41, 100000.00, '2025-12-26', '11:30:00', 'Tư vấn nguy cơ ung thư theo tuổi', 'pending', 'package', 'Tự động phân công - Gói khám: Gói khám tầm soát ung thư cơ bản', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 05:45:20', '2025-12-06 05:45:20'),
+(306, 'APT00042', 14, 9, NULL, NULL, NULL, 300000.00, '2025-12-07', '15:00:00', 'ko', 'completed', 'regular', 'ko', NULL, NULL, NULL, NULL, 0.00, '2025-12-06 08:23:32', '2025-12-06 08:24:29'),
+(307, 'APT00043', 14, NULL, NULL, 5, 43, 1270000.00, '2025-12-14', NULL, 'Khám theo gói: Gói khám tầm soát ung thư cơ bản', 'pending', 'package', 'ko', NULL, NULL, NULL, NULL, 0.00, '2025-12-07 03:50:56', '2025-12-07 03:50:56'),
+(308, 'APT00044', 14, NULL, NULL, 5, 44, 1270000.00, '2025-12-19', NULL, 'Khám theo gói: Gói khám tầm soát ung thư cơ bản', 'pending', 'package', 'ko', NULL, NULL, NULL, NULL, 0.00, '2025-12-07 03:51:16', '2025-12-07 03:51:16'),
+(309, 'APT00045', 14, NULL, NULL, 5, 45, 1270000.00, '2025-12-19', NULL, 'Khám theo gói: Gói khám tầm soát ung thư cơ bản', 'pending', 'package', 'ko', NULL, NULL, NULL, NULL, 0.00, '2025-12-07 03:51:41', '2025-12-07 03:51:41');
 
 -- --------------------------------------------------------
 
@@ -113,30 +131,119 @@ CREATE TABLE `appointment_package_services` (
 --
 
 INSERT INTO `appointment_package_services` (`id`, `appointment_id`, `service_id`, `service_price`, `doctor_id`, `status`, `result_state`, `result_value`, `result_json`, `result_files`, `review_note`, `result_status`, `notes`, `tested_at`, `created_at`) VALUES
-(98, 176, 72, 500000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, '', 'pending', NULL, '2025-11-25 16:40:26', '2025-11-24 08:25:37'),
-(99, 176, 73, 300000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, 'ok', 'pending', NULL, '2025-11-25 16:03:02', '2025-11-24 08:25:37'),
-(100, 176, 74, 50000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, '', 'pending', NULL, '2025-11-25 16:42:24', '2025-11-24 08:25:37'),
-(101, 176, 75, 100000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, '', 'pending', NULL, '2025-11-25 16:43:02', '2025-11-24 08:25:37'),
-(102, 176, 76, 70000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, '', 'pending', NULL, '2025-11-25 16:43:27', '2025-11-24 08:25:37'),
-(103, 176, 77, 200000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, '', 'pending', NULL, '2025-11-25 16:45:13', '2025-11-24 08:25:37'),
-(104, 176, 78, 300000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, '', 'pending', NULL, '2025-11-25 16:44:18', '2025-11-24 08:25:37'),
-(105, 176, 79, 150000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, '', 'pending', NULL, '2025-11-25 16:41:04', '2025-11-24 08:25:37'),
-(106, 176, 80, 100000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, '', 'pending', NULL, '2025-11-25 16:37:27', '2025-11-24 08:25:37'),
-(107, 186, 57, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-01 10:56:06'),
-(108, 186, 58, 300000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, '', 'pending', NULL, '2025-12-01 18:03:12', '2025-12-01 10:56:06'),
-(109, 186, 59, 200000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-01 10:56:06'),
-(110, 186, 60, 50000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-01 10:56:06'),
-(111, 186, 61, 400000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-01 10:56:06'),
-(112, 186, 62, 50000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-01 10:56:06'),
-(113, 186, 63, 500000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-01 10:56:06'),
-(114, 194, 64, 400000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-03 03:19:06'),
-(115, 194, 65, 50000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-03 03:19:06'),
-(116, 194, 66, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-03 03:19:06'),
-(117, 194, 67, 300000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-03 03:19:06'),
-(118, 194, 68, 80000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-03 03:19:06'),
-(119, 194, 69, 50000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-03 03:19:06'),
-(120, 194, 70, 500000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-03 03:19:06'),
-(121, 194, 71, 50000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-03 03:19:06');
+(182, 265, 73, 300000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-04 13:47:24'),
+(183, 265, 74, 50000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-04 13:47:24'),
+(184, 265, 75, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-04 13:47:24'),
+(185, 265, 76, 70000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-04 13:47:24'),
+(186, 265, 77, 200000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-04 13:47:24'),
+(187, 265, 78, 300000.00, NULL, 'pending', 'approved', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-04 13:47:24'),
+(188, 265, 79, 150000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-04 13:47:24'),
+(189, 265, 80, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-04 13:47:24'),
+(190, 274, 73, 300000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 03:17:35'),
+(191, 274, 74, 50000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 03:17:35'),
+(192, 274, 75, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 03:17:35'),
+(193, 274, 76, 70000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 03:17:35'),
+(194, 274, 77, 200000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 03:17:35'),
+(195, 274, 78, 300000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 03:17:35'),
+(196, 274, 79, 150000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 03:17:35'),
+(197, 274, 80, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 03:17:35'),
+(198, 283, 73, 300000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 03:21:42'),
+(199, 283, 74, 50000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 03:21:42'),
+(200, 283, 75, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 03:21:42'),
+(201, 283, 76, 70000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 03:21:42'),
+(202, 283, 77, 200000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 03:21:42'),
+(203, 283, 78, 300000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 03:21:42'),
+(204, 283, 79, 150000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 03:21:42'),
+(205, 283, 80, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 03:21:42'),
+(206, 292, 73, 300000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 04:29:40'),
+(207, 292, 74, 50000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 04:29:40'),
+(208, 292, 75, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 04:29:40'),
+(209, 292, 76, 70000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 04:29:40'),
+(210, 292, 77, 200000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 04:29:40'),
+(211, 292, 78, 300000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 04:29:40'),
+(212, 292, 79, 150000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 04:29:40'),
+(213, 292, 80, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 04:29:40'),
+(214, 293, 73, 300000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 04:59:38'),
+(215, 293, 74, 50000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 04:59:38'),
+(216, 293, 75, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 04:59:38'),
+(217, 293, 76, 70000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 04:59:39'),
+(218, 293, 77, 200000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 04:59:39'),
+(219, 293, 78, 300000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 04:59:39'),
+(220, 293, 79, 150000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 04:59:39'),
+(221, 293, 80, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-06 04:59:39'),
+(222, 307, 73, 300000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:50:56'),
+(223, 307, 74, 50000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:50:56'),
+(224, 307, 75, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:50:56'),
+(225, 307, 76, 70000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:50:56'),
+(226, 307, 77, 200000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:50:56'),
+(227, 307, 78, 300000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:50:56'),
+(228, 307, 79, 150000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:50:56'),
+(229, 307, 80, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:50:56'),
+(230, 308, 73, 300000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:51:16'),
+(231, 308, 74, 50000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:51:16'),
+(232, 308, 75, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:51:16'),
+(233, 308, 76, 70000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:51:16'),
+(234, 308, 77, 200000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:51:16'),
+(235, 308, 78, 300000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:51:16'),
+(236, 308, 79, 150000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:51:16'),
+(237, 308, 80, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:51:16'),
+(238, 309, 73, 300000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:51:41'),
+(239, 309, 74, 50000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:51:41'),
+(240, 309, 75, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:51:41'),
+(241, 309, 76, 70000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:51:41'),
+(242, 309, 77, 200000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:51:41'),
+(243, 309, 78, 300000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:51:41'),
+(244, 309, 79, 150000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:51:41'),
+(245, 309, 80, 100000.00, NULL, 'pending', 'draft', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, '2025-12-07 03:51:41');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `appointment_results`
+--
+
+CREATE TABLE `appointment_results` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `appointment_id` int(11) NOT NULL,
+  `status` enum('draft','submitted','approved') NOT NULL DEFAULT 'draft',
+  `review_note` text DEFAULT NULL,
+  `submitted_at` datetime DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `appointment_results`
+--
+
+INSERT INTO `appointment_results` (`id`, `appointment_id`, `status`, `review_note`, `submitted_at`, `approved_at`, `created_at`, `updated_at`) VALUES
+(1, 297, 'submitted', 'ko có vấn đề gì', '2025-12-06 18:21:43', NULL, '2025-12-06 18:21:43', '2025-12-06 18:21:43');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `appointment_result_items`
+--
+
+CREATE TABLE `appointment_result_items` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `result_id` int(10) UNSIGNED NOT NULL,
+  `metric_name` varchar(255) DEFAULT NULL,
+  `result_value` varchar(255) DEFAULT NULL,
+  `reference_range` varchar(255) DEFAULT NULL,
+  `result_status` varchar(50) DEFAULT NULL,
+  `notes` varchar(255) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `appointment_result_items`
+--
+
+INSERT INTO `appointment_result_items` (`id`, `result_id`, `metric_name`, `result_value`, `reference_range`, `result_status`, `notes`, `created_at`, `updated_at`) VALUES
+(1, 1, 'bình thường', 'tốt', '167-172', 'normal', 'ko', '2025-12-06 18:21:43', '2025-12-06 18:21:43');
 
 -- --------------------------------------------------------
 
@@ -160,7 +267,7 @@ CREATE TABLE `consultations` (
 --
 
 INSERT INTO `consultations` (`id`, `code`, `patient_id`, `doctor_id`, `subject`, `status`, `last_message_at`, `created_at`) VALUES
-(1, 'CST000001', 14, 3, 'bệnh nặng', 'open', '2025-11-21 20:26:17', '2025-11-21 13:26:17');
+(2, 'CST000001', 14, 9, 'tai biến', 'open', '2025-12-06 20:36:45', '2025-12-06 13:36:44');
 
 -- --------------------------------------------------------
 
@@ -197,7 +304,8 @@ CREATE TABLE `consultation_messages` (
 --
 
 INSERT INTO `consultation_messages` (`id`, `consultation_id`, `sender_user_id`, `message_text`, `created_at`) VALUES
-(1, 1, 31, 'em muons hỏi bác sĩ khám bệnh', '2025-11-21 13:26:17');
+(1, 1, 31, 'em muons hỏi bác sĩ khám bệnh', '2025-11-21 13:26:17'),
+(2, 2, 31, 'bị rối loạn', '2025-12-06 13:36:45');
 
 -- --------------------------------------------------------
 
@@ -222,6 +330,14 @@ CREATE TABLE `diagnoses` (
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `diagnoses`
+--
+
+INSERT INTO `diagnoses` (`id`, `appointment_id`, `package_appointment_id`, `doctor_id`, `patient_id`, `primary_icd10`, `secondary_icd10`, `clinical_findings`, `assessment`, `plan`, `status`, `signed_by`, `signed_at`, `created_at`, `updated_at`) VALUES
+(11, 272, 38, 1, 14, 'ko có gì khác thường', NULL, 'ko', 'ko', NULL, 'approved', 2, '2025-12-04 20:48:32', '2025-12-04 20:48:32', '2025-12-04 20:48:32'),
+(12, 297, NULL, 7, 14, 'ko có gì khác thường', NULL, 'ko', 'ko', NULL, 'approved', 8, '2025-12-06 18:26:24', '2025-12-06 18:23:14', '2025-12-06 18:26:24');
 
 -- --------------------------------------------------------
 
@@ -282,19 +398,20 @@ CREATE TABLE `health_packages` (
   `max_age` int(11) DEFAULT 150,
   `is_active` tinyint(1) DEFAULT 1,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `cooldown_days` int(11) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Đang đổ dữ liệu cho bảng `health_packages`
 --
 
-INSERT INTO `health_packages` (`id`, `package_code`, `name`, `description`, `gender_requirement`, `min_age`, `max_age`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'PKG0001', 'Gói khám sức khỏe tổng quát - Nam', 'Gói khám toàn diện dành cho nam giới, bao gồm các xét nghiệm cơ bản và chuyên sâu', 'male', 18, 100, 1, '2025-10-29 03:35:33', '2025-10-31 04:24:04'),
-(2, 'PKG0002', 'Gói khám sức khỏe tổng quát - Nữ', 'Gói khám toàn diện dành cho nữ giới, bao gồm các xét nghiệm cơ bản và chuyên sâu', 'female', 18, 100, 1, '2025-10-29 03:35:33', '2025-11-11 07:16:03'),
-(3, 'PKG0003', 'Gói khám phụ sản (mẹ bầu và thai nhi)', 'Gói khám phụ sản dành cho phụ nữ mang thai, bao gồm các xét nghiệm, siêu âm và tư vấn định kỳ giúp theo dõi sức khỏe mẹ và thai nhi.', 'female', 18, 80, 1, '2025-11-11 06:58:39', '2025-11-11 06:58:39'),
-(4, 'PKG0004', 'Gói khám sức khỏe tổng quát Nam-Nữ', 'Gói khám giúp đánh giá toàn diện tình trạng sức khỏe hiện tại, bao gồm xét nghiệm máu, đường huyết, chức năng gan thận, chẩn đoán hình ảnh cơ bản và tư vấn bác sĩ.', 'both', 18, 80, 1, '2025-11-21 07:23:23', '2025-11-21 07:23:23'),
-(5, 'PKG0005', 'Gói khám tầm soát ung thư cơ bản', 'Gói khám phát hiện sớm các loại ung thư phổ biến (gan, phổi, dạ dày, đại tràng...). Bao gồm xét nghiệm dấu ấn ung thư, siêu âm tổng quát và chẩn đoán hình ảnh.', 'both', 18, 80, 1, '2025-11-21 07:32:57', '2025-11-21 07:32:57');
+INSERT INTO `health_packages` (`id`, `package_code`, `name`, `description`, `gender_requirement`, `min_age`, `max_age`, `is_active`, `created_at`, `updated_at`, `cooldown_days`) VALUES
+(1, 'PKG0001', 'Gói khám sức khỏe tổng quát - Nam', 'Gói khám toàn diện dành cho nam giới, bao gồm các xét nghiệm cơ bản và chuyên sâu', 'male', 18, 100, 1, '2025-10-29 03:35:33', '2025-10-31 04:24:04', 0),
+(2, 'PKG0002', 'Gói khám sức khỏe tổng quát - Nữ', 'Gói khám toàn diện dành cho nữ giới, bao gồm các xét nghiệm cơ bản và chuyên sâu', 'female', 18, 100, 1, '2025-10-29 03:35:33', '2025-11-11 07:16:03', 0),
+(3, 'PKG0003', 'Gói khám phụ sản (mẹ bầu và thai nhi)', 'Gói khám phụ sản dành cho phụ nữ mang thai, bao gồm các xét nghiệm, siêu âm và tư vấn định kỳ giúp theo dõi sức khỏe mẹ và thai nhi.', 'female', 18, 80, 1, '2025-11-11 06:58:39', '2025-11-11 06:58:39', 0),
+(4, 'PKG0004', 'Gói khám sức khỏe tổng quát Nam-Nữ', 'Gói khám giúp đánh giá toàn diện tình trạng sức khỏe hiện tại, bao gồm xét nghiệm máu, đường huyết, chức năng gan thận, chẩn đoán hình ảnh cơ bản và tư vấn bác sĩ.', 'both', 18, 80, 1, '2025-11-21 07:23:23', '2025-11-21 07:23:23', 0),
+(5, 'PKG0005', 'Gói khám tầm soát ung thư cơ bản', 'Gói khám phát hiện sớm các loại ung thư phổ biến (gan, phổi, dạ dày, đại tràng...). Bao gồm xét nghiệm dấu ấn ung thư, siêu âm tổng quát và chẩn đoán hình ảnh.', 'both', 18, 80, 1, '2025-11-21 07:32:57', '2025-11-21 07:32:57', 0);
 
 -- --------------------------------------------------------
 
@@ -322,6 +439,13 @@ CREATE TABLE `invoices` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Đang đổ dữ liệu cho bảng `invoices`
+--
+
+INSERT INTO `invoices` (`id`, `invoice_code`, `appointment_id`, `patient_id`, `total_amount`, `discount_amount`, `tax_amount`, `final_amount`, `status`, `payment_method`, `payment_status`, `notes`, `issued_date`, `paid_date`, `due_date`, `created_at`, `updated_at`) VALUES
+(13, 'INV202512060001', 297, 14, 190000.00, 0.00, 0.00, 190000.00, 'pending', 'cash', 'unpaid', '', '2025-12-06 15:42:21', NULL, '2025-12-13', '2025-12-06 15:42:21', '2025-12-06 15:42:21');
+
 -- --------------------------------------------------------
 
 --
@@ -339,6 +463,13 @@ CREATE TABLE `invoice_items` (
   `total_price` decimal(10,2) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `invoice_items`
+--
+
+INSERT INTO `invoice_items` (`id`, `invoice_id`, `item_type`, `item_id`, `description`, `quantity`, `unit_price`, `total_price`, `created_at`) VALUES
+(61, 13, 'consultation', NULL, 'Phí khám Răng hàm mặt', 1, 190000.00, 190000.00, '2025-12-06 15:42:21');
 
 -- --------------------------------------------------------
 
@@ -406,7 +537,64 @@ INSERT INTO `medicines` (`id`, `medicine_code`, `name`, `generic_name`, `descrip
 (2, 'MED002', 'Amoxicillin 500mg', 'Amoxicillin', NULL, 'Kháng sinh', 'Viên', 'Viên nang', '500mg', 'Công ty Dược B', 5000.00, 500, 10, 30, 1, NULL, NULL, 1, '2025-10-04 05:42:12', '2025-10-04 05:42:12'),
 (3, 'MED003', 'Vitamin C 1000mg', 'Ascorbic Acid', NULL, 'Vitamin', 'Viên', 'Viên sủi', '1000mg', 'Công ty Dược C', 3000.00, 800, 10, 30, 1, NULL, NULL, 1, '2025-10-04 05:42:12', '2025-10-04 05:42:12'),
 (4, 'MED004', 'Omeprazole 20mg', 'Omeprazole', NULL, 'Tiêu hóa', 'Viên', 'Viên nang', '20mg', 'Công ty Dược D', 4000.00, 600, 10, 30, 1, NULL, NULL, 1, '2025-10-04 05:42:12', '2025-10-04 05:42:12'),
-(5, 'MED005', 'Cetirizine 10mg', 'Cetirizine', NULL, 'Chống dị ứng', 'Viên', 'Viên nén', '10mg', 'Công ty Dược E', 1500.00, 700, 10, 30, 1, NULL, NULL, 1, '2025-10-04 05:42:12', '2025-10-04 05:42:12');
+(5, 'MED005', 'Cetirizine 10mg', 'Cetirizine', NULL, 'Chống dị ứng', 'Viên', 'Viên nén', '10mg', 'Công ty Dược E', 1500.00, 700, 10, 30, 1, NULL, NULL, 1, '2025-10-04 05:42:12', '2025-10-04 05:42:12'),
+(6, 'MED006', 'Ibuprofen 400mg', 'Ibuprofen', NULL, 'Giảm đau, kháng viêm', 'Viên', 'Viên nén', '400mg', 'Công ty Dược A', 3500.00, 1200, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(7, 'MED007', 'Naproxen 250mg', 'Naproxen', NULL, 'Giảm đau, kháng viêm', 'Viên', 'Viên nén', '250mg', 'Công ty Dược A', 4500.00, 600, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(8, 'MED008', 'Paracetamol 80mg (trẻ em)', 'Paracetamol', NULL, 'Giảm đau, hạ sốt (Nhi)', 'Viên', 'Viên đặt hậu môn', '80mg', 'Công ty Dược A', 1500.00, 800, 20, 30, 0, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(9, 'MED009', 'Loratadine 10mg', 'Loratadine', NULL, 'Chống dị ứng', 'Viên', 'Viên nén', '10mg', 'Công ty Dược F', 2500.00, 700, 20, 30, 0, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(10, 'MED010', 'Chlorpheniramine 4mg', 'Chlorpheniramine', NULL, 'Chống dị ứng', 'Viên', 'Viên nén', '4mg', 'Công ty Dược F', 1000.00, 900, 20, 30, 0, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(11, 'MED011', 'Xylometazoline 0.1% spray', 'Xylometazoline', NULL, 'Tai mũi họng', 'Lọ', 'Xịt mũi', '0.1%', 'Công ty Dược G', 25000.00, 200, 10, 24, 0, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(12, 'MED012', 'Esomeprazole 20mg', 'Esomeprazole', NULL, 'Tiêu hoá', 'Viên', 'Viên nang', '20mg', 'Công ty Dược D', 6000.00, 500, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(13, 'MED013', 'Domperidone 10mg', 'Domperidone', NULL, 'Tiêu hoá', 'Viên', 'Viên nén', '10mg', 'Công ty Dược D', 2500.00, 600, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(14, 'MED014', 'Drotaverine 40mg', 'Drotaverine', NULL, 'Tiêu hoá - Giảm co thắt', 'Viên', 'Viên nén', '40mg', 'Công ty Dược D', 3000.00, 400, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(15, 'MED015', 'ORS gói (Oresol)', 'Glucose + Electrolytes', NULL, 'Bù nước - tiêu chảy', 'Gói', 'Bột pha', NULL, 'Công ty Dược H', 3000.00, 2000, 50, 24, 0, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(16, 'MED016', 'Loperamide 2mg', 'Loperamide', NULL, 'Tiêu chảy', 'Viên', 'Viên nang', '2mg', 'Công ty Dược H', 2000.00, 500, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(17, 'MED017', 'Salbutamol Inhaler 100mcg', 'Salbutamol', NULL, 'Hô hấp', 'Ống', 'Bơm hít', '100mcg/puff', 'Công ty Dược I', 65000.00, 150, 20, 24, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(18, 'MED018', 'Ambroxol 30mg', 'Ambroxol', NULL, 'Long đờm', 'Viên', 'Viên nén', '30mg', 'Công ty Dược I', 2500.00, 600, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(19, 'MED019', 'Dextromethorphan 15mg/5ml', 'Dextromethorphan', NULL, 'Giảm ho', 'Chai', 'Siro', '15mg/5ml', 'Công ty Dược I', 38000.00, 180, 10, 24, 0, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(20, 'MED020', 'Amlodipine 5mg', 'Amlodipine', NULL, 'Tim mạch', 'Viên', 'Viên nén', '5mg', 'Công ty Dược J', 3000.00, 700, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(21, 'MED021', 'Losartan 50mg', 'Losartan', NULL, 'Tim mạch', 'Viên', 'Viên nén', '50mg', 'Công ty Dược J', 4500.00, 600, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(22, 'MED022', 'Atorvastatin 20mg', 'Atorvastatin', NULL, 'Rối loạn lipid', 'Viên', 'Viên nén', '20mg', 'Công ty Dược J', 7000.00, 500, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(23, 'MED023', 'Metformin 500mg', 'Metformin', NULL, 'Đái tháo đường', 'Viên', 'Viên nén', '500mg', 'Công ty Dược K', 2500.00, 900, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(24, 'MED024', 'Amoxicillin + Clavulanate 1g', 'Amoxicillin/Clavulanic acid', NULL, 'Kháng sinh', 'Viên', 'Viên nén', '875/125mg', 'Công ty Dược B', 12000.00, 400, 20, 24, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(25, 'MED025', 'Azithromycin 500mg', 'Azithromycin', NULL, 'Kháng sinh', 'Viên', 'Viên nén', '500mg', 'Công ty Dược B', 15000.00, 350, 20, 24, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(26, 'MED026', 'Cefuroxime 500mg', 'Cefuroxime', NULL, 'Kháng sinh', 'Viên', 'Viên nén', '500mg', 'Công ty Dược B', 14000.00, 300, 20, 24, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(27, 'MED027', 'Vitamin B-Complex', 'B group vitamins', NULL, 'Vitamin', 'Viên', 'Viên nén', NULL, 'Công ty Dược C', 4000.00, 800, 20, 30, 0, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(28, 'MED028', 'Folic Acid 5mg', 'Folic acid', NULL, 'Phụ sản', 'Viên', 'Viên nén', '5mg', 'Công ty Dược L', 2000.00, 700, 20, 30, 0, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(29, 'MED029', 'Sắt (Ferrous fumarate) 200mg', 'Ferrous fumarate', NULL, 'Phụ sản/Thiếu máu', 'Viên', 'Viên nén', '200mg', 'Công ty Dược L', 3000.00, 700, 20, 30, 0, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(30, 'MED030', 'Calcium + Vitamin D3', 'Calcium carbonate + Cholecalciferol', NULL, 'Xương khớp', 'Viên', 'Viên nén', '600mg/400IU', 'Công ty Dược M', 6000.00, 500, 20, 30, 0, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(31, 'MED031', 'Kẽm gluconate 10mg/5ml', 'Zinc gluconate', NULL, 'Nhi khoa', 'Chai', 'Siro', '10mg/5ml', 'Công ty Dược N', 42000.00, 200, 10, 24, 0, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(32, 'MED032', 'Clotrimazole 1% cream', 'Clotrimazole', NULL, 'Kháng nấm', 'Tuýp', 'Kem bôi', '1%', 'Công ty Dược O', 18000.00, 250, 10, 24, 0, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(33, 'MED033', 'Hydrocortisone 1% cream', 'Hydrocortisone', NULL, 'Da liễu', 'Tuýp', 'Kem bôi', '1%', 'Công ty Dược O', 20000.00, 250, 10, 24, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(34, 'MED034', 'Mupirocin 2% ointment', 'Mupirocin', NULL, 'Da liễu - Kháng khuẩn', 'Tuýp', 'Mỡ bôi', '2%', 'Công ty Dược O', 45000.00, 150, 10, 24, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(35, 'MED035', 'Omeprazole 20mg (gói uống)', 'Omeprazole', NULL, 'Tiêu hoá', 'Gói', 'Bột pha', '20mg', 'Công ty Dược D', 3800.00, 400, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(36, 'MED036', 'ORS kẽm (Oresol + Zinc)', 'Glucose + Electrolytes + Zinc', NULL, 'Bù nước/Nhi', 'Gói', 'Bột pha', NULL, 'Công ty Dược H', 4500.00, 1000, 50, 24, 0, NULL, NULL, 1, '2025-12-04 04:34:00', '2025-12-04 04:34:00'),
+(37, 'MED037', 'Diclofenac 50mg', 'Diclofenac', NULL, 'Giảm đau, kháng viêm', 'Viên', 'Viên nén', '50mg', 'Cty Dược A', 3500.00, 600, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(38, 'MED038', 'Acetylcystein 200mg', 'Acetylcysteine', NULL, 'Long đờm', 'Gói', 'Bột pha', '200mg', 'Cty Dược I', 3500.00, 800, 20, 24, 0, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(39, 'MED039', 'Natri Clorid 0.9% 500ml', 'Sodium Chloride', NULL, 'Dịch truyền', 'Chai', 'Dịch truyền', '0.9%', 'Cty Dược P', 18000.00, 120, 10, 12, 1, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(40, 'MED040', 'Fexofenadine 180mg', 'Fexofenadine', NULL, 'Chống dị ứng', 'Viên', 'Viên nén', '180mg', 'Cty Dược F', 7000.00, 400, 20, 30, 0, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(41, 'MED041', 'Mometasone nasal spray', 'Mometasone', NULL, 'Tai mũi họng', 'Lọ', 'Xịt mũi', '50mcg/dose', 'Cty Dược F', 82000.00, 120, 10, 24, 1, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(42, 'MED042', 'Betadine 10% gargle', 'Povidone Iodine', NULL, 'Sát khuẩn họng', 'Chai', 'Dung dịch', '10%', 'Cty Dược Q', 28000.00, 150, 10, 24, 0, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(43, 'MED043', 'Rabeprazole 20mg', 'Rabeprazole', NULL, 'Tiêu hoá', 'Viên', 'Viên nén', '20mg', 'Cty Dược D', 6500.00, 500, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(44, 'MED044', 'Itopride 50mg', 'Itopride', NULL, 'Rối loạn tiêu hoá', 'Viên', 'Viên nén', '50mg', 'Cty Dược D', 6000.00, 350, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(45, 'MED045', 'Simethicone 80mg', 'Simethicone', NULL, 'Chống đầy hơi', 'Viên', 'Viên nhai', '80mg', 'Cty Dược H', 2500.00, 600, 20, 24, 0, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(46, 'MED046', 'Budesonide/Formoterol 160/4.5', 'Budesonide+Formoterol', NULL, 'Hô hấp', 'Ống', 'Bơm hít', '160/4.5mcg', 'Cty Dược I', 185000.00, 90, 10, 24, 1, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(47, 'MED047', 'Montelukast 10mg', 'Montelukast', NULL, 'Hen/Viêm mũi dị ứng', 'Viên', 'Viên nén', '10mg', 'Cty Dược I', 12000.00, 300, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(48, 'MED048', 'Bisoprolol 5mg', 'Bisoprolol', NULL, 'Tim mạch', 'Viên', 'Viên nén', '5mg', 'Cty Dược J', 3500.00, 500, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(49, 'MED049', 'Clopidogrel 75mg', 'Clopidogrel', NULL, 'Kháng kết tập tiểu cầu', 'Viên', 'Viên nén', '75mg', 'Cty Dược J', 9500.00, 250, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(50, 'MED050', 'Perindopril 5mg', 'Perindopril', NULL, 'Tim mạch', 'Viên', 'Viên nén', '5mg', 'Cty Dược J', 6000.00, 300, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(51, 'MED051', 'Gliclazide MR 60mg', 'Gliclazide', NULL, 'Đái tháo đường', 'Viên', 'Viên nén phóng thích biến đổi', '60mg', 'Cty Dược K', 7000.00, 300, 20, 30, 1, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(52, 'MED052', 'Insulin Aspart 100IU/ml', 'Insulin Aspart', NULL, 'Đái tháo đường', 'Bút', 'Dung dịch tiêm', '100IU/ml', 'Cty Dược K', 280000.00, 60, 10, 12, 1, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(53, 'MED053', 'Levofloxacin 500mg', 'Levofloxacin', NULL, 'Kháng sinh', 'Viên', 'Viên nén', '500mg', 'Cty Dược B', 16000.00, 250, 20, 24, 1, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(54, 'MED054', 'Ciprofloxacin 500mg', 'Ciprofloxacin', NULL, 'Kháng sinh', 'Viên', 'Viên nén', '500mg', 'Cty Dược B', 12000.00, 250, 20, 24, 1, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(55, 'MED055', 'Amikacin 500mg/2ml', 'Amikacin', NULL, 'Kháng sinh tiêm', 'Ống', 'Dung dịch tiêm', '500mg/2ml', 'Cty Dược B', 45000.00, 80, 10, 12, 1, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(56, 'MED056', 'Vitamin D3 1000IU', 'Cholecalciferol', NULL, 'Vitamin', 'Viên', 'Viên nang mềm', '1000IU', 'Cty Dược M', 3500.00, 500, 20, 30, 0, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(57, 'MED057', 'Magnesium B6', 'Magnesium + Pyridoxine', NULL, 'Khoáng chất', 'Viên', 'Viên nén', NULL, 'Cty Dược M', 5500.00, 400, 20, 30, 0, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(58, 'MED058', 'Probiotic 5 strains', 'Lactobacillus/Bifido', NULL, 'Tiêu hoá/Nhi', 'Gói', 'Bột pha', NULL, 'Cty Dược H', 8000.00, 300, 20, 24, 0, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(59, 'MED059', 'Sắt (Ferrous sulfate) 325mg', 'Ferrous sulfate', NULL, 'Phụ sản/Thiếu máu', 'Viên', 'Viên nén', '325mg', 'Cty Dược L', 3500.00, 500, 20, 30, 0, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(60, 'MED060', 'Iod bổ sung thai kỳ', 'Iodine', NULL, 'Phụ sản', 'Viên', 'Viên nén', '150mcg', 'Cty Dược L', 3000.00, 400, 20, 30, 0, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(61, 'MED061', 'Ketoconazole 2% shampoo', 'Ketoconazole', NULL, 'Kháng nấm', 'Chai', 'Dầu gội', '2%', 'Cty Dược O', 55000.00, 120, 10, 24, 0, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23'),
+(62, 'MED062', 'Fusidic acid 2% cream', 'Fusidic acid', NULL, 'Da liễu - Kháng khuẩn', 'Tuýp', 'Kem bôi', '2%', 'Cty Dược O', 52000.00, 140, 10, 24, 1, NULL, NULL, 1, '2025-12-04 04:43:23', '2025-12-04 04:43:23');
 
 -- --------------------------------------------------------
 
@@ -430,32 +618,43 @@ CREATE TABLE `notifications` (
 --
 
 INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `link`, `type`, `is_read`, `created_at`) VALUES
-(67, 31, 'Đăng ký gói khám thành công', 'Bạn đã đăng ký gói khám Gói khám tầm soát ung thư cơ bản vào ngày 25/11/2025. Vui lòng chờ phân công bác sĩ.', '/package-appointments/28', 'system', 0, '2025-11-24 08:25:37'),
-(68, 31, 'Lịch hẹn đã được xác nhận', 'Lịch hẹn theo gói khám của bạn vào 25/11/2025 đã được xác nhận.', '/appointments/176', 'system', 0, '2025-11-24 08:26:45'),
-(69, 31, 'Nhắc lịch khám sắp tới', 'Bạn có lịch hẹn theo gói vào 25/11/2025. Vui lòng đến đúng giờ.', '/appointments/176', 'reminder', 0, '2025-11-24 08:26:45'),
-(70, 31, 'Nhắc lịch khám sắp tới', 'Bạn có lịch hẹn theo gói vào 25/11/2025 lúc 12:20. Vui lòng đến đúng giờ.', '/appointments/185', 'reminder', 0, '2025-11-24 09:26:01'),
-(71, 31, 'Nhắc lịch khám sắp tới', 'Bạn có lịch hẹn theo gói vào 25/11/2025 lúc 11:50. Vui lòng đến đúng giờ.', '/appointments/184', 'reminder', 0, '2025-11-24 09:26:01'),
-(72, 31, 'Nhắc lịch khám sắp tới', 'Bạn có lịch hẹn theo gói vào 25/11/2025 lúc 11:20. Vui lòng đến đúng giờ.', '/appointments/183', 'reminder', 0, '2025-11-24 09:26:01'),
-(73, 31, 'Nhắc lịch khám sắp tới', 'Bạn có lịch hẹn theo gói vào 25/11/2025 lúc 10:50. Vui lòng đến đúng giờ.', '/appointments/182', 'reminder', 0, '2025-11-24 09:26:01'),
-(74, 31, 'Nhắc lịch khám sắp tới', 'Bạn có lịch hẹn theo gói vào 25/11/2025 lúc 10:20. Vui lòng đến đúng giờ.', '/appointments/181', 'reminder', 0, '2025-11-24 09:26:01'),
-(75, 31, 'Nhắc lịch khám sắp tới', 'Bạn có lịch hẹn theo gói vào 25/11/2025 lúc 09:50. Vui lòng đến đúng giờ.', '/appointments/180', 'reminder', 0, '2025-11-24 09:26:01'),
-(76, 31, 'Nhắc lịch khám sắp tới', 'Bạn có lịch hẹn theo gói vào 25/11/2025 lúc 09:20. Vui lòng đến đúng giờ.', '/appointments/179', 'reminder', 0, '2025-11-24 09:26:01'),
-(77, 31, 'Nhắc lịch khám sắp tới', 'Bạn có lịch hẹn theo gói vào 25/11/2025 lúc 08:00. Vui lòng đến đúng giờ.', '/appointments/177', 'reminder', 0, '2025-11-24 09:26:01'),
-(78, 31, 'Đơn thuốc đã sẵn sàng', 'Đơn thuốc của bạn đã được duyệt.', '/prescriptions/1/export-pdf', 'system', 0, '2025-11-30 04:33:49'),
-(79, 31, 'Đăng ký gói khám thành công', 'Bạn đã đăng ký gói khám Gói khám phụ sản (mẹ bầu và thai nhi) vào ngày 03/12/2025. Vui lòng chờ phân công bác sĩ.', '/package-appointments/29', 'system', 0, '2025-12-01 10:56:06'),
-(80, 31, 'Lịch hẹn đã được xác nhận', 'Lịch hẹn theo gói khám của bạn vào 03/12/2025 đã được xác nhận.', '/appointments/186', 'system', 0, '2025-12-01 10:58:11'),
-(81, 31, 'Đơn thuốc đã sẵn sàng', 'Đơn thuốc của bạn đã được duyệt.', '/prescriptions/2/export-pdf', 'system', 0, '2025-12-01 11:04:34'),
-(82, 31, 'Kết quả dịch vụ đã được duyệt', 'Dịch vụ trong gói của bạn đã được duyệt.', '/my-results/package/29', 'system', 0, '2025-12-01 11:05:37'),
-(83, 31, 'Nhắc lịch khám sắp tới', 'Bạn có lịch hẹn theo gói vào 03/12/2025 lúc 11:50. Vui lòng đến đúng giờ.', '/appointments/193', 'reminder', 0, '2025-12-02 15:54:50'),
-(84, 31, 'Nhắc lịch khám sắp tới', 'Bạn có lịch hẹn theo gói vào 03/12/2025 lúc 11:20. Vui lòng đến đúng giờ.', '/appointments/192', 'reminder', 0, '2025-12-02 15:54:50'),
-(85, 31, 'Nhắc lịch khám sắp tới', 'Bạn có lịch hẹn theo gói vào 03/12/2025 lúc 10:50. Vui lòng đến đúng giờ.', '/appointments/191', 'reminder', 0, '2025-12-02 15:54:50'),
-(86, 31, 'Nhắc lịch khám sắp tới', 'Bạn có lịch hẹn theo gói vào 03/12/2025 lúc 10:00. Vui lòng đến đúng giờ.', '/appointments/190', 'reminder', 0, '2025-12-02 15:54:50'),
-(87, 31, 'Nhắc lịch khám sắp tới', 'Bạn có lịch hẹn theo gói vào 03/12/2025 lúc 09:20. Vui lòng đến đúng giờ.', '/appointments/189', 'reminder', 0, '2025-12-02 15:54:50'),
-(88, 31, 'Nhắc lịch khám sắp tới', 'Bạn có lịch hẹn theo gói vào 03/12/2025 lúc 08:00. Vui lòng đến đúng giờ.', '/appointments/187', 'reminder', 0, '2025-12-02 15:54:50'),
-(89, 31, 'Nhắc lịch khám sắp tới', 'Bạn có lịch hẹn theo gói vào 03/12/2025. Vui lòng đến đúng giờ.', '/appointments/186', 'reminder', 0, '2025-12-02 15:54:50'),
-(90, 31, 'Đăng ký gói khám thành công', 'Bạn đã đăng ký gói khám Gói khám sức khỏe tổng quát Nam-Nữ vào ngày 05/12/2025. Vui lòng chờ phân công bác sĩ.', '/package-appointments/30', 'system', 0, '2025-12-03 03:19:06'),
-(91, 31, 'Lịch hẹn đã được xác nhận', 'Lịch hẹn theo gói khám của bạn vào 05/12/2025 đã được xác nhận.', '/appointments/194', 'system', 0, '2025-12-03 06:32:21'),
-(92, 31, 'Nhắc lịch khám sắp tới', 'Bạn có lịch hẹn theo gói vào 05/12/2025. Vui lòng đến đúng giờ.', '/appointments/194', 'reminder', 0, '2025-12-03 06:49:55');
+(116, 31, 'Đăng ký gói khám thành công', 'Bạn đã đăng ký gói khám Gói khám tầm soát ung thư cơ bản vào ngày 14/12/2025. Vui lòng chờ phân công bác sĩ.', '/package-appointments/38', 'system', 0, '2025-12-04 13:47:24'),
+(117, 31, 'Lịch hẹn đã được xác nhận', 'Lịch hẹn theo gói khám của bạn vào 14/12/2025 đã được xác nhận.', '/appointments/265', 'system', 0, '2025-12-04 13:47:54'),
+(118, 31, 'Đơn thuốc đã sẵn sàng', 'Đơn thuốc của bạn đã được duyệt.', '/prescriptions/11/export-pdf', 'system', 0, '2025-12-04 13:49:08'),
+(119, 31, 'Đăng ký gói khám thành công', 'Bạn đã đăng ký gói khám Gói khám tầm soát ung thư cơ bản vào ngày 07/12/2025. Vui lòng chờ phân công bác sĩ.', '/package-appointments/39', 'system', 0, '2025-12-06 03:17:35'),
+(120, 31, 'Đăng ký gói khám thành công', 'Bạn đã đăng ký gói khám Gói khám tầm soát ung thư cơ bản vào ngày 19/12/2025. Vui lòng chờ phân công bác sĩ.', '/package-appointments/40', 'system', 0, '2025-12-06 03:21:42'),
+(121, 31, 'Lịch hẹn đã được xác nhận', 'Lịch hẹn theo gói khám của bạn vào 19/12/2025 đã được xác nhận.', '/appointments/283', 'system', 0, '2025-12-06 03:31:06'),
+(122, 31, 'Đăng ký gói khám thành công', 'Bạn đã đăng ký gói khám Gói khám tầm soát ung thư cơ bản vào ngày 26/12/2025. Vui lòng chờ phân công bác sĩ.', '/package-appointments/41', 'system', 0, '2025-12-06 04:29:40'),
+(123, 31, 'Đăng ký gói khám thành công', 'Bạn đã đăng ký gói khám Gói khám tầm soát ung thư cơ bản vào ngày 18/12/2025. Vui lòng chờ phân công bác sĩ.', '/package-appointments/42', 'system', 0, '2025-12-06 04:59:39'),
+(124, 1, 'Có lịch hẹn mới từ bệnh nhân yến ', 'yến  vừa đặt gói khám vào ngày 18/12/2025. Vui lòng kiểm tra và xử lý.', '/package-appointments/42', 'system', 0, '2025-12-06 04:59:41'),
+(125, 31, 'Đặt lịch khám thành công', 'Bạn đã đặt lịch khám ngày 21/12/2025 lúc 14:00 với bác sĩ BS. Vũ Thị F. Vui lòng chờ xác nhận.', '/appointments/294', 'system', 0, '2025-12-06 05:08:04'),
+(126, 7, 'Bạn có lịch hẹn mới cần xác nhận', 'Bệnh nhân yến  đặt lịch ngày 21/12/2025 lúc 14:00. Vui lòng kiểm tra và xác nhận.', '/appointments/294', 'system', 0, '2025-12-06 05:08:07'),
+(127, 1, 'Có lịch hẹn mới từ bệnh nhân yến ', 'yến  vừa đặt lịch khám vào ngày 21/12/2025 lúc 14:00. Vui lòng kiểm tra và xử lý.', '/appointments/294', 'system', 0, '2025-12-06 05:08:10'),
+(128, 31, 'Đặt lịch khám thành công', 'Bạn đã đặt lịch khám ngày 07/12/2025 lúc 15:00 với bác sĩ BS. Hoàng Văn E. Vui lòng chờ xác nhận.', '/appointments/295', 'system', 0, '2025-12-06 05:11:39'),
+(129, 6, 'Bạn có lịch hẹn mới cần xác nhận', 'Bệnh nhân yến  đặt lịch ngày 07/12/2025 lúc 15:00. Vui lòng kiểm tra và xác nhận.', '/appointments/295', 'system', 0, '2025-12-06 05:11:42'),
+(130, 1, 'Có lịch hẹn mới từ bệnh nhân yến ', 'yến  vừa đặt lịch khám vào ngày 07/12/2025 lúc 15:00. Vui lòng kiểm tra và xử lý.', '/appointments/295', 'system', 0, '2025-12-06 05:11:46'),
+(131, 31, 'Đặt lịch khám thành công', 'Bạn đã đặt lịch khám ngày 07/12/2025 lúc 15:00 với bác sĩ BS. Trần Thị B. Vui lòng chờ xác nhận.', '/appointments/296', 'system', 0, '2025-12-06 05:14:47'),
+(132, 3, 'Bạn có lịch hẹn mới cần xác nhận', 'Bệnh nhân yến  đặt lịch ngày 07/12/2025 lúc 15:00. Vui lòng kiểm tra và xác nhận.', '/appointments/296', 'system', 0, '2025-12-06 05:14:50'),
+(133, 1, 'Có lịch hẹn mới từ bệnh nhân yến ', 'yến  vừa đặt lịch khám vào ngày 07/12/2025 lúc 15:00. Vui lòng kiểm tra và xử lý.', '/appointments/296', 'system', 0, '2025-12-06 05:14:53'),
+(134, 31, 'Đặt lịch khám thành công', 'Bạn đã đặt lịch khám ngày 21/12/2025 lúc 10:30 với bác sĩ BS. Đặng Văn G. Vui lòng chờ xác nhận.', '/appointments/297', 'system', 0, '2025-12-06 05:30:13'),
+(135, 8, 'Bạn có lịch hẹn mới cần xác nhận', 'Bệnh nhân yến  đặt lịch ngày 21/12/2025 lúc 10:30. Vui lòng kiểm tra và xác nhận.', '/appointments/297', 'system', 0, '2025-12-06 05:30:17'),
+(136, 1, 'Có lịch hẹn mới từ bệnh nhân yến ', 'yến  vừa đặt lịch khám vào ngày 21/12/2025 lúc 10:30. Vui lòng kiểm tra và xử lý.', '/appointments/297', 'system', 0, '2025-12-06 05:30:20'),
+(137, 31, 'Lịch hẹn đã được xác nhận', 'Lịch hẹn của bạn vào 26/12/2025 lúc không rõ giờ với bác sĩ  đã được xác nhận.', '/appointments/292', 'reminder', 0, '2025-12-06 05:46:11'),
+(138, 31, 'Lịch hẹn đã được xác nhận', 'Lịch hẹn của bạn vào 07/12/2025 lúc không rõ giờ với bác sĩ  đã được xác nhận.', '/appointments/274', 'reminder', 0, '2025-12-06 06:03:20'),
+(139, 31, 'Lịch hẹn đã được xác nhận', 'Lịch hẹn của bạn vào 07/12/2025 lúc 15:00 với bác sĩ BS. Hoàng Văn E đã được xác nhận.', '/appointments/295', 'reminder', 0, '2025-12-06 06:04:25'),
+(140, 31, 'Lịch hẹn đã được xác nhận', 'Lịch hẹn của bạn vào 21/12/2025 lúc 10:30 với bác sĩ BS. Đặng Văn G đã được xác nhận.', '/appointments/297', 'reminder', 0, '2025-12-06 06:09:04'),
+(141, 31, 'Đặt lịch khám thành công', 'Bạn đã đặt lịch khám ngày 07/12/2025 lúc 15:00 với bác sĩ BS.Phạm Quang Trường. Vui lòng chờ xác nhận.', '/appointments/306', 'system', 0, '2025-12-06 08:23:32'),
+(142, 26, 'Bạn có lịch hẹn mới cần xác nhận', 'Bệnh nhân yến  đặt lịch ngày 07/12/2025 lúc 15:00. Vui lòng kiểm tra và xác nhận.', '/appointments/306', 'system', 0, '2025-12-06 08:23:35'),
+(143, 1, 'Có lịch hẹn mới từ bệnh nhân yến ', 'yến  vừa đặt lịch khám vào ngày 07/12/2025 lúc 15:00. Vui lòng kiểm tra và xử lý.', '/appointments/306', 'system', 0, '2025-12-06 08:23:38'),
+(144, 31, 'Lịch hẹn đã được xác nhận', 'Lịch hẹn của bạn vào 07/12/2025 lúc 15:00 với bác sĩ BS.Phạm Quang Trường đã được xác nhận.', '/appointments/306', 'reminder', 0, '2025-12-06 08:24:12'),
+(145, 31, 'Đơn thuốc đã sẵn sàng', 'Đơn thuốc của bạn đã được duyệt.', '/prescriptions/12/export-pdf', 'system', 0, '2025-12-06 11:32:14'),
+(146, 26, 'Câu hỏi tư vấn mới', 'Bạn có câu hỏi mới: tai biến', '/consultations/2', 'system', 0, '2025-12-06 13:36:45'),
+(147, 31, 'Đăng ký gói khám thành công', 'Bạn đã đăng ký gói khám Gói khám tầm soát ung thư cơ bản vào ngày 14/12/2025. Vui lòng chờ phân công bác sĩ.', '/package-appointments/43', 'system', 0, '2025-12-07 03:50:56'),
+(148, 1, 'Có lịch hẹn mới từ bệnh nhân yến ', 'yến  vừa đặt gói khám vào ngày 14/12/2025. Vui lòng kiểm tra và xử lý.', '/package-appointments/43', 'system', 0, '2025-12-07 03:50:59'),
+(149, 31, 'Đăng ký gói khám thành công', 'Bạn đã đăng ký gói khám Gói khám tầm soát ung thư cơ bản vào ngày 19/12/2025. Vui lòng chờ phân công bác sĩ.', '/package-appointments/44', 'system', 0, '2025-12-07 03:51:16'),
+(150, 1, 'Có lịch hẹn mới từ bệnh nhân yến ', 'yến  vừa đặt gói khám vào ngày 19/12/2025. Vui lòng kiểm tra và xử lý.', '/package-appointments/44', 'system', 0, '2025-12-07 03:51:17'),
+(151, 31, 'Đăng ký gói khám thành công', 'Bạn đã đăng ký gói khám Gói khám tầm soát ung thư cơ bản vào ngày 19/12/2025. Vui lòng chờ phân công bác sĩ.', '/package-appointments/45', 'system', 0, '2025-12-07 03:51:41'),
+(152, 1, 'Có lịch hẹn mới từ bệnh nhân yến ', 'yến  vừa đặt gói khám vào ngày 19/12/2025. Vui lòng kiểm tra và xử lý.', '/package-appointments/45', 'system', 0, '2025-12-07 03:51:43');
 
 -- --------------------------------------------------------
 
@@ -486,9 +685,14 @@ CREATE TABLE `package_appointments` (
 --
 
 INSERT INTO `package_appointments` (`id`, `patient_id`, `package_id`, `appointment_date`, `status`, `final_status`, `coordinator_doctor_id`, `approved_by`, `approved_at`, `final_pdf_path`, `notes`, `total_price`, `created_by`, `created_at`, `updated_at`) VALUES
-(28, 14, 5, '2025-11-25', 'scheduled', 'approved', NULL, 1, '2025-11-25 16:45:32', NULL, 'ko', 1770000.00, 31, '2025-11-24 08:25:37', '2025-11-25 09:45:32'),
-(29, 14, 3, '2025-12-03', 'scheduled', 'in_progress', NULL, NULL, NULL, NULL, 'ko', 1600000.00, 31, '2025-12-01 10:56:06', '2025-12-01 10:56:06'),
-(30, 14, 4, '2025-12-05', 'scheduled', 'in_progress', NULL, NULL, NULL, NULL, 'ko', 1530000.00, 31, '2025-12-03 03:19:06', '2025-12-03 03:19:06');
+(38, 14, 5, '2025-12-14', 'scheduled', 'in_progress', NULL, NULL, NULL, NULL, 'ko', 1270000.00, 31, '2025-12-04 13:47:24', '2025-12-04 13:47:24'),
+(39, 14, 5, '2025-12-07', 'scheduled', 'in_progress', NULL, NULL, NULL, NULL, 'ko', 1270000.00, 31, '2025-12-06 03:17:35', '2025-12-06 03:17:35'),
+(40, 14, 5, '2025-12-19', 'scheduled', 'in_progress', NULL, NULL, NULL, NULL, 'ko', 1270000.00, 31, '2025-12-06 03:21:42', '2025-12-06 03:21:42'),
+(41, 14, 5, '2025-12-26', 'scheduled', 'in_progress', NULL, NULL, NULL, NULL, 'ko', 1270000.00, 31, '2025-12-06 04:29:40', '2025-12-06 04:29:40'),
+(42, 14, 5, '2025-12-18', 'scheduled', 'in_progress', NULL, NULL, NULL, NULL, 'ko', 1270000.00, 31, '2025-12-06 04:59:38', '2025-12-06 04:59:38'),
+(43, 14, 5, '2025-12-14', 'scheduled', 'in_progress', NULL, NULL, NULL, NULL, 'ko', 1270000.00, 31, '2025-12-07 03:50:56', '2025-12-07 03:50:56'),
+(44, 14, 5, '2025-12-19', 'scheduled', 'in_progress', NULL, NULL, NULL, NULL, 'ko', 1270000.00, 31, '2025-12-07 03:51:16', '2025-12-07 03:51:16'),
+(45, 14, 5, '2025-12-19', 'scheduled', 'in_progress', NULL, NULL, NULL, NULL, 'ko', 1270000.00, 31, '2025-12-07 03:51:41', '2025-12-07 03:51:41');
 
 -- --------------------------------------------------------
 
@@ -530,24 +734,24 @@ CREATE TABLE `package_services` (
 --
 
 INSERT INTO `package_services` (`id`, `package_id`, `service_name`, `service_price`, `duration_minutes`, `service_category`, `is_required`, `gender_specific`, `notes`, `display_order`, `created_at`) VALUES
-(1, 1, 'Chụp X quang ngực thẳng số hóa (1 phim)', 500000.00, 30, 'imaging', 1, 'both', NULL, 1, '2025-10-29 03:35:33'),
-(2, 1, 'Siêu âm ổ bụng (gan mật, tụy, lách, thận, bàng quang)', 400000.00, 30, 'imaging', 1, 'both', NULL, 2, '2025-10-29 03:35:33'),
-(3, 1, 'Siêu âm vú', 400000.00, 30, 'imaging', 1, 'male', NULL, 3, '2025-10-29 03:35:33'),
-(4, 1, 'Siêu âm tuyến giáp', 400000.00, 30, 'imaging', 1, 'both', NULL, 4, '2025-10-29 03:35:33'),
-(5, 1, 'Điện tim ECG', 500000.00, 30, 'general', 1, 'both', NULL, 5, '2025-10-29 03:35:33'),
-(6, 1, 'Vị khuẩn nhuộm soi (huyết trắng)', 600000.00, 30, 'specialist', 1, 'both', NULL, 6, '2025-10-29 03:35:33'),
-(7, 1, 'Sinh hiệu (Mạch, huyết áp, chiều cao, cân nặng, chỉ số BMI)', 150000.00, 30, 'general', 1, 'both', NULL, 10, '2025-10-29 03:35:33'),
-(8, 1, 'Khám Nội tổng quát (BS nội)', 150000.00, 30, 'general', 1, 'both', NULL, 11, '2025-10-29 03:35:33'),
-(9, 1, 'Khám Phụ khoa (BS phụ khoa)', 250000.00, 30, 'specialist', 1, 'male', NULL, 12, '2025-10-29 03:35:33'),
-(10, 1, 'Tổng phân tích tế bào máu ngoại vi (máy laser)', 200000.00, 30, 'blood_test', 1, 'both', NULL, 20, '2025-10-29 03:35:33'),
-(11, 1, 'Tổng phân tích nước tiểu (máy tự động)', 50000.00, 30, 'urine_test', 1, 'both', NULL, 30, '2025-10-29 03:35:33'),
-(12, 1, 'Định lượng cholesterol toàn phần', 180000.00, 30, 'blood_test', 1, 'both', NULL, 40, '2025-10-29 03:35:33'),
-(13, 1, 'Định lượng HDL-C', 200000.00, 30, 'blood_test', 1, 'both', NULL, 41, '2025-10-29 03:35:33'),
-(14, 1, 'Định lượng LDL-C', 200000.00, 30, 'blood_test', 1, 'both', NULL, 42, '2025-10-29 03:35:33'),
-(15, 1, 'Định lượng Triglycerid', 200000.00, 30, 'blood_test', 1, 'both', NULL, 43, '2025-10-29 03:35:33'),
-(16, 1, 'Đo hoạt độ ALT (GPT)', 200000.00, 30, 'blood_test', 1, 'both', NULL, 50, '2025-10-29 03:35:33'),
-(17, 1, 'Đo hoạt độ AST (GOT)', 200000.00, 30, 'blood_test', 1, 'both', NULL, 51, '2025-10-29 03:35:33'),
-(18, 1, 'Đo hoạt độ GGT', 200000.00, 30, 'blood_test', 1, 'both', NULL, 52, '2025-10-29 03:35:33'),
+(1, 1, 'Chụp X quang ngực thẳng số hóa (1 phim)', 500000.00, 30, 'imaging', 1, 'both', NULL, 1, '2025-10-28 20:35:33'),
+(2, 1, 'Siêu âm ổ bụng (gan mật, tụy, lách, thận, bàng quang)', 400000.00, 30, 'imaging', 1, 'both', NULL, 2, '2025-10-28 20:35:33'),
+(3, 1, 'Siêu âm vú', 400000.00, 30, 'imaging', 1, 'male', NULL, 3, '2025-10-28 20:35:33'),
+(4, 1, 'Siêu âm tuyến giáp', 400000.00, 30, 'imaging', 1, 'both', NULL, 4, '2025-10-28 20:35:33'),
+(5, 1, 'Điện tim ECG', 500000.00, 30, 'general', 1, 'both', NULL, 5, '2025-10-28 20:35:33'),
+(6, 1, 'Vị khuẩn nhuộm soi (huyết trắng)', 600000.00, 30, 'specialist', 1, 'both', NULL, 6, '2025-10-28 20:35:33'),
+(7, 1, 'Sinh hiệu (Mạch, huyết áp, chiều cao, cân nặng, chỉ số BMI)', 150000.00, 30, 'general', 1, 'both', NULL, 10, '2025-10-28 20:35:33'),
+(8, 1, 'Khám Nội tổng quát (BS nội)', 150000.00, 30, 'general', 1, 'both', NULL, 11, '2025-10-28 20:35:33'),
+(9, 1, 'Khám Phụ khoa (BS phụ khoa)', 250000.00, 30, 'specialist', 1, 'male', NULL, 12, '2025-10-28 20:35:33'),
+(10, 1, 'Tổng phân tích tế bào máu ngoại vi (máy laser)', 200000.00, 30, 'blood_test', 1, 'both', NULL, 20, '2025-10-28 20:35:33'),
+(11, 1, 'Tổng phân tích nước tiểu (máy tự động)', 50000.00, 30, 'urine_test', 1, 'both', NULL, 30, '2025-10-28 20:35:33'),
+(12, 1, 'Định lượng cholesterol toàn phần', 180000.00, 30, 'blood_test', 1, 'both', NULL, 40, '2025-10-28 20:35:33'),
+(13, 1, 'Định lượng HDL-C', 200000.00, 30, 'blood_test', 1, 'both', NULL, 41, '2025-10-28 20:35:33'),
+(14, 1, 'Định lượng LDL-C', 200000.00, 30, 'blood_test', 1, 'both', NULL, 42, '2025-10-28 20:35:33'),
+(15, 1, 'Định lượng Triglycerid', 200000.00, 30, 'blood_test', 1, 'both', NULL, 43, '2025-10-28 20:35:33'),
+(16, 1, 'Đo hoạt độ ALT (GPT)', 200000.00, 30, 'blood_test', 1, 'both', NULL, 50, '2025-10-28 20:35:33'),
+(17, 1, 'Đo hoạt độ AST (GOT)', 200000.00, 30, 'blood_test', 1, 'both', NULL, 51, '2025-10-28 20:35:33'),
+(18, 1, 'Đo hoạt độ GGT', 200000.00, 30, 'blood_test', 1, 'both', NULL, 52, '2025-10-28 20:35:33'),
 (19, 1, 'Định lượng Creatinin máu', 200000.00, 30, 'blood_test', 1, 'both', NULL, 60, '2025-10-29 03:35:33'),
 (20, 1, 'Định lượng Ure máu', 200000.00, 30, 'blood_test', 1, 'both', NULL, 61, '2025-10-29 03:35:33'),
 (21, 1, 'Định lượng TSH máu', 200000.00, 30, 'blood_test', 1, 'both', NULL, 70, '2025-10-29 03:35:33'),
@@ -586,22 +790,15 @@ INSERT INTO `package_services` (`id`, `package_id`, `service_name`, `service_pri
 (54, 2, 'HbsAg miễn dịch tự động', 200000.00, 30, 'blood_test', 1, 'both', NULL, 100, '2025-10-29 03:35:33'),
 (55, 2, 'HbsAb miễn dịch tự động', 200000.00, 30, 'blood_test', 1, 'both', NULL, 101, '2025-10-29 03:35:33'),
 (56, 2, 'HCV Ab miễn dịch tự động', 200000.00, 30, 'blood_test', 1, 'both', NULL, 102, '2025-10-29 03:35:33'),
-(57, 3, 'Khám tổng quát và tư vấn thai kỳ với bác sĩ sản khoa', 100000.00, 60, 'general', 1, 'female', 'Khám và tư vấn thai kỳ với bác sĩ sản khoa', 0, '2025-11-11 07:01:51'),
 (58, 3, 'Siêu âm thai định kỳ', 300000.00, 20, 'general', 1, 'female', 'khám thai định kỳ cho mẹ bầu ', 0, '2025-11-11 07:03:04'),
-(59, 3, 'Xét nghiệm máu', 200000.00, 50, 'blood_test', 1, 'female', 'xét nghiệm máu cho mẹ bầu', 0, '2025-11-11 07:04:19'),
 (60, 3, 'Xét nghiệm nước tiểu', 50000.00, 30, 'urine_test', 1, 'female', 'ko ', 0, '2025-11-11 07:05:22'),
 (61, 3, 'kiểm tra đường huyết, huyết áp', 400000.00, 30, 'other', 0, 'female', 'ko', 0, '2025-11-11 07:06:08'),
 (62, 3, 'Tư vấn dinh dưỡng và chế độ chăm sóc mẹ bầu', 50000.00, 30, 'other', 0, 'female', 'ko ', 0, '2025-11-11 07:08:01'),
-(63, 3, 'Theo dõi sự phát triển của thai nhi qua từng giai đoạn', 500000.00, 40, 'general', 1, 'female', 'theo dõi thai nhi qua từng giai đoạn', 0, '2025-11-11 07:09:00'),
 (64, 4, 'Khám nội tổng quát', 400000.00, 30, 'general', 1, 'both', 'khám nội quan tổng quát', 0, '2025-11-21 07:26:13'),
-(65, 4, 'Đo huyết áp', 50000.00, 60, 'general', 1, 'both', 'ko', 0, '2025-11-21 07:26:44'),
-(66, 4, 'Đo đường huyết (Glucose)', 100000.00, 120, 'blood_test', 1, 'both', 'đo đường huyết ', 0, '2025-11-21 07:27:48'),
 (67, 4, 'Mỡ máu (Cholesterol – Triglyceride – HDL – LDL)', 300000.00, 30, 'blood_test', 1, 'both', 'xét nghiệm mỡ máu (Cholesterol – Triglyceride – HDL – LDL)', 0, '2025-11-21 07:28:47'),
 (68, 4, 'Tổng phân tích nước tiểu 10 thông số', 80000.00, 30, 'urine_test', 1, 'both', 'Tổng phân tích nước tiểu 10 thông số', 0, '2025-11-21 07:29:33'),
 (69, 4, 'Siêu âm ổ bụng tổng quát', 50000.00, 30, 'imaging', 1, 'both', 'ko có', 0, '2025-11-21 07:30:04'),
-(70, 4, 'Chụp X-quang ngực thẳng', 500000.00, 45, 'imaging', 1, 'both', 'Chụp X-quang ngực thẳng ', 0, '2025-11-21 07:30:30'),
 (71, 4, 'In kết quả + tư vấn sức khỏe', 50000.00, 20, 'other', 0, 'both', 'In kết quả + tư vấn sức khỏe', 0, '2025-11-21 07:31:04'),
-(72, 5, 'Khám nội tổng quát', 500000.00, 50, 'general', 1, 'both', 'Khám nội quan tổng quát ', 0, '2025-11-21 07:33:31'),
 (73, 5, 'Khám phát hiện khối u ngoại biên', 300000.00, 30, 'general', 1, 'both', 'Khám phát hiện khối u ngoại biên', 0, '2025-11-21 07:33:51'),
 (74, 5, 'AFP (gan)', 50000.00, 30, 'blood_test', 1, 'both', 'xét nghiệm máu AFP (gan)', 0, '2025-11-21 07:35:00'),
 (75, 5, 'CEA (đại tràng)', 100000.00, 30, 'blood_test', 1, 'both', 'xét nghiệm máu CEA (đại tràng)', 0, '2025-11-21 07:35:24'),
@@ -629,23 +826,41 @@ CREATE TABLE `package_service_doctors` (
 --
 
 INSERT INTO `package_service_doctors` (`id`, `service_id`, `doctor_id`, `created_at`) VALUES
-(1, 65, 5, '2025-12-03 04:28:00'),
-(2, 65, 2, '2025-12-03 04:28:00'),
 (6, 64, 4, '2025-12-03 06:25:20'),
 (7, 64, 2, '2025-12-03 06:25:20'),
 (8, 64, 6, '2025-12-03 06:25:20'),
-(9, 66, 5, '2025-12-03 06:25:31'),
-(10, 66, 1, '2025-12-03 06:25:31'),
 (11, 67, 3, '2025-12-03 06:25:36'),
 (12, 67, 4, '2025-12-03 06:25:36'),
 (13, 68, 7, '2025-12-03 06:25:40'),
 (14, 68, 5, '2025-12-03 06:25:40'),
-(15, 70, 4, '2025-12-03 06:25:44'),
-(16, 70, 2, '2025-12-03 06:25:44'),
 (17, 69, 6, '2025-12-03 06:25:53'),
 (18, 69, 9, '2025-12-03 06:25:53'),
 (19, 71, 3, '2025-12-03 06:25:59'),
-(20, 71, 1, '2025-12-03 06:25:59');
+(20, 71, 1, '2025-12-03 06:25:59'),
+(25, 73, 5, '2025-12-04 10:33:20'),
+(26, 73, 1, '2025-12-04 10:33:20'),
+(29, 74, 5, '2025-12-04 10:33:26'),
+(30, 74, 1, '2025-12-04 10:33:26'),
+(31, 76, 5, '2025-12-04 10:33:28'),
+(32, 76, 1, '2025-12-04 10:33:28'),
+(33, 75, 5, '2025-12-04 10:33:31'),
+(34, 75, 1, '2025-12-04 10:33:31'),
+(35, 77, 5, '2025-12-04 10:33:35'),
+(36, 77, 1, '2025-12-04 10:33:35'),
+(37, 78, 5, '2025-12-04 10:33:38'),
+(38, 78, 1, '2025-12-04 10:33:38'),
+(39, 79, 5, '2025-12-04 10:33:42'),
+(40, 79, 1, '2025-12-04 10:33:42'),
+(41, 80, 5, '2025-12-04 10:33:45'),
+(42, 80, 1, '2025-12-04 10:33:45'),
+(43, 58, 5, '2025-12-04 12:58:40'),
+(44, 58, 3, '2025-12-04 12:58:40'),
+(45, 60, 5, '2025-12-04 12:58:44'),
+(46, 60, 3, '2025-12-04 12:58:44'),
+(47, 61, 5, '2025-12-04 12:58:48'),
+(48, 61, 3, '2025-12-04 12:58:48'),
+(49, 62, 5, '2025-12-04 12:58:53'),
+(50, 62, 3, '2025-12-04 12:58:53');
 
 -- --------------------------------------------------------
 
@@ -672,17 +887,7 @@ CREATE TABLE `package_test_results` (
 --
 
 INSERT INTO `package_test_results` (`id`, `appointment_id`, `service_id`, `metric_name`, `result_value`, `result_status`, `reference_range`, `notes`, `tested_at`, `created_at`, `updated_at`) VALUES
-(2, 176, 73, 'bình thường', 'thành công', 'pending', 'ko có', 'ko ', NULL, '2025-11-25 09:03:02', '2025-11-25 09:03:02'),
-(3, 176, 80, '212', 'thành công', 'pending', '2121 -21121', 'ko ', NULL, '2025-11-25 09:37:27', '2025-11-25 09:37:27'),
-(4, 176, 72, 'bình thường', 'thành công', 'pending', 'ko có', 'ko ', NULL, '2025-11-25 09:40:26', '2025-11-25 09:40:26'),
-(5, 176, 79, '212', 'thành công', 'pending', 'ko có', 'ưqewq', NULL, '2025-11-25 09:41:04', '2025-11-25 09:41:04'),
-(6, 176, 74, '212', 'thành công', 'pending', 'ko có', 'ko ', NULL, '2025-11-25 09:42:24', '2025-11-25 09:42:24'),
-(7, 176, 75, 'bình thường', 'ko', 'pending', 'ko có', 'ewqewqe', NULL, '2025-11-25 09:43:02', '2025-11-25 09:43:02'),
-(8, 176, 76, 'ko', 'đá', 'pending', 'dá', 'sad', NULL, '2025-11-25 09:43:27', '2025-11-25 09:43:27'),
-(9, 176, 78, '212', 'dsad', 'pending', 'đass', 'đs', NULL, '2025-11-25 09:44:18', '2025-11-25 09:44:18'),
-(10, 176, 77, '212', '312321', 'pending', '12321', '123213', NULL, '2025-11-25 09:45:13', '2025-11-25 09:45:13'),
-(11, 186, 58, 'cao', 'bình thường', 'pending', '117-137', 'kocsacascascsa', NULL, '2025-12-01 11:03:12', '2025-12-01 11:03:12'),
-(12, 194, 65, 'trung bình', 'bình thường', 'pending', '117-137', 'ko có', NULL, '2025-12-03 06:47:51', '2025-12-03 06:47:51');
+(29, 265, 78, 'bình thường', 'tốt', 'normal', '167-172', 'ko', NULL, '2025-12-04 13:48:21', '2025-12-04 13:48:21');
 
 -- --------------------------------------------------------
 
@@ -777,9 +982,14 @@ CREATE TABLE `prescriptions` (
 --
 
 INSERT INTO `prescriptions` (`id`, `prescription_code`, `appointment_id`, `package_appointment_id`, `diagnosis_id`, `doctor_id`, `patient_id`, `status`, `notes_to_patient`, `notes_internal`, `total_items`, `pdf_path`, `created_at`, `updated_at`) VALUES
-(1, 'RX20251130103019596', 178, 28, NULL, 2, 14, 'approved', NULL, NULL, 1, NULL, '2025-11-30 03:30:19', '2025-11-30 04:33:49'),
-(2, 'RX20251201180408625', 188, 29, NULL, 2, 14, 'approved', NULL, NULL, 1, NULL, '2025-12-01 11:04:08', '2025-12-01 11:04:34'),
-(3, 'RX20251204105953586', 202, 30, NULL, 2, 14, 'submitted', NULL, NULL, 0, NULL, '2025-12-04 03:59:53', '2025-12-04 04:11:01');
+(5, 'RX20251204181032203', 217, 32, NULL, 1, 14, 'approved', NULL, NULL, 1, NULL, '2025-12-04 11:10:32', '2025-12-04 11:10:41'),
+(6, 'RX20251204181620197', 215, 32, NULL, 1, 14, 'approved', NULL, NULL, 1, NULL, '2025-12-04 11:16:20', '2025-12-04 11:16:23'),
+(7, 'RX20251204185626757', 227, 33, NULL, 1, 14, 'approved', NULL, NULL, 1, NULL, '2025-12-04 11:56:26', '2025-12-04 11:56:31'),
+(8, 'RX20251204185900389', 225, 33, NULL, 1, 14, 'approved', NULL, NULL, 1, NULL, '2025-12-04 11:59:00', '2025-12-04 11:59:02'),
+(9, 'RX20251204195026388', 212, 32, NULL, 5, 14, 'approved', NULL, NULL, 1, NULL, '2025-12-04 12:50:26', '2025-12-04 12:50:30'),
+(10, 'RX20251204195704838', 245, 35, NULL, 1, 14, 'approved', NULL, NULL, 1, NULL, '2025-12-04 12:57:04', '2025-12-04 12:57:06'),
+(11, 'RX20251204204906261', 272, 38, NULL, 1, 14, 'approved', NULL, NULL, 1, NULL, '2025-12-04 13:49:06', '2025-12-04 13:49:08'),
+(12, 'RX20251206183212597', 297, NULL, NULL, 7, 14, 'approved', NULL, NULL, 1, NULL, '2025-12-06 11:32:12', '2025-12-06 11:32:14');
 
 -- --------------------------------------------------------
 
@@ -814,8 +1024,14 @@ CREATE TABLE `prescription_items` (
 --
 
 INSERT INTO `prescription_items` (`id`, `prescription_id`, `prescription_code`, `medical_record_id`, `medicine_id`, `drug_name`, `quantity`, `dosage`, `frequency`, `duration`, `instructions`, `route`, `start_date`, `end_date`, `refills_allowed`, `refills_remaining`, `status`, `created_at`, `updated_at`) VALUES
-(4, 1, 'RX20251130103019596', NULL, 5, NULL, 1, '2', '2', '1', 'sau ăn', 'uống', '2025-12-02', '2025-12-05', 0, 0, 'active', '2025-11-30 04:10:46', '2025-11-30 04:10:46'),
-(5, 2, 'RX20251201180408625', NULL, 4, NULL, 1, '2', '2', '3', '4', '4', '2025-12-09', '2025-12-03', 0, 0, 'active', '2025-12-01 11:04:08', '2025-12-01 11:04:08');
+(6, 5, 'RX20251204181032203', NULL, 8, NULL, 1, '1', '2', '4', 'sau ăn', 'uống', '2025-12-05', '2025-12-09', 0, 0, 'active', '2025-12-04 11:10:32', '2025-12-04 11:10:32'),
+(7, 6, 'RX20251204181620197', NULL, 9, NULL, 1, '1', '2', '4', 'sau ăn', 'uống', '2025-12-05', '2025-12-06', 0, 0, 'active', '2025-12-04 11:16:20', '2025-12-04 11:16:20'),
+(8, 7, 'RX20251204185626757', NULL, 7, NULL, 1, '1', '2', '4', 'sau ăn', 'uống', '2025-12-10', '2025-12-12', 0, 0, 'active', '2025-12-04 11:56:26', '2025-12-04 11:56:26'),
+(9, 8, 'RX20251204185900389', NULL, 38, NULL, 1, '1', '2', '4', 'sau ăn', 'uống', '2025-12-05', '2025-12-11', 0, 0, 'active', '2025-12-04 11:59:00', '2025-12-04 11:59:00'),
+(10, 9, 'RX20251204195026388', NULL, 55, NULL, 1, '1', '2', '4', 'sau ăn', 'uống', '2025-12-05', '2025-12-12', 0, 0, 'active', '2025-12-04 12:50:26', '2025-12-04 12:50:26'),
+(11, 10, 'RX20251204195704838', NULL, 38, NULL, 1, '1', '2', '4', 'sau ăn', 'uống', '2025-12-06', '2025-12-05', 0, 0, 'active', '2025-12-04 12:57:04', '2025-12-04 12:57:04'),
+(12, 11, 'RX20251204204906261', NULL, 38, NULL, 1, '1', '2', '4', 'sau ăn', 'uống', '2025-12-05', '2025-12-07', 0, 0, 'active', '2025-12-04 13:49:06', '2025-12-04 13:49:06'),
+(13, 12, 'RX20251206183212597', NULL, 46, NULL, 1, '1', '2', '4', 'sau ăn', 'uống', '2025-12-13', '2025-12-13', 0, 0, 'active', '2025-12-06 11:32:12', '2025-12-06 11:32:12');
 
 -- --------------------------------------------------------
 
@@ -962,6 +1178,20 @@ ALTER TABLE `appointment_package_services`
   ADD KEY `idx_doctor` (`doctor_id`),
   ADD KEY `idx_aps_state` (`result_state`),
   ADD KEY `idx_aps_apt_svc` (`appointment_id`,`service_id`);
+
+--
+-- Chỉ mục cho bảng `appointment_results`
+--
+ALTER TABLE `appointment_results`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_result_appointment` (`appointment_id`);
+
+--
+-- Chỉ mục cho bảng `appointment_result_items`
+--
+ALTER TABLE `appointment_result_items`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_result_item` (`result_id`);
 
 --
 -- Chỉ mục cho bảng `consultations`
@@ -1181,19 +1411,31 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT cho bảng `appointments`
 --
 ALTER TABLE `appointments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=203;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=310;
 
 --
 -- AUTO_INCREMENT cho bảng `appointment_package_services`
 --
 ALTER TABLE `appointment_package_services`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=122;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=246;
+
+--
+-- AUTO_INCREMENT cho bảng `appointment_results`
+--
+ALTER TABLE `appointment_results`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT cho bảng `appointment_result_items`
+--
+ALTER TABLE `appointment_result_items`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT cho bảng `consultations`
 --
 ALTER TABLE `consultations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT cho bảng `consultation_attachments`
@@ -1205,13 +1447,13 @@ ALTER TABLE `consultation_attachments`
 -- AUTO_INCREMENT cho bảng `consultation_messages`
 --
 ALTER TABLE `consultation_messages`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT cho bảng `diagnoses`
 --
 ALTER TABLE `diagnoses`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT cho bảng `doctors`
@@ -1229,13 +1471,13 @@ ALTER TABLE `health_packages`
 -- AUTO_INCREMENT cho bảng `invoices`
 --
 ALTER TABLE `invoices`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT cho bảng `invoice_items`
 --
 ALTER TABLE `invoice_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=52;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=62;
 
 --
 -- AUTO_INCREMENT cho bảng `medical_records`
@@ -1247,19 +1489,19 @@ ALTER TABLE `medical_records`
 -- AUTO_INCREMENT cho bảng `medicines`
 --
 ALTER TABLE `medicines`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=63;
 
 --
 -- AUTO_INCREMENT cho bảng `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=93;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=153;
 
 --
 -- AUTO_INCREMENT cho bảng `package_appointments`
 --
 ALTER TABLE `package_appointments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
 
 --
 -- AUTO_INCREMENT cho bảng `package_services`
@@ -1271,13 +1513,13 @@ ALTER TABLE `package_services`
 -- AUTO_INCREMENT cho bảng `package_service_doctors`
 --
 ALTER TABLE `package_service_doctors`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
 
 --
 -- AUTO_INCREMENT cho bảng `package_test_results`
 --
 ALTER TABLE `package_test_results`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT cho bảng `patients`
@@ -1295,13 +1537,13 @@ ALTER TABLE `payments`
 -- AUTO_INCREMENT cho bảng `prescriptions`
 --
 ALTER TABLE `prescriptions`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT cho bảng `prescription_items`
 --
 ALTER TABLE `prescription_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT cho bảng `service_allowed_medicines`
@@ -1342,6 +1584,18 @@ ALTER TABLE `appointment_package_services`
   ADD CONSTRAINT `appointment_package_services_ibfk_1` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `appointment_package_services_ibfk_2` FOREIGN KEY (`service_id`) REFERENCES `package_services` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `appointment_package_services_ibfk_3` FOREIGN KEY (`doctor_id`) REFERENCES `doctors` (`id`) ON DELETE SET NULL;
+
+--
+-- Các ràng buộc cho bảng `appointment_results`
+--
+ALTER TABLE `appointment_results`
+  ADD CONSTRAINT `appointment_results_ibfk_1` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`id`) ON DELETE CASCADE;
+
+--
+-- Các ràng buộc cho bảng `appointment_result_items`
+--
+ALTER TABLE `appointment_result_items`
+  ADD CONSTRAINT `appointment_result_items_ibfk_1` FOREIGN KEY (`result_id`) REFERENCES `appointment_results` (`id`) ON DELETE CASCADE;
 
 --
 -- Các ràng buộc cho bảng `doctors`

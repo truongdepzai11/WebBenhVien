@@ -122,10 +122,16 @@ class PackageAppointmentController {
             $packageServices = $this->packageModel->getPackageServices($packageAppointment['package_id']);
         }
 
-        // Lấy tất cả appointments thuộc gói
-        $appointments = $this->appointmentModel->getByPackageAppointmentId($id);
+        $assignedCount = $this->appointmentModel->countAssignedByPackageAppointmentId($id);
+        $serviceAppointments = $this->appointmentModel->getByPackageAppointmentId($id);
+        if (!is_array($serviceAppointments)) {
+            $serviceAppointments = [];
+        }
+        $appointments = $serviceAppointments;
+        $completionStats = $this->appointmentModel->getChildCompletionStats($id);
+
         // Chỉ tính các lịch có bác sĩ (bất kể appointment_type) → tránh bỏ sót dữ liệu cũ
-        $serviceAppointments = array_values(array_filter($appointments, function($a){
+        $serviceAppointments = array_values(array_filter($serviceAppointments, function($a){
             return !empty($a['doctor_id']);
         }));
         // Đếm theo dịch vụ duy nhất dựa trên reason (tên dịch vụ)
@@ -861,8 +867,11 @@ class PackageAppointmentController {
     // Lấy các khung giờ đã dùng trong cùng gói ở một ngày (để không trùng giờ giữa các dịch vụ)
     private function getUsedTimeSlots($packageAppointmentId, $dateYmd) {
         $used = [];
-        $appointments = $this->appointmentModel->getByPackageAppointmentId($packageAppointmentId);
-        foreach ($appointments as $a) {
+        $serviceAppointments = $this->appointmentModel->getByPackageAppointmentId($packageAppointmentId);
+        if (!is_array($serviceAppointments)) {
+            $serviceAppointments = [];
+        }
+        foreach ($serviceAppointments as $a) {
             if (!empty($a['doctor_id']) && !empty($a['appointment_date']) && $a['appointment_date'] === $dateYmd && !empty($a['appointment_time'])) {
                 // Chuẩn hóa dạng H:i:s
                 $t = date('H:i:s', strtotime($a['appointment_time']));

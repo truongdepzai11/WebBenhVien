@@ -49,6 +49,7 @@ ob_start();
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại khám</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lý do</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+        	            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tình trạng</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
                     </tr>
                 </thead>
@@ -121,6 +122,9 @@ ob_start();
                                 <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full <?= $colorClass ?>">
                                     <?= $label ?>
                                 </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                —
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <i class="fas fa-arrow-right text-purple-600"></i>
@@ -272,10 +276,40 @@ ob_start();
                                 <?= $statusLabels[$apt['status']] ?>
                             </span>
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <?php
+                            $progressLabel = '<span class="text-gray-400 italic">—</span>';
+                            if (!empty($apt['package_appointment_id'])) {
+                                $done = (int)($apt['child_completion_done'] ?? 0);
+                                $total = (int)($apt['child_completion_total'] ?? 0);
+                                if ($total > 0) {
+                                    if ($done === 0) {
+                                        $progressLabel = '<span class="text-orange-600 font-medium">Chưa khám (0/'. $total .')</span>';
+                                    } elseif ($done < $total) {
+                                        $progressLabel = '<span class="text-blue-600 font-medium">Đã hoàn thành '. $done .'/'. $total .' dịch vụ</span>';
+                                    } else {
+                                        $progressLabel = '<span class="text-green-600 font-semibold">Đã hoàn thành tất cả dịch vụ ('. $total .'/'. $total .')</span>';
+                                    }
+                                } else {
+                                    $progressLabel = '<span class="text-gray-500 italic">Chưa có dữ liệu dịch vụ</span>';
+                                }
+                            }
+                            echo $progressLabel;
+                            ?>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex gap-2">
                                 <?php if ($apt['status'] === 'pending' && (Auth::isDoctor() || Auth::isAdmin())): ?>
-                                <form action="<?= APP_URL ?>/appointments/<?= $apt['id'] ?>/update-status" method="POST" class="inline">
+                                <?php 
+                                $isPackageSummary = !empty($apt['package_id']) && !empty($apt['package_appointment_id'])
+                                    && !empty($apt['reason']) && strpos($apt['reason'], ':') !== false
+                                    && empty($apt['doctor_id']);
+                                $confirmMessage = $isPackageSummary
+                                    ? 'Xác nhận lịch tổng của gói này và tất cả dịch vụ?'
+                                    : 'Xác nhận lịch khám này?';
+                                ?>
+                                <form action="<?= APP_URL ?>/appointments/<?= $apt['id'] ?>/update-status" method="POST" class="inline"
+                                      onsubmit="return confirm('<?= $confirmMessage ?>');">
                                     <input type="hidden" name="status" value="confirmed">
                                     <button type="submit" class="text-blue-600 hover:text-blue-900" title="Xác nhận">
                                         <i class="fas fa-check-circle"></i>
@@ -283,7 +317,17 @@ ob_start();
                                 </form>
                                 <?php endif; ?>
                                 
-                                <?php if ($apt['status'] === 'confirmed' && (Auth::isDoctor() || Auth::isAdmin())): ?>
+                                <?php 
+                                $canComplete = true;
+                                if (!empty($apt['package_id']) && !empty($apt['package_appointment_id'])
+                                    && !empty($apt['reason']) && strpos($apt['reason'], ':') !== false
+                                    && empty($apt['doctor_id'])) {
+                                    $done = (int)($apt['child_completion_done'] ?? 0);
+                                    $total = (int)($apt['child_completion_total'] ?? 0);
+                                    $canComplete = ($total > 0 && $done === $total);
+                                }
+                                ?>
+                                <?php if ($apt['status'] === 'confirmed' && (Auth::isDoctor() || Auth::isAdmin()) && $canComplete): ?>
                                 <form action="<?= APP_URL ?>/appointments/<?= $apt['id'] ?>/update-status" method="POST" class="inline">
                                     <input type="hidden" name="status" value="completed">
                                     <button type="submit" class="text-green-600 hover:text-green-900" title="Hoàn thành">
