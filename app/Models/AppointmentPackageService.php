@@ -26,6 +26,27 @@ class AppointmentPackageService {
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+    
+    // Tìm APS theo appointment_id
+    public function findByAppointmentId($appointmentId) {
+        $query = "SELECT * FROM appointment_package_services WHERE appointment_id = :apt_id LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':apt_id', $appointmentId);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    
+    public function findFirstByPackageAppointmentId($packageAppointmentId) {
+        $query = "SELECT aps.*
+                  FROM appointment_package_services aps
+                  JOIN appointments a ON a.id = aps.appointment_id
+                  WHERE a.package_appointment_id = :pkg_id
+                  LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':pkg_id', $packageAppointmentId);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 
     public function updateResultStateById($apsId, $state) {
         $query = "UPDATE " . $this->table . " SET result_state = :st, tested_at = IF(:st='submitted', NOW(), tested_at) WHERE id = :id";

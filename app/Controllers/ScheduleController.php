@@ -362,6 +362,23 @@ class ScheduleController {
                     throw new Exception('Tạo appointment thất bại');
                 }
 
+                // Tạo appointment_package_services records cho từng dịch vụ trong gói
+                $packageServices = $pkgModel->getPackageServices($_POST['package_id']);
+                if (!empty($packageServices)) {
+                    $insertQuery = "INSERT INTO appointment_package_services 
+                                    (appointment_id, service_id, service_price, status, result_state) 
+                                    VALUES (?, ?, ?, 'pending', 'draft')";
+                    $insertStmt = $conn->prepare($insertQuery);
+                    
+                    foreach ($packageServices as $service) {
+                        $insertStmt->execute([
+                            $this->appointmentModel->id,
+                            $service['id'],
+                            $service['service_price'] ?? 0
+                        ]);
+                    }
+                }
+
                 // COMMIT TRANSACTION
                 $conn->commit();
 

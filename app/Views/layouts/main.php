@@ -159,6 +159,10 @@
                             <i class="fas fa-comments w-5"></i>
                             <span>Tư vấn sức khỏe</span>
                         </a>
+                        <a href="javascript:void(0)" onclick="toggleChatBot()" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100">
+                            <i class="fas fa-robot w-5"></i>
+                            <span>Tư vấn AI</span>
+                        </a>
                         <?php endif; ?>
 
                         <?php if (Auth::isDoctor()): ?>
@@ -278,17 +282,145 @@
             </div>
         </div>
         <?php if (Auth::isPatient()): ?>
-        <a href="<?= APP_URL ?>/consultations/create" class="fixed bottom-6 right-6 inline-flex items-center gap-2 px-4 py-3 rounded-full shadow-lg bg-green-600 hover:bg-green-700 text-white z-40">
-            <i class="fas fa-comments"></i>
-            <span class="hidden sm:inline">Tư vấn sức khỏe</span>
+        <a href="javascript:void(0)" onclick="toggleChatBot()" class="fixed bottom-6 right-6 inline-flex items-center gap-2 px-4 py-3 rounded-full shadow-lg bg-green-600 hover:bg-green-700 text-white z-40">
+            <i class="fas fa-robot"></i>
+            <span class="hidden sm:inline">Tư vấn AI</span>
         </a>
-        <?php elseif (Auth::isDoctor()): ?>
-        <a href="<?= APP_URL ?>/doctor/consultations" class="fixed bottom-6 right-6 inline-flex items-center gap-2 px-4 py-3 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 text-white z-40">
-            <i class="fas fa-comments-medical"></i>
-            <span class="hidden sm:inline">Hộp thư tư vấn</span>
-        </a>
+        
+        <!-- Chat Bot Popup -->
+        <div id="chatBotPopup" class="fixed bottom-24 right-6 w-96 h-[500px] bg-white rounded-lg shadow-2xl z-50 hidden flex flex-col">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 rounded-t-lg flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                        <i class="fas fa-robot text-green-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold">Trợ lý AI Sức khỏe</h3>
+                        <p class="text-xs opacity-90">Luôn sẵn sàng tư vấn</p>
+                    </div>
+                </div>
+                <button onclick="toggleChatBot()" class="text-white hover:bg-white/20 rounded p-2">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Messages Area -->
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+                <div class="flex items-start space-x-2">
+                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-robot text-green-600 text-sm"></i>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg shadow-sm max-w-[80%]">
+                        <p class="text-sm">Xin chào! Tôi là trợ lý AI sức khỏe. Tôi có thể giúp gì cho bạn hôm nay?</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Input Area -->
+            <div class="p-4 border-t bg-white rounded-b-lg">
+                <div class="flex items-center space-x-2">
+                    <input type="text" id="chatInput" placeholder="Nhập câu hỏi của bạn..." 
+                           class="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    <button onclick="sendMessage()" class="bg-green-600 hover:bg-green-700 text-white p-2 rounded-full">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
         <?php endif; ?>
-
+    
+    <!-- Chat Bot JavaScript -->
+    <script>
+        function toggleChatBot() {
+            const popup = document.getElementById('chatBotPopup');
+            if (popup.classList.contains('hidden')) {
+                popup.classList.remove('hidden');
+                document.getElementById('chatInput').focus();
+            } else {
+                popup.classList.add('hidden');
+            }
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            const messagesContainer = document.getElementById('chatMessages');
+            
+            // Add user message
+            const userMessageHtml = `
+                <div class="flex items-start space-x-2 justify-end">
+                    <div class="bg-blue-600 text-white p-3 rounded-lg shadow-sm max-w-[80%]">
+                        <p class="text-sm">${message}</p>
+                        <span class="text-xs opacity-75 mt-1">${new Date().toLocaleTimeString()}</span>
+                    </div>
+                    <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-user text-gray-600 text-sm"></i>
+                    </div>
+                </div>
+            `;
+            messagesContainer.innerHTML += userMessageHtml;
+            
+            // Clear input
+            input.value = '';
+            
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // Simulate AI response
+            setTimeout(() => {
+                const aiResponse = getAIResponse(message);
+                const botMessageHtml = `
+                    <div class="flex items-start space-x-2">
+                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-robot text-green-600 text-sm"></i>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg shadow-sm max-w-[80%]">
+                            <p class="text-sm">${aiResponse}</p>
+                            <span class="text-xs text-gray-500 mt-1">${new Date().toLocaleTimeString()}</span>
+                        </div>
+                    </div>
+                `;
+                messagesContainer.innerHTML += botMessageHtml;
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }, 1000);
+        }
+        
+        function getAIResponse(message) {
+            // Simple AI responses for demo
+            const responses = {
+                'đau đầu': 'Đau đầu có thể do nhiều nguyên nhân: stress, thiếu ngủ, hoặc vấn đề về huyết áp. Bạn nên nghỉ ngơi và uống đủ nước. Nếu kéo dài, hãy đến khám bác sĩ.',
+                'huyết áp': 'Huyết áp bình thường là 120/80. Nếu trên 140/90 thì bạn nên giảm muối, tập thể dục và theo dõi thường xuyên.',
+                'sốt': 'Nếu sốt dưới 38.5°C, bạn có thể nghỉ ngơi và uống paracetamol. Nếu trên 38.5°C hoặc kéo dài hơn 2 ngày, hãy đến khám.',
+                'ho': 'Ho thường do virus hoặc dị ứng. Bạn nên uống nhiều nước, súc miệng bằng nước muối. Nếu có khó thở hoặc ho kéo dài, hãy đến khám.',
+                'đau bụng': 'Đau bụng có thể do khó tiêu, viêm dạ dày hoặc ăn uống. Bạn nên ăn nhẹ, uống nhiều nước. Nếu đau dữ dội, hãy đến khám ngay.'
+            };
+            
+            message = message.toLowerCase();
+            for (let key in responses) {
+                if (message.includes(key)) {
+                    return responses[key];
+                }
+            }
+            
+            return 'Cảm ơn câu hỏi của bạn. Tôi đang học hỏi để trả lời tốt hơn. Bạn có thể mô tả chi tiết hơn về triệu chứng không?';
+        }
+        
+        // Enter key to send
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('chatInput');
+            if (input) {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendMessage();
+                    }
+                });
+            }
+        });
+    </script>
     <?php else: ?>
         <!-- Layout cho trang đăng nhập/đăng ký -->
         <?php echo $content ?? ''; ?>

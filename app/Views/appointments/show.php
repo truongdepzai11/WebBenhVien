@@ -3,6 +3,28 @@ $page_title = 'Chi tiết Lịch hẹn';
 ob_start(); 
 ?>
 
+<!-- Session Messages -->
+<?php if (isset($_SESSION['error'])): ?>
+    <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+        <?= $_SESSION['error'] ?>
+        <?php unset($_SESSION['error']); ?>
+    </div>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['success'])): ?>
+    <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+        <?= $_SESSION['success'] ?>
+        <?php unset($_SESSION['success']); ?>
+    </div>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['info'])): ?>
+    <div class="mb-4 p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded-lg">
+        <?= $_SESSION['info'] ?>
+        <?php unset($_SESSION['info']); ?>
+    </div>
+<?php endif; ?>
+
 <div class="mb-6">
     <a href="<?= APP_URL ?>/appointments" class="text-purple-600 hover:text-purple-700">
         <i class="fas fa-arrow-left mr-2"></i>Quay lại danh sách
@@ -199,7 +221,7 @@ if (($appointment['status'] ?? '') === 'completed'):
         </div>
     <?php endif; ?>
 
-    <form method="post" action="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/results/save">
+    <form method="post" action="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/results/save" onsubmit="console.log('Package form submitted'); alert('Form submitting!'); return true;">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200" id="metrics-table">
                 <thead class="bg-gray-50">
@@ -244,7 +266,7 @@ if (($appointment['status'] ?? '') === 'completed'):
             </div>
             <div class="space-x-2">
                 <button type="submit" class="px-6 py-2 bg-gray-700 text-white rounded hover:bg-gray-800">Lưu nháp</button>
-                <button type="submit" formaction="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/results/submit" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Nộp kết quả</button>
+                <button type="button" onclick="validateAndSubmitResults()" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Nộp kết quả</button>
             </div>
         </div>
         <?php else: ?>
@@ -275,11 +297,199 @@ if (($appointment['status'] ?? '') === 'completed'):
         const tr = btn.closest('tr');
         tr.parentNode.removeChild(tr);
     }
+    
+    function validateAndSubmitResults() {
+        const tbody = document.querySelector('#metrics-table tbody');
+        const rows = tbody.querySelectorAll('tr');
+        let hasData = false;
+        
+        for (const tr of rows) {
+            const metricName = tr.querySelector('input[name="metric_name[]"]').value.trim();
+            const resultValue = tr.querySelector('input[name="result_value[]"]').value.trim();
+            
+            if (metricName !== '' || resultValue !== '') {
+                hasData = true;
+                break;
+            }
+        }
+        
+        if (!hasData) {
+            alert('Vui lòng nhập ít nhất một chỉ số và kết quả trước khi nộp!');
+            return;
+        }
+        
+        // Bỏ qua kiểm tra findings và conclusion vì không có field này
+        // Nếu hợp lệ, submit form
+        console.log('Submitting package results form...');
+        const form = document.querySelector('form[action*="/results/save"]');
+        form.action = '<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/results/submit';
+        form.submit();
+    }
+    
+    function validateAndSubmitDiagnosis() {
+        const primarySection = document.querySelector('input[name="primary_section"]').value.trim();
+        const clinicalFindings = document.querySelector('textarea[name="clinical_findings"]').value.trim();
+        const officialFindings = document.querySelector('textarea[name="official_findings"]').value.trim();
+        
+        if (primarySection === '') {
+            alert('Vui lòng nhập chẩn đoán chính!');
+            return;
+        }
+        
+        if (clinicalFindings === '') {
+            alert('Vui lòng nhập dấu hiệu & lâm sàng!');
+            return;
+        }
+        
+        if (officialFindings === '') {
+            alert('Vui lòng nhập kết luận chính thức!');
+            return;
+        }
+        
+        // Nếu hợp lệ, submit form
+        const form = document.querySelector('form[action*="/diagnoses/save"]');
+        form.submit();
+    }
     </script>
 </div>
 <?php endif; ?>
 
-<?php if (empty($appointment['package_appointment_id'])): ?>
+<!-- PACKAGE SERVICE RESULTS - PATIENT VIEW -->
+<?php if (!empty($appointment['package_appointment_id']) && !empty($appointment['doctor_id']) && Auth::isPatient()): ?>
+<div class="bg-white rounded-lg shadow-md p-8 mt-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-gray-800">Kết quả dịch vụ</h3>
+        <div>
+            <?php if ($state): ?>
+                <span class="px-3 py-1 text-xs font-semibold rounded-full <?= $state === 'approved' ? 'bg-green-100 text-green-800' : ($state === 'submitted' ? 'bg-blue-100 text-blue-800' : ($state === 'returned' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800')) ?>">
+                    Trạng thái: <?= htmlspecialchars($state) ?>
+                </span>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <?php if (!empty($reviewNote) && $state === 'returned'): ?>
+        <div class="mb-4 p-3 rounded bg-orange-50 text-orange-800 text-sm">
+            Lý do trả về: <?= nl2br(htmlspecialchars($reviewNote)) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if (!empty($serviceMetrics)): ?>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Chỉ số</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kết quả</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Khoảng tham chiếu</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tình trạng</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ghi chú</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                <?php foreach ($serviceMetrics as $row): ?>
+                <tr>
+                    <td class="px-4 py-2"><?= htmlspecialchars($row['metric_name'] ?? '') ?></td>
+                    <td class="px-4 py-2"><?= htmlspecialchars($row['result_value'] ?? '') ?></td>
+                    <td class="px-4 py-2"><?= htmlspecialchars($row['reference_range'] ?? '') ?></td>
+                    <td class="px-4 py-2">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full <?= ($row['result_status'] ?? 'normal') === 'normal' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' ?>">
+                            <?= ($row['result_status'] ?? 'normal') === 'normal' ? 'Bình thường' : 'Bất thường' ?>
+                        </span>
+                    </td>
+                    <td class="px-4 py-2"><?= htmlspecialchars($row['notes'] ?? '') ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php else: ?>
+        <div class="text-center py-8 text-gray-500">
+            <i class="fas fa-vial text-4xl mb-4"></i>
+            <p>Chưa có kết quả xét nghiệm</p>
+        </div>
+    <?php endif; ?>
+    
+    <?php if (!empty($resultJson)): ?>
+        <div class="mt-6 pt-6 border-t">
+            <h4 class="text-md font-semibold text-gray-800 mb-3">Kết luận</h4>
+            <?php 
+            $resultData = json_decode($resultJson, true);
+            if ($resultData):
+            ?>
+                <?php if (!empty($resultData['findings'])): ?>
+                    <div class="mb-3">
+                        <span class="font-semibold">Phát hiện:</span><br>
+                        <p class="text-gray-700"><?= nl2br(htmlspecialchars($resultData['findings'])) ?></p>
+                    </div>
+                <?php endif; ?>
+                <?php if (!empty($resultData['conclusion'])): ?>
+                    <div>
+                        <span class="font-semibold">Kết luận:</span><br>
+                        <p class="text-gray-700"><?= nl2br(htmlspecialchars($resultData['conclusion'])) ?></p>
+                    </div>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
+
+    <!-- PACKAGE SERVICE DIAGNOSIS - DOCTOR ONLY -->
+    <?php if (!empty($appointment['package_appointment_id']) && !empty($appointment['doctor_id']) && Auth::isDoctor()): ?>
+    <div class="bg-white rounded-lg shadow-md p-8 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-800">Chẩn đoán</h3>
+            <?php 
+                $pkgDx = $packageDiagnosis ?? null;
+                $pkgDxStatus = $pkgDx['status'] ?? null;
+                $pkgDxLocked = ($pkgDxStatus === 'approved');
+                if ($pkgDxStatus === 'approved'): 
+            ?>
+            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Trạng thái: approved</span>
+            <?php endif; ?>
+        </div>
+
+        <form method="post" action="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/diagnoses/save">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">Chẩn đoán chính</label>
+                    <input type="text" name="primary_section" value="<?= htmlspecialchars($pkgDx['primary_icd10'] ?? '') ?>" class="w-full border rounded px-3 py-2" <?= $pkgDxLocked ? 'readonly' : '' ?>>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm text-gray-600 mb-1">Dấu hiệu & lâm sàng</label>
+                    <textarea name="clinical_findings" rows="3" class="w-full border rounded px-3 py-2" <?= $pkgDxLocked ? 'readonly' : '' ?>><?= htmlspecialchars($pkgDx['clinical_findings'] ?? '') ?></textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm text-gray-600 mb-1">Kết luận chính thức</label>
+                    <textarea name="official_findings" rows="3" class="w-full border rounded px-3 py-2" <?= $pkgDxLocked ? 'readonly' : '' ?>><?= htmlspecialchars($pkgDx['assessment'] ?? '') ?></textarea>
+                </div>
+            </div>
+            <?php if (!$pkgDxLocked): ?>
+            <div class="flex items-center justify-end mt-4 space-x-3">
+                <label class="text-sm text-gray-600"><input type="checkbox" name="submit_after" value="1" class="mr-1">Lưu xong duyệt luôn</label>
+                <button type="button" onclick="validateAndSubmitDiagnosis()" class="px-6 py-2 bg-teal-600 text-white rounded hover:bg-teal-700">Lưu chẩn đoán</button>
+            </div>
+            <?php else: ?>
+            <div class="mt-2 text-sm text-gray-500">Chẩn đoán đã được duyệt.</div>
+            <?php endif; ?>
+        </form>
+
+        <?php if (!empty($pkgDx)): ?>
+        <div class="mt-6">
+            <h4 class="text-md font-semibold text-gray-800 mb-2">Chẩn đoán mới nhất</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                <div><span class="font-semibold">Chẩn đoán chính:</span> <?= htmlspecialchars($pkgDx['primary_icd10'] ?? '') ?></div>
+                <div><span class="font-semibold">Trạng thái:</span> <?= htmlspecialchars($pkgDx['status'] ?? '') ?></div>
+                <div class="md:col-span-2"><span class="font-semibold">Dấu hiệu & lâm sàng:</span><br><?= nl2br(htmlspecialchars($pkgDx['clinical_findings'] ?? '')) ?></div>
+                <div class="md:col-span-2"><span class="font-semibold">Kết luận chính thức:</span><br><?= nl2br(htmlspecialchars($pkgDx['assessment'] ?? '')) ?></div>
+            </div>
+        </div>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
+<?php if (empty($appointment['package_appointment_id']) && !Auth::isAdmin()): ?>
     <?php
         $regularResult = $regularResult ?? null;
         $regularResultItems = $regularResultItems ?? [];
@@ -736,60 +946,6 @@ if (($appointment['status'] ?? '') === 'completed'):
             while (current < 4) { addRxRow(); current++; }
         })();
         </script>
-    </div>
-    <?php endif; ?>
-
-    <!-- PACKAGE SERVICE DIAGNOSIS - DOCTOR ONLY -->
-    <?php if (!empty($appointment['package_appointment_id']) && !empty($appointment['doctor_id']) && Auth::isDoctor()): ?>
-    <div class="bg-white rounded-lg shadow-md p-8 mt-6">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold text-gray-800">Chẩn đoán</h3>
-            <?php 
-                $pkgDx = $packageDiagnosis ?? null;
-                $pkgDxStatus = $pkgDx['status'] ?? null;
-                $pkgDxLocked = ($pkgDxStatus === 'approved');
-                if ($pkgDxStatus === 'approved'): 
-            ?>
-            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Trạng thái: approved</span>
-            <?php endif; ?>
-        </div>
-
-        <form method="post" action="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/diagnoses/save">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm text-gray-600 mb-1">Chẩn đoán chính</label>
-                    <input type="text" name="primary_section" value="<?= htmlspecialchars($pkgDx['primary_icd10'] ?? '') ?>" class="w-full border rounded px-3 py-2" <?= $pkgDxLocked ? 'readonly' : '' ?>>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-sm text-gray-600 mb-1">Dấu hiệu & lâm sàng</label>
-                    <textarea name="clinical_findings" rows="3" class="w-full border rounded px-3 py-2" <?= $pkgDxLocked ? 'readonly' : '' ?>><?= htmlspecialchars($pkgDx['clinical_findings'] ?? '') ?></textarea>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-sm text-gray-600 mb-1">Kết luận chính thức</label>
-                    <textarea name="official_findings" rows="3" class="w-full border rounded px-3 py-2" <?= $pkgDxLocked ? 'readonly' : '' ?>><?= htmlspecialchars($pkgDx['assessment'] ?? '') ?></textarea>
-                </div>
-            </div>
-            <?php if (!$pkgDxLocked): ?>
-            <div class="flex items-center justify-end mt-4 space-x-3">
-                <label class="text-sm text-gray-600"><input type="checkbox" name="submit_after" value="1" class="mr-1">Lưu xong duyệt luôn</label>
-                <button type="submit" class="px-6 py-2 bg-teal-600 text-white rounded hover:bg-teal-700">Lưu chẩn đoán</button>
-            </div>
-            <?php else: ?>
-            <div class="mt-2 text-sm text-gray-500">Chẩn đoán đã được duyệt.</div>
-            <?php endif; ?>
-        </form>
-
-        <?php if (!empty($pkgDx)): ?>
-        <div class="mt-6">
-            <h4 class="text-md font-semibold text-gray-800 mb-2">Chẩn đoán mới nhất</h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-                <div><span class="font-semibold">Chẩn đoán chính:</span> <?= htmlspecialchars($pkgDx['primary_icd10'] ?? '') ?></div>
-                <div><span class="font-semibold">Trạng thái:</span> <?= htmlspecialchars($pkgDx['status'] ?? '') ?></div>
-                <div class="md:col-span-2"><span class="font-semibold">Dấu hiệu & lâm sàng:</span><br><?= nl2br(htmlspecialchars($pkgDx['clinical_findings'] ?? '')) ?></div>
-                <div class="md:col-span-2"><span class="font-semibold">Kết luận chính thức:</span><br><?= nl2br(htmlspecialchars($pkgDx['assessment'] ?? '')) ?></div>
-            </div>
-        </div>
-        <?php endif; ?>
     </div>
     <?php endif; ?>
 

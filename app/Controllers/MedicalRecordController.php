@@ -103,11 +103,11 @@ class MedicalRecordController {
                 $selectedPatient = $this->patientModel->findById($appointment['patient_id']);
                 $appointmentVisitDate = $appointment['appointment_date'] ?? null;
             }
-            // Nếu đã có hồ sơ cho lịch hẹn này, chuyển sang trang chi tiết để tránh tạo trùng
+            // Nếu đã có hồ sơ cho lịch hẹn này, hiển thị thông báo và không cho tạo mới
             $existing = $this->medicalRecordModel->findByAppointmentId($appointmentId);
             if ($existing) {
-                $_SESSION['success'] = 'Hồ sơ bệnh án cho lịch hẹn này đã tồn tại.';
-                header('Location: ' . APP_URL . '/medical-records/' . $existing['id']);
+                $_SESSION['info'] = 'Hồ sơ bệnh án cho lịch hẹn này đã tồn tại. <a href="' . APP_URL . '/medical-records/' . $existing['id'] . '" class="text-blue-600 hover:underline">Xem hồ sơ</a>';
+                header('Location: ' . APP_URL . '/appointments/' . $appointmentId);
                 exit;
             }
         }
@@ -193,8 +193,13 @@ class MedicalRecordController {
         }
 
         if ($this->medicalRecordModel->create()) {
-            $_SESSION['success'] = 'Tạo hồ sơ bệnh án thành công';
-            header('Location: ' . APP_URL . '/medical-records/' . $this->medicalRecordModel->id);
+            $_SESSION['success'] = 'Tạo hồ sơ bệnh án thành công. <a href="' . APP_URL . '/medical-records/' . $this->medicalRecordModel->id . '" class="text-blue-600 hover:underline">Xem hồ sơ</a>';
+            // Redirect về appointment nếu có, ngược lại về medical records list
+            $redirectUrl = APP_URL . '/medical-records';
+            if (isset($_POST['appointment_id']) && $_POST['appointment_id']) {
+                $redirectUrl = APP_URL . '/appointments/' . $_POST['appointment_id'];
+            }
+            header('Location: ' . $redirectUrl);
             exit;
         } else {
             $_SESSION['error'] = 'Tạo hồ sơ bệnh án thất bại';

@@ -29,8 +29,8 @@ class MedicalRecord {
         $this->record_code = $this->generateRecordCode();
 
         $query = "INSERT INTO " . $this->table . " 
-                  (record_code, patient_id, doctor_id, appointment_id, diagnosis, symptoms, treatment, prescription, test_results, notes, visit_date) 
-                  VALUES (:record_code, :patient_id, :doctor_id, :appointment_id, :diagnosis, :symptoms, :treatment, :prescription, :test_results, :notes, :visit_date)";
+                  (record_code, patient_id, doctor_id, appointment_id, diagnosis, symptoms, treatment_plan, prescription, test_results, notes, visit_date) 
+                  VALUES (:record_code, :patient_id, :doctor_id, :appointment_id, :diagnosis, :symptoms, :treatment_plan, :prescription, :test_results, :notes, :visit_date)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -40,7 +40,7 @@ class MedicalRecord {
         $stmt->bindParam(':appointment_id', $this->appointment_id);
         $stmt->bindParam(':diagnosis', $this->diagnosis);
         $stmt->bindParam(':symptoms', $this->symptoms);
-        $stmt->bindParam(':treatment', $this->treatment);
+        $stmt->bindParam(':treatment_plan', $this->treatment);
         $stmt->bindParam(':prescription', $this->prescription);
         $stmt->bindParam(':test_results', $this->test_results);
         $stmt->bindParam(':notes', $this->notes);
@@ -172,7 +172,7 @@ class MedicalRecord {
         $query = "UPDATE " . $this->table . " 
                   SET diagnosis = :diagnosis,
                       symptoms = :symptoms,
-                      treatment = :treatment,
+                      treatment_plan = :treatment_plan,
                       prescription = :prescription,
                       test_results = :test_results,
                       notes = :notes,
@@ -183,7 +183,7 @@ class MedicalRecord {
 
         $stmt->bindParam(':diagnosis', $this->diagnosis);
         $stmt->bindParam(':symptoms', $this->symptoms);
-        $stmt->bindParam(':treatment', $this->treatment);
+        $stmt->bindParam(':treatment_plan', $this->treatment);
         $stmt->bindParam(':prescription', $this->prescription);
         $stmt->bindParam(':test_results', $this->test_results);
         $stmt->bindParam(':notes', $this->notes);
@@ -204,14 +204,19 @@ class MedicalRecord {
 
     // Lấy đơn thuốc của hồ sơ bệnh án
     public function getPrescriptions($record_id) {
-        $query = "SELECT p.*, m.name as medicine_name, m.unit, m.price
+        // Tìm medical record để lấy appointment_id
+        $record = $this->findById($record_id);
+        if (!$record || !$record['appointment_id']) {
+            return [];
+        }
+        
+        $query = "SELECT p.*
                   FROM prescriptions p
-                  LEFT JOIN medicines m ON p.medicine_id = m.id
-                  WHERE p.medical_record_id = :record_id
+                  WHERE p.appointment_id = :appointment_id
                   ORDER BY p.created_at";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':record_id', $record_id);
+        $stmt->bindParam(':appointment_id', $record['appointment_id']);
         $stmt->execute();
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

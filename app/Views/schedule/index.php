@@ -104,6 +104,7 @@ for ($i = 0; $i < 7; $i++) {
 <div class="bg-white rounded-lg shadow-md p-4 mb-6">
     <form method="GET" class="flex items-center gap-4">
         <input type="hidden" name="view" value="week">
+        <input type="hidden" name="walkin_type" value="<?= $_GET['walkin_type'] ?? 'regular' ?>">
         <label class="text-sm font-medium text-gray-700">Chọn bác sĩ:</label>
         <select name="doctor_id" onchange="this.form.submit()" 
                 class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
@@ -113,6 +114,7 @@ for ($i = 0; $i < 7; $i++) {
             </option>
             <?php endforeach; ?>
         </select>
+        <input type="hidden" name="refresh" value="1">
     </form>
 </div>
 <?php endif; ?>
@@ -283,6 +285,7 @@ for ($i = 0; $i < 7; $i++) {
 <div class="bg-white rounded-lg shadow-md p-6 mb-6">
     <form method="GET" action="<?= APP_URL ?>/schedule" class="grid grid-cols-1 md:grid-cols-<?= (Auth::isAdmin() || Auth::isReceptionist()) ? '3' : '2' ?> gap-4">
         <input type="hidden" name="view" value="day">
+        <input type="hidden" name="walkin_type" value="<?= $_GET['walkin_type'] ?? 'regular' ?>">
         <!-- Chọn bác sĩ - ADMIN/RECEPTIONIST -->
         <?php if (Auth::isAdmin() || Auth::isReceptionist()): ?>
         <div>
@@ -295,6 +298,7 @@ for ($i = 0; $i < 7; $i++) {
                 </option>
                 <?php endforeach; ?>
             </select>
+            <input type="hidden" name="refresh" value="1">
         </div>
         <?php endif; ?>
 
@@ -303,11 +307,12 @@ for ($i = 0; $i < 7; $i++) {
             <label class="block text-sm font-medium text-gray-700 mb-2">Ngày</label>
             <input type="date" name="date" value="<?= $selectedDate ?>" onchange="this.form.submit()"
                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+            <input type="hidden" name="refresh" value="1">
         </div>
 
         <!-- Nút hôm nay -->
         <div class="flex items-end">
-            <button type="button" onclick="window.location.href='<?= APP_URL ?>/schedule?doctor_id=<?= $selectedDoctorId ?>&date=<?= date('Y-m-d') ?>'"
+            <button type="button" onclick="window.location.href='<?= APP_URL ?>/schedule?doctor_id=<?= $selectedDoctorId ?>&date=<?= date('Y-m-d') ?>&refresh=1&walkin_type=<?= urlencode($_GET['walkin_type'] ?? 'regular') ?>'"
                     class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
                 <i class="fas fa-calendar-day mr-2"></i>Hôm nay
             </button>
@@ -772,6 +777,26 @@ function filterPackagesByGender(gender) {
 
 // Lắng nghe thay đổi giới tính (bệnh nhân mới)
 document.addEventListener('DOMContentLoaded', function() {
+    // Tự động chọn loại khám từ URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const walkinType = urlParams.get('walkin_type') || 'regular';
+    if (walkinType) {
+        selectAppointmentType(walkinType);
+    }
+    
+    // Chỉ reload khi có tham số refresh=1 và không có dữ liệu
+    if (urlParams.get('refresh') === '1') {
+        setTimeout(function() {
+            // Kiểm tra xem có dữ liệu lịch hẹn không
+            const scheduleTable = document.querySelector('.bg-white.rounded-lg.shadow-md.overflow-hidden');
+            if (scheduleTable && !scheduleTable.querySelector('table')) {
+                // Nếu không có bảng lịch, reload lại trang một lần (không còn refresh=1)
+                const newUrl = window.location.pathname + window.location.search.replace(/[?&]refresh=1/g, '');
+                window.location.href = newUrl;
+            }
+        }, 500);
+    }
+    
     const genderSelect = document.getElementById('newPatientGenderPkg');
     if (genderSelect) {
         genderSelect.addEventListener('change', function() {

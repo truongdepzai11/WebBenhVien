@@ -70,6 +70,15 @@ class Auth {
         return self::check() && (self::isAdmin() || self::isReceptionist());
     }
 
+    // Yêu cầu quyền admin hoặc staff (admin/receptionist)
+    public static function requireAdminOrStaff() {
+        self::requireLogin();
+        if (!self::isAdmin() && !self::isReceptionist()) {
+            header('Location: ' . APP_URL . '/dashboard');
+            exit;
+        }
+    }
+
     // Yêu cầu đăng nhập
     public static function requireLogin() {
         if (!self::check()) {
