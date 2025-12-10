@@ -65,7 +65,7 @@ class PatientController {
 
         $medical_records = $this->medicalRecordModel->getByPatientId($id);
         
-        // Lấy lịch hẹn gần đây (10 lịch hẹn mới nhất)
+        // Lấy lịch hẹn gần đây (chỉ regular appointments)
         $appointments = $this->appointmentModel->getByPatientId($id);
         $recent_appointments = array_slice($appointments, 0, 10);
         

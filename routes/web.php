@@ -463,6 +463,31 @@ $router->get('/zalopay-payment/cancel/{id}', function($id){
     $controller->cancelPayment($id);
 });
 
+// Bank Payment Routes
+$router->get('/bank-payment/pay/{id}', function($id){
+    require_once APP_PATH . '/Controllers/BankPaymentController.php';
+    $controller = new BankPaymentController();
+    $controller->showPaymentPage($id);
+});
+
+$router->get('/bank-payment/confirm/{id}', function($id){
+    require_once APP_PATH . '/Controllers/BankPaymentController.php';
+    $controller = new BankPaymentController();
+    $controller->confirmPayment($id);
+});
+
+$router->post('/bank-payment/patient-confirm/{id}', function($id){
+    require_once APP_PATH . '/Controllers/BankPaymentController.php';
+    $controller = new BankPaymentController();
+    $controller->patientConfirmPayment($id);
+});
+
+$router->get('/bank-payment/cancel/{id}', function($id){
+    require_once APP_PATH . '/Controllers/BankPaymentController.php';
+    $controller = new BankPaymentController();
+    $controller->cancelPayment($id);
+});
+
 // MoMo Payment Routes
 $router->get('/invoices/{id}/momo', function($id){
     $controller = new InvoiceController();

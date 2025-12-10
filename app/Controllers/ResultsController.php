@@ -259,7 +259,7 @@ class ResultsController {
             }
 
             // Load metrics
-            $st2 = $conn->prepare('SELECT service_id, metric_name, result_value, result_status, reference_range, notes
+            $st2 = $conn->prepare('SELECT service_id, metric_name, result_value, result_status, reference_range, notes, image_path, file_path
                                     FROM package_test_results
                                     WHERE appointment_id = ?
                                     ORDER BY service_id, id');

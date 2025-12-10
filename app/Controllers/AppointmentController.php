@@ -61,7 +61,9 @@ class AppointmentController {
         $units   = $_POST['unit'] ?? [];
         $ranges  = $_POST['reference_range'] ?? [];
         $flags   = $_POST['flag'] ?? [];
-        $notes   = $_POST['note'] ?? [];
+        $notes   = $_POST['notes'] ?? [];
+        $images  = $_FILES['image_path'] ?? [];
+        $files   = $_FILES['file_path'] ?? [];
 
         $db = new Database(); $conn = $db->getConnection();
         $conn->beginTransaction();
@@ -69,20 +71,47 @@ class AppointmentController {
             $del = $conn->prepare('DELETE FROM package_test_results WHERE appointment_id = ? AND service_id = ?');
             $del->execute([(int)$summary['id'], (int)$aps['service_id']]);
 
-            $ins = $conn->prepare('INSERT INTO package_test_results (appointment_id, service_id, metric_name, result_value, result_status, reference_range, notes) VALUES (?,?,?,?,?,?,?)');
+            $ins = $conn->prepare('INSERT INTO package_test_results (appointment_id, service_id, metric_name, result_value, result_status, reference_range, notes, image_path, file_path) VALUES (?,?,?,?,?,?,?,?,?)');
             $count = max(count($metrics), count($values));
             for ($i=0; $i<$count; $i++) {
                 $m = trim($metrics[$i] ?? '');
                 $v = trim($values[$i] ?? '');
                 if ($m === '' && $v === '') continue;
+                
+                // Upload image
+                $imagePath = null;
+                if (isset($images['tmp_name'][$i]) && !empty($images['tmp_name'][$i])) {
+                    $uploadDir = BASE_PATH . '/uploads/results/';
+                    if (!is_dir($uploadDir)) {
+                        mkdir($uploadDir, 0755, true);
+                    }
+                    $imageName = 'result_' . time() . '_' . $i . '_' . basename($images['name'][$i]);
+                    $imagePath = 'uploads/results/' . $imageName;
+                    move_uploaded_file($images['tmp_name'][$i], $uploadDir . $imageName);
+                }
+                
+                // Upload file
+                $filePath = null;
+                if (isset($files['tmp_name'][$i]) && !empty($files['tmp_name'][$i])) {
+                    $uploadDir = BASE_PATH . '/uploads/results/';
+                    if (!is_dir($uploadDir)) {
+                        mkdir($uploadDir, 0755, true);
+                    }
+                    $fileName = 'file_' . time() . '_' . $i . '_' . basename($files['name'][$i]);
+                    $filePath = 'uploads/results/' . $fileName;
+                    move_uploaded_file($files['tmp_name'][$i], $uploadDir . $fileName);
+                }
+                
                 $ins->execute([
                     (int)$summary['id'],
                     (int)$aps['service_id'],
                     $m,
                     $v,
-                    $_POST['result_status'][$i] ?? null,
+                    $flags[$i] ?? 'normal',
                     $ranges[$i] ?? null,
-                    $_POST['notes'][$i] ?? null,
+                    $notes[$i] ?? null,
+                    $imagePath,
+                    $filePath
                 ]);
             }
             // Cập nhật result_json (findings/conclusion) nếu có
@@ -120,6 +149,111 @@ class AppointmentController {
         } catch (\Throwable $e) {
             $conn->rollBack();
             $_SESSION['error'] = 'Lỗi nộp kết quả: ' . $e->getMessage();
+        }
+        header('Location: ' . APP_URL . '/appointments/' . $id); exit;
+    }
+
+    // Lưu kết quả (chỉ lưu, chưa nộp) - cho bác sĩ chỉnh sửa
+    public function saveResults($id) {
+        Auth::requireLogin();
+        if (!Auth::isDoctor()) { header('Location: ' . APP_URL . '/appointments/' . $id); exit; }
+
+        $apt = $this->appointmentModel->findById($id);
+        if (!$apt || empty($apt['package_appointment_id']) || empty($apt['doctor_id'])) {
+            $_SESSION['error'] = 'Chỉ áp dụng cho lịch dịch vụ trong gói đã phân công.';
+            header('Location: ' . APP_URL . '/appointments/' . $id); exit;
+        }
+        $doctor = $this->doctorModel->findByUserId(Auth::id());
+        if (!$doctor || (int)$doctor['id'] !== (int)$apt['doctor_id']) {
+            $_SESSION['error'] = 'Bạn không có quyền thao tác kết quả cho lịch này.';
+            header('Location: ' . APP_URL . '/appointments/' . $id); exit;
+        }
+
+        require_once APP_PATH . '/Models/AppointmentPackageService.php';
+        $summary = $this->appointmentModel->findSummaryByPackageAppointmentId($apt['package_appointment_id']);
+        $apsModel = new AppointmentPackageService();
+        $aps = $apsModel->findByPackageAppointmentAndServiceName($apt['package_appointment_id'], $apt['reason']);
+        if (!$summary || !$aps) {
+            $_SESSION['error'] = 'Không xác định được dịch vụ trong gói để lưu kết quả.';
+            header('Location: ' . APP_URL . '/appointments/' . $id); exit;
+        }
+
+        // Lưu dữ liệu
+        $metrics = $_POST['metric_name'] ?? [];
+        $values  = $_POST['result_value'] ?? [];
+        $ranges  = $_POST['reference_range'] ?? [];
+        $statuses = $_POST['result_status'] ?? [];
+        $notes   = $_POST['notes'] ?? [];
+        $images  = $_FILES['image_path'] ?? [];
+        $files   = $_FILES['file_path'] ?? [];
+
+        $db = new Database(); $conn = $db->getConnection();
+        $conn->beginTransaction();
+        try {
+            $del = $conn->prepare('DELETE FROM package_test_results WHERE appointment_id = ? AND service_id = ?');
+            $del->execute([(int)$summary['id'], (int)$aps['service_id']]);
+
+            $ins = $conn->prepare('INSERT INTO package_test_results (appointment_id, service_id, metric_name, result_value, result_status, reference_range, notes, image_path, file_path) VALUES (?,?,?,?,?,?,?,?,?)');
+            $count = max(count($metrics), count($values));
+            for ($i=0; $i<$count; $i++) {
+                $m = trim($metrics[$i] ?? '');
+                $v = trim($values[$i] ?? '');
+                if ($m === '' && $v === '') continue;
+                
+                // Upload image
+                $imagePath = null;
+                if (isset($images['tmp_name'][$i]) && !empty($images['tmp_name'][$i])) {
+                    $uploadDir = BASE_PATH . '/uploads/results/';
+                    if (!is_dir($uploadDir)) {
+                        mkdir($uploadDir, 0755, true);
+                    }
+                    $imageName = 'result_' . time() . '_' . $i . '_' . basename($images['name'][$i]);
+                    $imagePath = 'uploads/results/' . $imageName;
+                    move_uploaded_file($images['tmp_name'][$i], $uploadDir . $imageName);
+                }
+                
+                // Upload file
+                $filePath = null;
+                if (isset($files['tmp_name'][$i]) && !empty($files['tmp_name'][$i])) {
+                    $uploadDir = BASE_PATH . '/uploads/results/';
+                    if (!is_dir($uploadDir)) {
+                        mkdir($uploadDir, 0755, true);
+                    }
+                    $fileName = 'file_' . time() . '_' . $i . '_' . basename($files['name'][$i]);
+                    $filePath = 'uploads/results/' . $fileName;
+                    move_uploaded_file($files['tmp_name'][$i], $uploadDir . $fileName);
+                }
+                
+                $ins->execute([
+                    (int)$summary['id'],
+                    (int)$aps['service_id'],
+                    $m,
+                    $v,
+                    $statuses[$i] ?? 'normal',
+                    $ranges[$i] ?? null,
+                    $notes[$i] ?? null,
+                    $imagePath,
+                    $filePath
+                ]);
+            }
+            
+            // Cập nhật result_json nếu có
+            $findings = trim($_POST['findings'] ?? '');
+            $conclusion = trim($_POST['conclusion'] ?? '');
+            if ($findings !== '' || $conclusion !== '') {
+                $json = [
+                    'findings' => $findings,
+                    'conclusion' => $conclusion,
+                ];
+                $up = $conn->prepare('UPDATE appointment_package_services SET result_json = :js WHERE id = :id');
+                $up->execute([':js' => json_encode($json), ':id' => $aps['id']]);
+            }
+
+            $conn->commit();
+            $_SESSION['success'] = 'Đã lưu kết quả. Chưa gửi cho bệnh nhân.';
+        } catch (\Throwable $e) {
+            $conn->rollBack();
+            $_SESSION['error'] = 'Lỗi lưu kết quả: ' . $e->getMessage();
         }
         header('Location: ' . APP_URL . '/appointments/' . $id); exit;
     }
@@ -931,7 +1065,7 @@ class AppointmentController {
                     $serviceCategory = $sc->fetchColumn() ?: null;
                 } catch (\Throwable $e) { $serviceCategory = null; }
                 $db = new Database(); $conn = $db->getConnection();
-                $stmt = $conn->prepare('SELECT metric_name, result_value, result_status, reference_range, notes FROM package_test_results WHERE appointment_id = ? AND service_id = ? ORDER BY id');
+                $stmt = $conn->prepare('SELECT metric_name, result_value, result_status, reference_range, notes, image_path, file_path FROM package_test_results WHERE appointment_id = ? AND service_id = ? ORDER BY id');
                 $stmt->execute([(int)$summary['id'], (int)$aps['service_id']]);
                 $serviceMetrics = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
             }

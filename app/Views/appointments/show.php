@@ -221,7 +221,7 @@ if (($appointment['status'] ?? '') === 'completed'):
         </div>
     <?php endif; ?>
 
-    <form method="post" action="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/results/save" onsubmit="console.log('Package form submitted'); alert('Form submitting!'); return true;">
+    <form method="post" enctype="multipart/form-data" action="<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/results/save" onsubmit="console.log('Package form submitted'); alert('Form submitting!'); return true;">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200" id="metrics-table">
                 <thead class="bg-gray-50">
@@ -230,6 +230,8 @@ if (($appointment['status'] ?? '') === 'completed'):
                         <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kết quả</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Khoảng tham chiếu</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tình trạng</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ảnh</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">File xét nghiệm</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ghi chú</th>
                         <th class="px-2"></th>
                     </tr>
@@ -246,6 +248,48 @@ if (($appointment['status'] ?? '') === 'completed'):
                                 <option value="normal" <?= (isset($row['result_status']) && $row['result_status']==='normal') ? 'selected' : '' ?>>Bình thường</option>
                                 <option value="abnormal" <?= (isset($row['result_status']) && $row['result_status']==='abnormal') ? 'selected' : '' ?>>Bất thường</option>
                             </select>
+                        </td>
+                        <td class="px-4 py-2">
+                            <?php if (!empty($row['image_path'])): ?>
+                                <div class="text-sm">
+                                    <?php 
+                                        // Lấy tên file gốc, bỏ prefix result_[timestamp]_[index]_
+                                        $originalName = basename($row['image_path']);
+                                        if (preg_match('/result_\d+_\d+_(.+)$/', $originalName, $matches)) {
+                                            $displayName = $matches[1];
+                                        } else {
+                                            $displayName = $originalName;
+                                        }
+                                    ?>
+                                    <div class="text-gray-600 mb-1"><?= htmlspecialchars($displayName) ?></div>
+                                    <a href="<?= str_replace('/public', '', APP_URL) ?>/<?= htmlspecialchars($row['image_path']) ?>" target="_blank" class="text-blue-600 text-xs hover:text-blue-800">
+                                        <i class="fas fa-eye mr-1"></i>Xem ảnh
+                                    </a>
+                                </div>
+                            <?php else: ?>
+                                <input <?= $isLocked ? 'readonly' : '' ?> type="file" name="image_path[]" accept="image/*" class="w-full border rounded px-2 py-1 text-sm">
+                            <?php endif; ?>
+                        </td>
+                        <td class="px-4 py-2">
+                            <?php if (!empty($row['file_path'])): ?>
+                                <div class="text-sm">
+                                    <?php 
+                                        // Lấy tên file gốc, bỏ prefix file_[timestamp]_[index]_
+                                        $originalName = basename($row['file_path']);
+                                        if (preg_match('/file_\d+_\d+_(.+)$/', $originalName, $matches)) {
+                                            $displayName = $matches[1];
+                                        } else {
+                                            $displayName = $originalName;
+                                        }
+                                    ?>
+                                    <div class="text-gray-600 mb-1"><?= htmlspecialchars($displayName) ?></div>
+                                    <a href="<?= str_replace('/public', '', APP_URL) ?>/<?= htmlspecialchars($row['file_path']) ?>" download="<?= htmlspecialchars($displayName) ?>" class="text-blue-600 text-xs hover:text-blue-800">
+                                        <i class="fas fa-download mr-1"></i>Xem file
+                                    </a>
+                                </div>
+                            <?php else: ?>
+                                <input <?= $isLocked ? 'readonly' : '' ?> type="file" name="file_path[]" accept=".pdf,.doc,.docx,.xls,.xlsx" class="w-full border rounded px-2 py-1 text-sm">
+                            <?php endif; ?>
                         </td>
                         <td class="px-4 py-2"><input <?= $isLocked ? 'readonly' : '' ?> type="text" name="notes[]" value="<?= htmlspecialchars($row['notes'] ?? '') ?>" class="w-full border rounded px-2 py-1"></td>
                         <td class="px-2 text-center">
@@ -288,6 +332,12 @@ if (($appointment['status'] ?? '') === 'completed'):
                     <option value="abnormal">Bất thường</option>
                 </select>
             </td>
+            <td class="px-4 py-2">
+                <input type="file" name="image_path[]" accept="image/*" class="w-full border rounded px-2 py-1 text-sm">
+            </td>
+            <td class="px-4 py-2">
+                <input type="file" name="file_path[]" accept=".pdf,.doc,.docx,.xls,.xlsx" class="w-full border rounded px-2 py-1 text-sm">
+            </td>
             <td class="px-4 py-2"><input type="text" name="notes[]" class="w-full border rounded px-2 py-1"></td>
             <td class="px-2 text-center"><button type="button" class="text-red-600" onclick="removeMetricRow(this)"><i class="fas fa-trash"></i></button></td>
         `;
@@ -323,6 +373,7 @@ if (($appointment['status'] ?? '') === 'completed'):
         console.log('Submitting package results form...');
         const form = document.querySelector('form[action*="/results/save"]');
         form.action = '<?= APP_URL ?>/appointments/<?= $appointment['id'] ?>/results/submit';
+        form.enctype = 'multipart/form-data';
         form.submit();
     }
     
@@ -383,6 +434,8 @@ if (($appointment['status'] ?? '') === 'completed'):
                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kết quả</th>
                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Khoảng tham chiếu</th>
                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tình trạng</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ảnh</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">File xét nghiệm</th>
                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ghi chú</th>
                 </tr>
             </thead>
@@ -396,6 +449,42 @@ if (($appointment['status'] ?? '') === 'completed'):
                         <span class="px-2 py-1 text-xs font-semibold rounded-full <?= ($row['result_status'] ?? 'normal') === 'normal' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' ?>">
                             <?= ($row['result_status'] ?? 'normal') === 'normal' ? 'Bình thường' : 'Bất thường' ?>
                         </span>
+                    </td>
+                    <td class="px-4 py-2">
+                        <?php if (!empty($row['image_path'])): ?>
+                            <?php 
+                                // Lấy tên file gốc, bỏ prefix result_[timestamp]_[index]_
+                                $originalName = basename($row['image_path']);
+                                if (preg_match('/result_\d+_\d+_(.+)$/', $originalName, $matches)) {
+                                    $displayName = $matches[1];
+                                } else {
+                                    $displayName = $originalName;
+                                }
+                            ?>
+                            <a href="<?= str_replace('/public', '', APP_URL) ?>/<?= htmlspecialchars($row['image_path']) ?>" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm">
+                                <i class="fas fa-image mr-1"></i><?= htmlspecialchars($displayName) ?>
+                            </a>
+                        <?php else: ?>
+                            <span class="text-gray-400 text-sm">-</span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="px-4 py-2">
+                        <?php if (!empty($row['file_path'])): ?>
+                            <?php 
+                                // Lấy tên file gốc, bỏ prefix file_[timestamp]_[index]_
+                                $originalName = basename($row['file_path']);
+                                if (preg_match('/file_\d+_\d+_(.+)$/', $originalName, $matches)) {
+                                    $displayName = $matches[1];
+                                } else {
+                                    $displayName = $originalName;
+                                }
+                            ?>
+                            <a href="<?= str_replace('/public', '', APP_URL) ?>/<?= htmlspecialchars($row['file_path']) ?>" download="<?= htmlspecialchars($displayName) ?>" class="text-blue-600 hover:text-blue-800 text-sm">
+                                <i class="fas fa-download mr-1"></i><?= htmlspecialchars($displayName) ?>
+                            </a>
+                        <?php else: ?>
+                            <span class="text-gray-400 text-sm">-</span>
+                        <?php endif; ?>
                     </td>
                     <td class="px-4 py-2"><?= htmlspecialchars($row['notes'] ?? '') ?></td>
                 </tr>

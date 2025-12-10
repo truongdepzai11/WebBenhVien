@@ -219,6 +219,18 @@ ob_start();
                        class="px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition">
                         <i class="fas fa-qrcode mr-2"></i>Xác nhận MoMo
                     </a>
+                    
+                    <a href="<?= APP_URL ?>/zalopay-payment/confirm/<?= $invoice['id'] ?>" 
+                       onclick="return confirm('Xác nhận bệnh nhân đã thanh toán qua ZaloPay?')"
+                       class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-wallet mr-2"></i>Xác nhận ZaloPay
+                    </a>
+                    
+                    <a href="<?= APP_URL ?>/bank-payment/confirm/<?= $invoice['id'] ?>" 
+                       onclick="return confirm('Xác nhận bệnh nhân đã thanh toán qua ngân hàng?')"
+                       class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                        <i class="fas fa-university mr-2"></i>Xác nhận Ngân hàng
+                    </a>
                     <?php endif; ?>
                 <?php endif; ?>
             </div>

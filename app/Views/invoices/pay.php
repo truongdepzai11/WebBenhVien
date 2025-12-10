@@ -95,6 +95,9 @@ document.getElementById('paymentForm').addEventListener('submit', function(e) {
     } else if (selectedMethod === 'zalopay') {
         e.preventDefault();
         window.location.href = '<?= APP_URL ?>/zalopay-payment/pay/<?= $invoice['id'] ?>';
+    } else if (selectedMethod === 'bank_transfer') {
+        e.preventDefault();
+        window.location.href = '<?= APP_URL ?>/bank-payment/pay/<?= $invoice['id'] ?>';
     }
 });
 </script>

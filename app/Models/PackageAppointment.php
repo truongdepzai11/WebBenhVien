@@ -138,4 +138,40 @@ class PackageAppointment {
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return $result['count'] > 0;
     }
+
+    // Lấy theo patient_id với thông tin chi tiết dịch vụ và bác sĩ
+    public function getByPatientIdWithServices($patientId) {
+        $query = "SELECT pa.*, 
+                         u_patient.full_name as patient_name, 
+                         p.patient_code, 
+                         hp.name as package_name,
+                         COUNT(ps.id) as services_count,
+                         GROUP_CONCAT(DISTINCT ps.service_name ORDER BY ps.display_order) as service_names,
+                         GROUP_CONCAT(DISTINCT du.full_name ORDER BY du.full_name) as doctor_names
+                  FROM " . $this->table . " pa
+                  LEFT JOIN patients p ON pa.patient_id = p.id
+                  LEFT JOIN users u_patient ON p.user_id = u_patient.id
+                  LEFT JOIN health_packages hp ON pa.package_id = hp.id
+                  LEFT JOIN package_services ps ON hp.id = ps.package_id
+                  LEFT JOIN package_service_doctors psd ON ps.id = psd.service_id
+                  LEFT JOIN doctors d ON psd.doctor_id = d.id  
+                  LEFT JOIN users du ON d.user_id = du.id
+                  WHERE pa.patient_id = :patient_id
+                  GROUP BY pa.id
+                  ORDER BY pa.created_at DESC";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':patient_id', $patientId);
+        $stmt->execute();
+
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Convert comma-separated strings to arrays
+        foreach ($results as &$result) {
+            $result['doctor_names'] = $result['doctor_names'] ? explode(',', $result['doctor_names']) : [];
+            $result['appointment_times'] = [$result['appointment_time']]; // Single appointment time
+        }
+        
+        return $results;
+    }
 }

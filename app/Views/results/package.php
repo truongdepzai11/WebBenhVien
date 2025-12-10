@@ -79,6 +79,8 @@ ob_start();
                   <th class="px-3 py-2 text-left">Kết quả</th>
                   <th class="px-3 py-2 text-left">Khoảng tham chiếu</th>
                   <th class="px-3 py-2 text-left">Tình trạng</th>
+                  <th class="px-3 py-2 text-left">Ảnh</th>
+                  <th class="px-3 py-2 text-left">File xét nghiệm</th>
                   <th class="px-3 py-2 text-left">Ghi chú</th>
                 </tr>
               </thead>
@@ -89,6 +91,42 @@ ob_start();
                   <td class="px-3 py-2"><?= htmlspecialchars($m['result_value'] ?? '') ?></td>
                   <td class="px-3 py-2"><?= htmlspecialchars($m['reference_range'] ?? '') ?></td>
                   <td class="px-3 py-2"><?= htmlspecialchars($m['result_status'] ?? '') ?></td>
+                  <td class="px-3 py-2">
+                    <?php if (!empty($m['image_path'])): ?>
+                      <?php 
+                        // Lấy tên file gốc, bỏ prefix result_[timestamp]_[index]_
+                        $originalName = basename($m['image_path']);
+                        if (preg_match('/result_\d+_\d+_(.+)$/', $originalName, $matches)) {
+                            $displayName = $matches[1];
+                        } else {
+                            $displayName = $originalName;
+                        }
+                      ?>
+                      <a href="<?= str_replace('/public', '', APP_URL) ?>/<?= htmlspecialchars($m['image_path']) ?>" target="_blank" class="text-blue-600 hover:text-blue-800 text-xs">
+                        <i class="fas fa-image mr-1"></i><?= htmlspecialchars($displayName) ?>
+                      </a>
+                    <?php else: ?>
+                      <span class="text-gray-400 text-xs">-</span>
+                    <?php endif; ?>
+                  </td>
+                  <td class="px-3 py-2">
+                    <?php if (!empty($m['file_path'])): ?>
+                      <?php 
+                        // Lấy tên file gốc, bỏ prefix file_[timestamp]_[index]_
+                        $originalName = basename($m['file_path']);
+                        if (preg_match('/file_\d+_\d+_(.+)$/', $originalName, $matches)) {
+                            $displayName = $matches[1];
+                        } else {
+                            $displayName = $originalName;
+                        }
+                      ?>
+                      <a href="<?= str_replace('/public', '', APP_URL) ?>/<?= htmlspecialchars($m['file_path']) ?>" download="<?= htmlspecialchars($displayName) ?>" class="text-blue-600 hover:text-blue-800 text-xs">
+                        <i class="fas fa-download mr-1"></i><?= htmlspecialchars($displayName) ?>
+                      </a>
+                    <?php else: ?>
+                      <span class="text-gray-400 text-xs">-</span>
+                    <?php endif; ?>
+                  </td>
                   <td class="px-3 py-2"><?= htmlspecialchars($m['notes'] ?? '') ?></td>
                 </tr>
                 <?php endforeach; ?>

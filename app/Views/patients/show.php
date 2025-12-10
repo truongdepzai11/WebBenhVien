@@ -185,14 +185,14 @@ ob_start();
                         <td class="px-4 py-3 text-sm text-gray-700">
                             <div class="flex items-center">
                                 <i class="fas fa-user-md text-purple-600 mr-2"></i>
-                                <?= htmlspecialchars($apt['doctor_name']) ?>
+                                <?= htmlspecialchars($apt['doctor_name'] ?? 'Chưa phân công') ?>
                             </div>
                         </td>
                         <td class="px-4 py-3 text-sm text-gray-700">
                             <?= date('d/m/Y', strtotime($apt['appointment_date'])) ?>
                         </td>
                         <td class="px-4 py-3 text-sm text-gray-700">
-                            <?= date('H:i', strtotime($apt['appointment_time'])) ?>
+                            <?= htmlspecialchars($apt['appointment_time'] ? date('H:i', strtotime($apt['appointment_time'])) : 'Chưa có giờ') ?>
                         </td>
                         <td class="px-4 py-3 text-sm text-gray-700">
                             <?= htmlspecialchars(substr($apt['reason'], 0, 30)) ?><?= strlen($apt['reason']) > 30 ? '...' : '' ?>

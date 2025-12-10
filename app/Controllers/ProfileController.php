@@ -127,17 +127,30 @@ class ProfileController {
         }
 
         // Cập nhật mật khẩu mới
+        require_once __DIR__ . '/../../config/database.php';
+        $db = new Database();
+        $conn = $db->getConnection();
+        
+        // Debug
+        error_log("User ID: " . Auth::id());
+        error_log("New password hash: " . password_hash($_POST['new_password'], PASSWORD_BCRYPT));
+        
         $query = "UPDATE users SET password = :password WHERE id = :id";
-        $stmt = $this->userModel->conn->prepare($query);
+        $stmt = $conn->prepare($query);
         $hashed_password = password_hash($_POST['new_password'], PASSWORD_BCRYPT);
         $stmt->bindParam(':password', $hashed_password);
         $stmt->bindParam(':id', Auth::id());
+        
+        error_log("SQL Query: " . $query);
+        
+        $executeResult = $stmt->execute();
+        error_log("Execute result: " . ($executeResult ? 'SUCCESS' : 'FAILED'));
 
-        if ($stmt->execute()) {
+        if ($executeResult) {
             $_SESSION['success'] = 'Đổi mật khẩu thành công!';
             header('Location: ' . APP_URL . '/profile');
         } else {
-            $_SESSION['error'] = 'Đổi mật khẩu thất bại!';
+            $_SESSION['error'] = 'Đổi mật khẩu thất bại! Lỗi: ' . implode(', ', $stmt->errorInfo());
             header('Location: ' . APP_URL . '/profile/change-password');
         }
         exit;
