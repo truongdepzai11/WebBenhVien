@@ -317,7 +317,19 @@ class AppointmentController {
                         require_once APP_PATH . '/Models/HealthPackage.php';
                         $this->packageModel = new HealthPackage();
                     }
-                    $services = $this->packageModel->getPackageServices($apt['package_id']);
+                    // Lấy tổng số dịch vụ đã chọn trong gói
+                    $summaryAppointment = $this->appointmentModel->getSummaryByPackageAppointmentId($apt['package_appointment_id']);
+                    if ($summaryAppointment) {
+                        $services = $this->packageModel->getSelectedServicesByAppointmentId($summaryAppointment['id']);
+                    } else {
+                        $services = [];
+                    }
+                    
+                    // Fallback: nếu không có dịch vụ đã chọn, lấy tất cả dịch vụ
+                    if (empty($services)) {
+                        $services = $this->packageModel->getPackageServices($apt['package_id']);
+                    }
+                    
                     $apt['total_services'] = is_array($services) ? count($services) : 0;
                     // Lấy danh sách các ngày khám khác nhau
                     $apt['appointment_dates'] = $this->appointmentModel->getAppointmentDatesByPackageAppointmentId($apt['package_appointment_id']);
@@ -816,7 +828,7 @@ class AppointmentController {
             exit;
         }
 
-        // Nếu xác nhận lịch gói khám, kiểm tra đã phân công hết dịch vụ chưa
+        // Nếu xác nhận lịch gói khám, kiểm tra đã phân công hết dịch vụ đã chọn chưa
         if ($status === 'confirmed') {
             $appointment = $this->appointmentModel->findById($id);
             
@@ -825,10 +837,23 @@ class AppointmentController {
                 
                 // Kiểm tra xem đây có phải là lịch tổng hợp gói không (có chứa dấu ":")
                 if (strpos($reason, ':') !== false) {
-                    // Lấy tổng số dịch vụ trong gói
+                    // Lấy danh sách dịch vụ đã chọn trong gói
                     require_once APP_PATH . '/Models/HealthPackage.php';
                     $packageModel = new HealthPackage();
-                    $services = $packageModel->getPackageServices($appointment['package_id']);
+                    
+                    // Lấy appointment tổng hợp để lấy dịch vụ đã chọn
+                    $summaryAppointment = $this->appointmentModel->getSummaryByPackageAppointmentId($appointment['package_appointment_id']);
+                    if ($summaryAppointment) {
+                        $services = $packageModel->getSelectedServicesByAppointmentId($summaryAppointment['id']);
+                    } else {
+                        $services = [];
+                    }
+                    
+                    // Fallback: nếu không có dịch vụ đã chọn, lấy tất cả dịch vụ
+                    if (empty($services)) {
+                        $services = $packageModel->getPackageServices($appointment['package_id']);
+                    }
+                    
                     $totalServices = is_array($services) ? count($services) : 0;
                     
                     // Đếm số dịch vụ đã phân công
@@ -1155,17 +1180,30 @@ class AppointmentController {
 
         $isPackageSummary = false;
 
-        // Kiểm tra nếu là lịch gói khám: phải phân công hết dịch vụ mới được xác nhận
+        // Kiểm tra nếu là lịch gói khám: phải phân công hết dịch vụ đã chọn mới được xác nhận
         if (!empty($appointment['package_id']) && !empty($appointment['package_appointment_id'])) {
             $reason = $appointment['reason'] ?? '';
             
             // Kiểm tra xem đây có phải là lịch tổng hợp gói không (có chứa dấu ":")
             if (strpos($reason, ':') !== false) {
                 $isPackageSummary = true;
-                // Lấy tổng số dịch vụ trong gói
+                // Lấy danh sách dịch vụ đã chọn trong gói
                 require_once APP_PATH . '/Models/HealthPackage.php';
                 $packageModel = new HealthPackage();
-                $services = $packageModel->getPackageServices($appointment['package_id']);
+                
+                // Lấy appointment tổng hợp để lấy dịch vụ đã chọn
+                $summaryAppointment = $this->appointmentModel->getSummaryByPackageAppointmentId($appointment['package_appointment_id']);
+                if ($summaryAppointment) {
+                    $services = $packageModel->getSelectedServicesByAppointmentId($summaryAppointment['id']);
+                } else {
+                    $services = [];
+                }
+                
+                // Fallback: nếu không có dịch vụ đã chọn, lấy tất cả dịch vụ
+                if (empty($services)) {
+                    $services = $packageModel->getPackageServices($appointment['package_id']);
+                }
+                
                 $totalServices = is_array($services) ? count($services) : 0;
                 
                 // Đếm số dịch vụ đã phân công

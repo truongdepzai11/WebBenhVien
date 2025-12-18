@@ -21,6 +21,9 @@ ob_start();
         // Hiển thị trạng thái theo tiến độ phân công dịch vụ trong gói
         $as = isset($assignedCount) ? (int)$assignedCount : 0;
         $ts = isset($packageServices) ? (int)count($packageServices) : 0;
+        
+        // Debug: log trực tiếp trong view
+        error_log("VIEW DEBUG: packageAppointmentID=" . ($packageAppointment['id'] ?? 'NULL') . ", assignedCount=" . $as . ", packageServices count=" . $ts);
 
         if ($ts > 0) {
             if ($as === 0) {
@@ -248,7 +251,7 @@ if ($childTotal === 0) {
             <i class="fas fa-list-check mr-2"></i>
             Danh sách dịch vụ & Lịch khám
             <span class="ml-2 text-sm font-normal text-gray-600">
-                (<?= isset($assignedCount) ? (int)$assignedCount : 0 ?>/<?= count($packageServices) ?> đã phân công)
+                (<?= isset($assignedCount) ? (int)$assignedCount : 0 ?>/<?= $ts ?> đã phân công)
             </span>
             <?php 
                 // Tổng thời lượng toàn gói

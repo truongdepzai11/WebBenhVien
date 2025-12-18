@@ -74,8 +74,20 @@ class PackageAppointmentController {
         $packageAppointments = array_map(function($pa) {
             // Đếm số dịch vụ đã phân công
             $pa['assigned_count'] = $this->appointmentModel->countAssignedByPackageAppointmentId($pa['id']);
-            // Lấy tổng số dịch vụ trong gói
-            $services = $this->packageModel->getPackageServices($pa['package_id']);
+            
+            // Lấy tổng số dịch vụ đã chọn trong gói
+            $summaryAppointment = $this->appointmentModel->getSummaryByPackageAppointmentId($pa['id']);
+            if ($summaryAppointment) {
+                $services = $this->packageModel->getSelectedServicesByAppointmentId($summaryAppointment['id']);
+            } else {
+                $services = [];
+            }
+            
+            // Fallback: nếu không có dịch vụ đã chọn, lấy tất cả dịch vụ
+            if (empty($services)) {
+                $services = $this->packageModel->getPackageServices($pa['package_id']);
+            }
+            
             $pa['total_services'] = is_array($services) ? count($services) : 0;
             return $pa;
         }, $packageAppointments);
@@ -117,9 +129,13 @@ class PackageAppointmentController {
         // Lấy danh sách dịch vụ đã chọn (ưu tiên), nếu chưa có thì lấy toàn bộ dịch vụ cấu hình của gói
         if ($summaryAppointment) {
             $packageServices = $this->packageModel->getSelectedServicesByAppointmentId($summaryAppointment['id']);
+            // Debug: log số lượng dịch vụ đã chọn
+            error_log("DEBUG: Found " . count($packageServices) . " selected services for appointment " . $summaryAppointment['id']);
         }
         if (empty($packageServices)) {
             $packageServices = $this->packageModel->getPackageServices($packageAppointment['package_id']);
+            // Debug: log fallback
+            error_log("DEBUG: Fallback to all services - Found " . count($packageServices) . " total services for package " . $packageAppointment['package_id']);
         }
 
         $assignedCount = $this->appointmentModel->countAssignedByPackageAppointmentId($id);
@@ -471,8 +487,19 @@ class PackageAppointmentController {
             exit;
         }
 
-        // Lấy danh sách dịch vụ trong gói
-        $packageServices = $this->packageModel->getPackageServices($packageAppointment['package_id']);
+        // Lấy danh sách dịch vụ đã chọn trong gói (chỉ những dịch vụ bệnh nhân chọn)
+        // Cần lấy theo appointment_id của appointment tổng hợp, không phải package_appointment_id
+        $summaryAppointment = $this->appointmentModel->getSummaryByPackageAppointmentId($packageAppointmentId);
+        if ($summaryAppointment) {
+            $packageServices = $this->packageModel->getSelectedServicesByAppointmentId($summaryAppointment['id']);
+        } else {
+            $packageServices = [];
+        }
+        
+        // Nếu không có dịch vụ đã chọn, lấy tất cả dịch vụ trong gói (fallback)
+        if (empty($packageServices)) {
+            $packageServices = $this->packageModel->getPackageServices($packageAppointment['package_id']);
+        }
 
         if (empty($packageServices)) {
             $_SESSION['error'] = 'Gói khám không có dịch vụ nào';
