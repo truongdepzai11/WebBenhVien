@@ -43,7 +43,19 @@ class DashboardController {
                         require_once __DIR__ . '/../Models/HealthPackage.php';
                         $this->packageModel = new HealthPackage();
                     }
-                    $services = $this->packageModel->getPackageServices($apt['package_id']);
+                    // Lấy tổng số dịch vụ đã chọn trong gói
+                    $summaryAppointment = $this->appointmentModel->getSummaryByPackageAppointmentId($apt['package_appointment_id']);
+                    if ($summaryAppointment) {
+                        $services = $this->packageModel->getSelectedServicesByAppointmentId($summaryAppointment['id']);
+                    } else {
+                        $services = [];
+                    }
+                    
+                    // Fallback: nếu không có dịch vụ đã chọn, lấy tất cả dịch vụ
+                    if (empty($services)) {
+                        $services = $this->packageModel->getPackageServices($apt['package_id']);
+                    }
+                    
                     $apt['total_services'] = is_array($services) ? count($services) : 0;
                     if (method_exists($this->appointmentModel, 'getAppointmentDatesByPackageAppointmentId')) {
                         $apt['appointment_dates'] = $this->appointmentModel->getAppointmentDatesByPackageAppointmentId($apt['package_appointment_id']);
@@ -88,7 +100,19 @@ class DashboardController {
                         require_once __DIR__ . '/../Models/HealthPackage.php';
                         $this->packageModel = new HealthPackage();
                     }
-                    $services = $this->packageModel->getPackageServices($apt['package_id']);
+                    // Lấy tổng số dịch vụ đã chọn trong gói
+                    $summaryAppointment = $this->appointmentModel->getSummaryByPackageAppointmentId($apt['package_appointment_id']);
+                    if ($summaryAppointment) {
+                        $services = $this->packageModel->getSelectedServicesByAppointmentId($summaryAppointment['id']);
+                    } else {
+                        $services = [];
+                    }
+                    
+                    // Fallback: nếu không có dịch vụ đã chọn, lấy tất cả dịch vụ
+                    if (empty($services)) {
+                        $services = $this->packageModel->getPackageServices($apt['package_id']);
+                    }
+                    
                     $apt['total_services'] = is_array($services) ? count($services) : 0;
                     $apt['appointment_dates'] = $this->appointmentModel->getAppointmentDatesByPackageAppointmentId($apt['package_appointment_id']);
                 }
